@@ -45,6 +45,40 @@ export function OverviewPanel({ analysis }: OverviewPanelProps) {
           </div>
         </div>
       </div>
+
+      {/* Debug Info */}
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+        <h3 className="text-sm font-semibold text-yellow-900 mb-3">🔍 Debug Info</h3>
+        <div className="space-y-2 text-xs">
+          <div className="flex justify-between">
+            <span className="text-yellow-800">Assets found:</span>
+            <span className="font-mono font-semibold text-yellow-900">{breakpointData.assets.length}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-yellow-800">Images:</span>
+            <span className="font-mono font-semibold text-yellow-900">
+              {breakpointData.assets.filter(a => a.type === 'image' || a.type === 'background').length}
+            </span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-yellow-800">SVGs:</span>
+            <span className="font-mono font-semibold text-yellow-900">
+              {breakpointData.assets.filter(a => a.type === 'svg').length}
+            </span>
+          </div>
+          <div className="pt-2 border-t border-yellow-300">
+            <p className="text-yellow-800 font-semibold mb-1">Sample assets:</p>
+            {breakpointData.assets.slice(0, 3).map((asset, i) => (
+              <div key={i} className="font-mono text-[10px] text-yellow-900 mb-1">
+                {asset.nodeName}: {asset.dimensions.width}×{asset.dimensions.height}px = {asset.estimatedBytes.toLocaleString()}b
+              </div>
+            ))}
+            {breakpointData.assets.length === 0 && (
+              <p className="text-red-600 font-semibold">⚠️ NO ASSETS FOUND - Image detection is broken!</p>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
