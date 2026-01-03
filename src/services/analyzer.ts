@@ -6,9 +6,15 @@ import { generateRecommendations } from './recommendations'
 export async function analyzeProject(): Promise<ProjectAnalysis> {
   try {
     const pages = await getAllPages()
+    console.log('Pages to analyze:', pages)
 
-    if (!pages || pages.length === 0) {
-      throw new Error('No pages found in project')
+    if (!pages || !Array.isArray(pages)) {
+      console.error('Pages is not an array:', pages)
+      throw new Error('Could not load pages from Framer project')
+    }
+
+    if (pages.length === 0) {
+      throw new Error('No pages found in project. Try creating a page first.')
     }
 
     const pageAnalyses: PageAnalysis[] = []

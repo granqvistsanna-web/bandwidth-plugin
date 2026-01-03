@@ -4,7 +4,19 @@ import type { AssetInfo, Breakpoint } from '../types/analysis'
 export async function getAllPages() {
   try {
     const root = await framer.getCanvasRoot()
-    return root
+    console.log('Canvas root:', root)
+
+    // getCanvasRoot returns a single node, we need to get its children (the pages)
+    if (!root) {
+      console.error('No canvas root found')
+      return []
+    }
+
+    // Get all child pages from the root
+    const pages = await framer.getChildren(root.id)
+    console.log('Found pages:', pages.length, pages)
+
+    return pages
   } catch (error) {
     console.error('Error getting canvas root:', error)
     return []
