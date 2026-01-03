@@ -1,9 +1,10 @@
-import type { ProjectAnalysis, PageAnalysis } from '../types/analysis'
+import type { ProjectAnalysis, PageAnalysis, AnalysisMode } from '../types/analysis'
 import { getAllPages, traverseNodeTree } from './traversal'
 import { calculateBreakpointData, aggregateBreakpointData } from './bandwidth'
 import { generateRecommendations } from './recommendations'
+import { getPublishedUrl, analyzePublishedSite } from './publishedAnalysis'
 
-export async function analyzeProject(): Promise<ProjectAnalysis> {
+export async function analyzeProject(mode: AnalysisMode = 'canvas'): Promise<ProjectAnalysis> {
   try {
     const pages = await getAllPages()
     console.log('Pages to analyze:', pages)
@@ -39,7 +40,8 @@ export async function analyzeProject(): Promise<ProjectAnalysis> {
     // Collect all recommendations
     const allRecommendations = pageAnalyses.flatMap(p => p.recommendations)
 
-    return {
+    const result: ProjectAnalysis = {
+      mode,
       pages: pageAnalyses,
       totalPages: pages.length,
       overallBreakpoints: {
@@ -49,6 +51,30 @@ export async function analyzeProject(): Promise<ProjectAnalysis> {
       },
       allRecommendations
     }
+
+    // If published mode, also fetch published site data
+    if (mode === 'published') {
+      const publishedUrl = await getPublishedUrl()
+
+      if (publishedUrl) {
+        console.log('Fetching published site data from:', publishedUrl)
+        try {
+          const publishedData = await analyzePublishedSite(publishedUrl)
+          result.publishedUrl = publishedUrl
+          result.publishedData = {
+            totalBytes: publishedData.totalBytes,
+            breakdown: publishedData.breakdown
+          }
+        } catch (error) {
+          console.error('Failed to analyze published site:', error)
+          // Fall back to canvas analysis
+        }
+      } else {
+        console.warn('Site is not published, falling back to canvas analysis')
+      }
+    }
+
+    return result
   } catch (error) {
     console.error('Error analyzing project:', error)
     throw error

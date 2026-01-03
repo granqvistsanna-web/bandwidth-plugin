@@ -62,7 +62,10 @@ export interface CostEstimation {
   provider: string
 }
 
+export type AnalysisMode = 'canvas' | 'published'
+
 export interface ProjectAnalysis {
+  mode: AnalysisMode
   pages: PageAnalysis[]
   totalPages: number
   overallBreakpoints: {
@@ -71,4 +74,15 @@ export interface ProjectAnalysis {
     desktop: BreakpointData
   }
   allRecommendations: Recommendation[]
+  publishedUrl?: string
+  publishedData?: {
+    totalBytes: number
+    breakdown: {
+      images: number
+      css: number
+      js: number
+      fonts: number
+      other: number
+    }
+  }
 }
