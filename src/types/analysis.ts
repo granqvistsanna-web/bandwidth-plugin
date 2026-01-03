@@ -3,7 +3,7 @@ export type Breakpoint = 'mobile' | 'tablet' | 'desktop'
 export interface AssetInfo {
   nodeId: string
   nodeName: string
-  type: 'image' | 'svg' | 'background'
+  type: 'image' | 'svg'
   estimatedBytes: number
   dimensions: {
     width: number

@@ -7,36 +7,12 @@ import { optimizeImage } from '../../services/imageOptimizer'
 import { replaceImageOnNode, replaceImageEverywhere, canReplaceImage } from '../../services/assetReplacer'
 import { ReplaceImageModal } from './ReplaceImageModal'
 
-/**
- * Get image dimensions from optimized image data
- */
-async function getImageDimensionsFromData(data: Uint8Array, format: string): Promise<{ width: number; height: number }> {
-  return new Promise((resolve) => {
-    const blob = new Blob([data], { type: format })
-    const url = URL.createObjectURL(blob)
-    const img = new Image()
-    
-    img.onload = () => {
-      URL.revokeObjectURL(url)
-      resolve({ width: img.width, height: img.height })
-    }
-    
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      // Fallback to default dimensions
-      resolve({ width: 100, height: 100 })
-    }
-    
-    img.src = url
-  })
-}
-
 interface RecommendationCardProps {
   recommendation: Recommendation
   allPages?: { pageId: string; pageName: string }[]
 }
 
-export function RecommendationCard({ recommendation, allPages = [] }: RecommendationCardProps) {
+export function RecommendationCard({ recommendation }: RecommendationCardProps) {
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [showReplaceModal, setShowReplaceModal] = useState(false)
   const [optimizationProgress, setOptimizationProgress] = useState<string>('')
@@ -128,12 +104,6 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
 
       setOptimizationProgress('Getting dimensions...')
 
-      // Get actual optimized dimensions from the image data
-      // This ensures we use the exact dimensions after optimization
-      const imageDimensions = await getImageDimensionsFromData(result.data, result.format)
-      const optimizedWidth = imageDimensions.width || recommendation.optimalWidth || 100
-      const optimizedHeight = imageDimensions.height || recommendation.optimalHeight || 100
-
       setOptimizationProgress('Replacing image...')
 
       const savings = result.originalSize - result.optimizedSize
@@ -146,9 +116,7 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
           recommendation.imageAssetId,
           result.data,
           result.format,
-          recommendation.nodeName,
-          optimizedWidth,
-          optimizedHeight
+          recommendation.nodeName
         )
         
         if (replacementResult.success) {
@@ -167,7 +135,7 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
             if (recommendation.nodeId) {
               try {
                 await framer.setSelection([recommendation.nodeId])
-              } catch (e) {
+              } catch {
                 // Ignore selection errors
               }
             }
@@ -181,9 +149,7 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
           recommendation.nodeId,
           result.data,
           result.format,
-          recommendation.nodeName,
-          optimizedWidth,
-          optimizedHeight
+          recommendation.nodeName
         )
 
         if (replacementResult.success) {
@@ -202,7 +168,7 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
             try {
               await framer.setSelection([recommendation.nodeId])
               framer.notify('Node selected. Drag the downloaded image onto it to replace.', { variant: 'info', durationMs: 5000 })
-            } catch (e) {
+            } catch {
               // Ignore selection errors
             }
           }
@@ -345,11 +311,31 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
         imageAssetId={recommendation.imageAssetId}
         nodeName={recommendation.nodeName}
       />
-    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+    <div 
+      className="border rounded-lg p-4 transition-all"
+      style={{
+        backgroundColor: 'var(--framer-color-bg)',
+        borderColor: 'var(--framer-color-divider)'
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'var(--framer-color-tint)'
+        e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+        e.currentTarget.style.boxShadow = 'none'
+      }}
+    >
       <div className="flex items-start gap-3 mb-3">
         {/* Preview thumbnail */}
         {hasPreview && (
-          <div className="flex-shrink-0 w-16 h-16 rounded border border-gray-200 overflow-hidden bg-gray-50">
+          <div 
+            className="flex-shrink-0 w-16 h-16 rounded border overflow-hidden"
+            style={{
+              borderColor: 'var(--framer-color-divider)',
+              backgroundColor: 'var(--framer-color-bg-secondary)'
+            }}
+          >
             <img
               src={recommendation.url}
               alt={recommendation.nodeName}
@@ -362,8 +348,14 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
           </div>
         )}
         {!hasPreview && (
-          <div className="flex-shrink-0 w-16 h-16 rounded border border-gray-200 bg-gray-50 flex items-center justify-center">
-            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div 
+            className="flex-shrink-0 w-16 h-16 rounded border flex items-center justify-center"
+            style={{
+              borderColor: 'var(--framer-color-divider)',
+              backgroundColor: 'var(--framer-color-bg-secondary)'
+            }}
+          >
+            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-text-tertiary)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
@@ -379,16 +371,16 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
             {typeLabels[recommendation.type]}
           </Badge>
         </div>
-            <div className="text-sm font-semibold text-green-600 flex-shrink-0">
+            <div className="text-sm font-semibold flex-shrink-0" style={{ color: '#22c55e' }}>
           Save {formatBytes(recommendation.potentialSavings)}
             </div>
           </div>
 
           {/* Prominent node name */}
           <div className="mb-1">
-            <h4 className="font-semibold text-gray-900 text-base break-words">{recommendation.nodeName || 'Unnamed'}</h4>
+            <h4 className="font-semibold text-base break-words" style={{ color: 'var(--framer-color-text)' }}>{recommendation.nodeName || 'Unnamed'}</h4>
             {recommendation.pageName && (
-              <div className="text-xs text-gray-500 mt-0.5 flex items-center gap-1">
+              <div className="text-xs mt-0.5 flex items-center gap-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -396,7 +388,7 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
               </div>
             )}
             {!canSelect && (
-              <div className="text-xs text-amber-600 mt-1">
+              <div className="text-xs mt-1" style={{ color: '#f59e0b' }}>
                 <div className="flex items-center gap-1 mb-1">
                   <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -404,7 +396,7 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
                   <span>CMS/Settings image - cannot select in canvas</span>
                 </div>
                 {recommendation.usedInPages && recommendation.usedInPages.length > 0 && (
-                  <div className="text-gray-600 mt-1">
+                  <div className="mt-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
                     Used on: {recommendation.usedInPages.map(p => p.pageName).join(', ')}
                   </div>
                 )}
@@ -414,11 +406,17 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
         </div>
       </div>
 
-      <p className="text-sm text-gray-600 mb-3">{recommendation.description}</p>
+      <p className="text-sm mb-3" style={{ color: 'var(--framer-color-text-secondary)' }}>{recommendation.description}</p>
 
-      <div className="bg-blue-50 border border-blue-200 rounded p-3 mb-3">
-        <div className="text-xs font-medium text-blue-900 mb-1">Action</div>
-        <div className="text-sm text-blue-800">{recommendation.actionable}</div>
+      <div 
+        className="border rounded p-3 mb-3"
+        style={{
+          backgroundColor: 'var(--framer-color-tint-dimmed)',
+          borderColor: 'var(--framer-color-divider)'
+        }}
+      >
+        <div className="text-xs font-medium mb-1" style={{ color: 'var(--framer-color-tint)' }}>Action</div>
+        <div className="text-sm" style={{ color: 'var(--framer-color-text)' }}>{recommendation.actionable}</div>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -426,11 +424,25 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
           <button
             onClick={handleOptimize}
             disabled={isOptimizing}
-            className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 min-w-0 ${
-              isOptimizing
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-green-600 text-white hover:bg-green-700 active:bg-green-800'
-            }`}
+            className="w-full px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 min-w-0"
+            style={isOptimizing ? {
+              backgroundColor: 'var(--framer-color-bg-tertiary)',
+              color: 'var(--framer-color-text-tertiary)',
+              cursor: 'not-allowed'
+            } : {
+              backgroundColor: '#22c55e',
+              color: 'white'
+            }}
+            onMouseEnter={(e) => {
+              if (!isOptimizing) {
+                e.currentTarget.style.backgroundColor = '#16a34a'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isOptimizing) {
+                e.currentTarget.style.backgroundColor = '#22c55e'
+              }
+            }}
             title={isOptimizing ? optimizationProgress : 'Resize and compress this image automatically'}
           >
             {isOptimizing ? (
@@ -451,14 +463,28 @@ export function RecommendationCard({ recommendation, allPages = [] }: Recommenda
             )}
           </button>
         )}
-        <button
-          onClick={handleNavigate}
+      <button
+        onClick={handleNavigate}
           disabled={!canSelect || isOptimizing}
-          className={`w-full px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 min-w-0 ${
-            !canSelect || isOptimizing
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-500 text-white hover:bg-blue-600 active:bg-blue-700'
-          }`}
+          className="w-full px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 min-w-0"
+          style={!canSelect || isOptimizing ? {
+            backgroundColor: 'var(--framer-color-bg-tertiary)',
+            color: 'var(--framer-color-text-tertiary)',
+            cursor: 'not-allowed'
+          } : {
+            backgroundColor: 'var(--framer-color-tint)',
+            color: 'var(--framer-color-text-reversed)'
+          }}
+          onMouseEnter={(e) => {
+            if (canSelect && !isOptimizing) {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-tint-dark)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (canSelect && !isOptimizing) {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-tint)'
+            }
+          }}
           title={!canSelect 
             ? 'This recommendation applies to multiple items' 
             : `Select "${recommendation.nodeName}" in canvas`

@@ -65,29 +65,45 @@ export function SidebarNavigation({ activeTab, onTabChange }: SidebarNavigationP
 
       {/* Sidebar */}
       <div 
-        className={`fixed left-0 top-0 bottom-0 bg-gradient-to-b from-white to-gray-50/50 border-r border-gray-200/80 flex flex-col transition-all duration-300 ease-out shadow-[4px_0_24px_rgba(0,0,0,0.08)] z-50 ${
+        className={`fixed left-0 top-0 bottom-0 flex flex-col transition-all duration-300 ease-out shadow-[4px_0_24px_rgba(0,0,0,0.08)] z-50 ${
           isExpanded ? 'w-64' : 'w-16'
         }`}
+        style={{
+          background: `linear-gradient(to bottom, var(--framer-color-bg), var(--framer-color-bg-secondary))`,
+          borderRight: `1px solid var(--framer-color-divider)`
+        }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Header */}
-        <div className="px-4 py-4 border-b border-gray-200/60 flex items-center justify-between min-h-[68px] bg-white/80 backdrop-blur-sm">
+        <div 
+          className="px-4 py-4 border-b flex items-center justify-between min-h-[68px] backdrop-blur-sm"
+          style={{
+            borderColor: 'var(--framer-color-divider)',
+            backgroundColor: 'var(--framer-color-bg)'
+          }}
+        >
           {isExpanded && (
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-9 h-9 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 ring-2 ring-blue-500/10">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 ring-2" style={{ 
+                background: 'linear-gradient(to bottom right, var(--framer-color-tint), var(--framer-color-tint-dark))',
+                ringColor: 'var(--framer-color-tint-dimmed)'
+              }}>
                 <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                 </svg>
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-bold text-gray-900 text-[15px] leading-tight tracking-tight">Bandwidth</div>
-                <div className="text-[11px] text-gray-500 leading-tight mt-0.5 font-medium">Check</div>
+                <div className="font-bold text-[15px] leading-tight tracking-tight" style={{ color: 'var(--framer-color-text)' }}>Bandwidth</div>
+                <div className="text-[11px] leading-tight mt-0.5 font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>Check</div>
               </div>
             </div>
           )}
           {!isExpanded && (
-            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-md mx-auto flex-shrink-0 ring-2 ring-blue-500/10">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md mx-auto flex-shrink-0 ring-2" style={{ 
+              background: 'linear-gradient(to bottom right, var(--framer-color-tint), var(--framer-color-tint-dark))',
+              ringColor: 'var(--framer-color-tint-dimmed)'
+            }}>
               <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
               </svg>
@@ -97,7 +113,7 @@ export function SidebarNavigation({ activeTab, onTabChange }: SidebarNavigationP
 
         {/* Navigation Items */}
         <nav className="flex-1 py-3 overflow-y-auto px-2">
-          {tabs.map((tab, index) => {
+          {tabs.map((tab) => {
             const isActive = activeTab === tab.id
             return (
               <button
@@ -110,23 +126,56 @@ export function SidebarNavigation({ activeTab, onTabChange }: SidebarNavigationP
                     setIsHovered(false)
                   }
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-all duration-200 relative group text-left ${
-                  isActive
-                    ? 'bg-gradient-to-r from-blue-50 to-blue-50/50 text-blue-700 shadow-sm ring-1 ring-blue-100'
-                    : 'text-gray-600 hover:bg-gray-100/80 hover:text-gray-900 active:scale-[0.98]'
-                }`}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-all duration-200 relative group text-left active:scale-[0.98]"
+                style={isActive ? {
+                  background: `linear-gradient(to right, var(--framer-color-tint-dimmed), var(--framer-color-bg-secondary))`,
+                  color: 'var(--framer-color-tint)',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  border: '1px solid var(--framer-color-tint-dimmed)'
+                } : {
+                  color: 'var(--framer-color-text-secondary)'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                    e.currentTarget.style.color = 'var(--framer-color-text)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.color = 'var(--framer-color-text-secondary)'
+                  }
+                }}
                 title={isCollapsed ? tab.label : undefined}
               >
                 {/* Active indicator - refined left accent */}
                 {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-gradient-to-b from-blue-500 to-blue-600 rounded-r-full shadow-sm" />
+                  <div 
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 rounded-r-full shadow-sm"
+                    style={{ background: 'linear-gradient(to bottom, var(--framer-color-tint), var(--framer-color-tint-dark))' }}
+                  />
                 )}
                 
-                <span className={`flex-shrink-0 transition-all duration-200 ${
-                  isActive 
-                    ? 'text-blue-600 scale-110' 
-                    : 'text-gray-400 group-hover:text-gray-600 group-hover:scale-105'
-                }`}>
+                <span 
+                  className="flex-shrink-0 transition-all duration-200"
+                  style={{
+                    color: isActive ? 'var(--framer-color-tint)' : 'var(--framer-color-text-tertiary)',
+                    transform: isActive ? 'scale(1.1)' : 'scale(1)'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.color = 'var(--framer-color-text-secondary)'
+                      e.currentTarget.style.transform = 'scale(1.05)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.color = 'var(--framer-color-text-tertiary)'
+                      e.currentTarget.style.transform = 'scale(1)'
+                    }
+                  }}
+                >
                   {tab.icon}
                 </span>
                 
@@ -140,9 +189,18 @@ export function SidebarNavigation({ activeTab, onTabChange }: SidebarNavigationP
 
                 {/* Tooltip when collapsed */}
                 {!isExpanded && (
-                  <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 shadow-2xl">
+                  <div 
+                    className="absolute left-full ml-3 px-3 py-2 text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 shadow-2xl"
+                    style={{
+                      backgroundColor: 'var(--framer-color-text)',
+                      color: 'var(--framer-color-text-reversed)'
+                    }}
+                  >
                     {tab.label}
-                    <div className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent border-r-gray-900" />
+                    <div 
+                      className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent"
+                      style={{ borderRightColor: 'var(--framer-color-text)' }}
+                    />
                   </div>
                 )}
               </button>

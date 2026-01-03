@@ -8,10 +8,10 @@ interface BreakdownChartProps {
 
 export function BreakdownChart({ breakdown, totalBytes }: BreakdownChartProps) {
   const items = [
-    { label: 'Images', bytes: breakdown.images, color: 'bg-blue-500' },
-    { label: 'Fonts', bytes: breakdown.fonts, color: 'bg-purple-500' },
-    { label: 'HTML/CSS/JS', bytes: breakdown.htmlCss, color: 'bg-green-500' },
-    { label: 'SVG', bytes: breakdown.svg, color: 'bg-yellow-500' }
+    { label: 'Images', bytes: breakdown.images, color: '#3b82f6' },
+    { label: 'Fonts', bytes: breakdown.fonts, color: '#a855f7' },
+    { label: 'HTML/CSS/JS', bytes: breakdown.htmlCss, color: '#22c55e' },
+    { label: 'SVG', bytes: breakdown.svg, color: '#eab308' }
   ]
 
   return (
@@ -22,13 +22,19 @@ export function BreakdownChart({ breakdown, totalBytes }: BreakdownChartProps) {
         return (
           <div key={item.label}>
             <div className="flex justify-between text-sm mb-1">
-              <span className="font-medium text-gray-700">{item.label}</span>
-              <span className="text-gray-600">{formatBytes(item.bytes)} ({percentage.toFixed(1)}%)</span>
+              <span className="font-medium" style={{ color: 'var(--framer-color-text)' }}>{item.label}</span>
+              <span style={{ color: 'var(--framer-color-text-secondary)' }}>{formatBytes(item.bytes)} ({percentage.toFixed(1)}%)</span>
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="w-full rounded-full h-2"
+              style={{ backgroundColor: 'var(--framer-color-bg-tertiary)' }}
+            >
               <div
-                className={`${item.color} h-2 rounded-full transition-all`}
-                style={{ width: `${percentage}%` }}
+                className="h-2 rounded-full transition-all"
+                style={{ 
+                  width: `${percentage}%`,
+                  backgroundColor: item.color
+                }}
               ></div>
             </div>
           </div>

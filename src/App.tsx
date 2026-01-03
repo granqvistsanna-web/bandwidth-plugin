@@ -25,7 +25,8 @@ type Tab = 'overview' | 'assets' | 'recommendations' | 'debug'
 
 export function App() {
     const [activeTab, setActiveTab] = useState<Tab>('overview')
-    const { analysis, loading, error, runAnalysis, selectedPageId, setSelectedPageId, lastScanned } = useAnalysis()
+    const [selectedPageId, setSelectedPageId] = useState<string | null>(null)
+    const { analysis, loading, error, runAnalysis, lastScanned } = useAnalysis()
 
     // Auto-run analysis on mount
     useEffect(() => {
@@ -33,7 +34,7 @@ export function App() {
     }, [runAnalysis])
 
     return (
-        <div className="relative h-full bg-white w-full">
+        <div className="relative h-full w-full" style={{ backgroundColor: 'var(--framer-color-bg)' }}>
             {!loading && !error && (
                 <SidebarNavigation activeTab={activeTab} onTabChange={setActiveTab} />
             )}
@@ -55,9 +56,10 @@ export function App() {
                                 />
                             )}
                             {activeTab === 'assets' && (
-                                <AssetsPanel 
+                                <AssetsPanel
                                     analysis={analysis}
                                     selectedPageId={selectedPageId}
+                                    onPageChange={setSelectedPageId}
                                 />
                             )}
                             {activeTab === 'recommendations' && (

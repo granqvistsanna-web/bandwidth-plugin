@@ -31,6 +31,16 @@ A Framer plugin that analyzes your canvas assets (images, SVGs, fonts) and provi
 
 ## Installation
 
+### From Framer Marketplace
+
+1. Open Framer Desktop app
+2. Go to Plugins → Browse Plugins
+3. Search for "Bandwidth Check"
+4. Click "Install" to add the plugin to your project
+5. The plugin will appear in your plugins panel
+
+### For Developers
+
 1. Clone this repository
 2. Install dependencies:
    ```bash
@@ -77,6 +87,36 @@ A Framer plugin that analyzes your canvas assets (images, SVGs, fonts) and provi
 - **No Video Analysis**: Video files are not currently detected
 - **No Third-Party Scripts**: External scripts and fonts are not measured
 - **Breakpoint Assumptions**: Uses standard breakpoint widths (375px, 768px, 1440px)
+
+## Troubleshooting
+
+### Plugin Won't Load
+- Ensure you're using Framer Desktop app (not web)
+- Try restarting Framer
+- Check for plugin updates
+
+### Analysis Shows No Assets
+- Verify you have images or SVGs in your project
+- Check that assets are on actual pages (not just design pages)
+- Try clicking "Rescan" in the plugin header
+
+### Recommendations Not Appearing
+- Ensure you have large images (>200KB) or unoptimized formats
+- Check that images are not already in WebP/AVIF format
+- Verify images are not on excluded design pages
+
+## Support
+
+For bug reports, feature requests, or questions:
+- See [SUPPORT.md](./SUPPORT.md) for support information
+- Email: [Your support email address]
+- GitHub Issues: [Your GitHub repo URL]
+
+## Requirements
+
+- Framer Desktop app (required for plugins)
+- No external services or authentication required
+- Works with all Framer plans
 
 ## Development
 

@@ -1,6 +1,6 @@
-import type { ProjectAnalysis, PageAnalysis, AnalysisMode, AssetInfo, Recommendation } from '../types/analysis'
+import type { ProjectAnalysis, PageAnalysis, AnalysisMode, Recommendation } from '../types/analysis'
 import { getAllPages, collectAllAssetsEfficient, collectPageAssets } from './traversal'
-import { calculateBreakpointData, aggregateBreakpointData } from './bandwidth'
+import { calculateBreakpointData } from './bandwidth'
 import { generateRecommendations } from './recommendations'
 import { getPublishedUrl, analyzePublishedSite } from './publishedAnalysis'
 import { debugLog } from '../utils/debugLog'

@@ -20,19 +20,32 @@ function formatTimestamp(date: Date): string {
 
 export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
   return (
-    <div className="px-6 py-4 border-b border-gray-200/80 bg-gradient-to-b from-white to-gray-50/30 backdrop-blur-sm">
+    <div 
+      className="px-6 py-4 border-b backdrop-blur-sm"
+      style={{ 
+        borderColor: 'var(--framer-color-divider)',
+        background: 'linear-gradient(to bottom, var(--framer-color-bg), var(--framer-color-bg-secondary))'
+      }}
+    >
       <div className="flex flex-col gap-3">
         {/* Title and Status */}
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-bold text-gray-900 leading-tight tracking-tight">
+          <h1 
+            className="text-lg font-bold leading-tight tracking-tight"
+            style={{ color: 'var(--framer-color-text)' }}
+          >
             Bandwidth Check
           </h1>
           {lastScanned && (
             <div className="flex items-center gap-1.5">
-              <div className={`w-1.5 h-1.5 rounded-full ${
-                loading ? 'bg-yellow-400 animate-pulse' : 'bg-green-500'
-              }`} />
-              <span className="text-xs font-medium text-gray-500">
+              <div 
+                className={`w-1.5 h-1.5 rounded-full ${loading ? 'animate-pulse' : ''}`}
+                style={{ backgroundColor: loading ? '#facc15' : '#22c55e' }}
+              />
+              <span 
+                className="text-xs font-medium"
+                style={{ color: 'var(--framer-color-text-secondary)' }}
+              >
                 {loading ? 'Analyzing...' : `Scanned ${formatTimestamp(lastScanned)}`}
               </span>
             </div>
@@ -43,11 +56,25 @@ export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
         <button
           onClick={onRefresh}
           disabled={loading}
-          className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 w-fit ${
-            loading
-              ? 'bg-gray-100 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98] shadow-sm hover:shadow-md'
-          }`}
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 w-fit active:scale-[0.98] shadow-sm hover:shadow-md"
+          style={loading ? {
+            backgroundColor: 'var(--framer-color-bg-tertiary)',
+            color: 'var(--framer-color-text-tertiary)',
+            cursor: 'not-allowed'
+          } : {
+            backgroundColor: 'var(--framer-color-tint)',
+            color: 'var(--framer-color-text-reversed)'
+          }}
+          onMouseEnter={(e) => {
+            if (!loading) {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-tint-dark)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (!loading) {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-tint)'
+            }
+          }}
           title={loading ? 'Analyzing project...' : 'Rescan project for changes'}
         >
           {loading ? (

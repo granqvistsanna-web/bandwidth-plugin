@@ -114,7 +114,7 @@ async function checkTransparency(url: string): Promise<boolean> {
           }
         }
         resolve(false)
-      } catch (error) {
+      } catch {
         // If we can't check, assume no transparency
         resolve(false)
       }
@@ -148,8 +148,9 @@ export async function optimizeImage(options: OptimizeImageOptions): Promise<Opti
   try {
     const originalBytes = await fetchImageBytes(url)
     originalSize = originalBytes.length
-  } catch (error) {
-    console.warn('Could not fetch original image to get size:', error)
+  } catch {
+    // Could not fetch original image to get size, will estimate later
+    originalSize = 0
   }
 
   // Check for transparency
@@ -166,7 +167,7 @@ export async function optimizeImage(options: OptimizeImageOptions): Promise<Opti
     image.crossOrigin = 'anonymous'
     
     image.onload = () => resolve(image)
-    image.onerror = (error) => {
+    image.onerror = () => {
       reject(new Error('Failed to load image. It may be blocked by CORS or invalid.'))
     }
     

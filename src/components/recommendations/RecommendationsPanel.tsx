@@ -9,7 +9,7 @@ interface RecommendationsPanelProps {
   selectedPageId: string | 'all'
 }
 
-export function RecommendationsPanel({ analysis, selectedPageId }: RecommendationsPanelProps) {
+export function RecommendationsPanel({ analysis }: RecommendationsPanelProps) {
   const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all')
 
   // Always use all recommendations, sorted globally by impact (potentialSavings)
@@ -55,14 +55,20 @@ export function RecommendationsPanel({ analysis, selectedPageId }: Recommendatio
     <div className="p-4">
       {/* Info message about cross-page navigation */}
       {sortedRecommendations.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+        <div 
+          className="border rounded-lg p-3 mb-4"
+          style={{
+            backgroundColor: 'var(--framer-color-tint-dimmed)',
+            borderColor: 'var(--framer-color-divider)'
+          }}
+        >
           <div className="flex items-start gap-2">
-            <svg className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-tint)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <div className="text-xs text-blue-800">
+            <div className="text-xs" style={{ color: 'var(--framer-color-text)' }}>
               <div className="font-medium mb-1">Recommendations ranked globally by impact</div>
-              <div className="text-blue-700">
+              <div style={{ color: 'var(--framer-color-text-secondary)' }}>
                 Assets may be on different pages. Clicking "Select" will navigate to the correct page and highlight the asset.
               </div>
             </div>
@@ -71,12 +77,18 @@ export function RecommendationsPanel({ analysis, selectedPageId }: Recommendatio
       )}
 
       {sortedRecommendations.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-          <div className="text-sm text-green-800 font-medium">Potential Savings</div>
-          <div className="text-2xl font-bold text-green-900 mt-1">
+        <div 
+          className="border rounded-lg p-4 mb-4"
+          style={{
+            backgroundColor: 'var(--framer-color-bg-secondary)',
+            borderColor: 'var(--framer-color-divider)'
+          }}
+        >
+          <div className="text-sm font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>Potential Savings</div>
+          <div className="text-2xl font-bold mt-1" style={{ color: 'var(--framer-color-text)' }}>
             {formatBytes(totalSavings)}
           </div>
-          <div className="text-xs text-green-700 mt-1">
+          <div className="text-xs mt-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
             {priorityCounts.high} high • {priorityCounts.medium} medium • {priorityCounts.low} low priority
           </div>
         </div>
@@ -84,13 +96,19 @@ export function RecommendationsPanel({ analysis, selectedPageId }: Recommendatio
 
       {/* Top 3 Quick Wins Section */}
       {top3QuickWins.length > 0 && (
-        <div className="bg-blue-50 border-2 border-blue-300 rounded-lg p-4 mb-4">
+        <div 
+          className="border-2 rounded-lg p-4 mb-4"
+          style={{
+            backgroundColor: 'var(--framer-color-tint-dimmed)',
+            borderColor: 'var(--framer-color-tint)'
+          }}
+        >
           <div className="flex items-center gap-2 mb-3">
-            <svg className="w-5 h-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-tint)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <h3 className="font-semibold text-blue-900">Top 3 Quick Wins</h3>
-            <span className="ml-auto text-sm font-medium text-blue-700">
+            <h3 className="font-semibold" style={{ color: 'var(--framer-color-text)' }}>Top 3 Quick Wins</h3>
+            <span className="ml-auto text-sm font-medium" style={{ color: 'var(--framer-color-tint)' }}>
               Save {formatBytes(top3Savings)}
             </span>
           </div>
@@ -98,16 +116,29 @@ export function RecommendationsPanel({ analysis, selectedPageId }: Recommendatio
             {top3QuickWins.map((rec, index) => (
               <div
                 key={rec.id}
-                className="bg-white rounded-lg p-3 border border-blue-200 hover:border-blue-400 transition-colors"
+                className="rounded-lg p-3 border transition-colors"
+                style={{
+                  backgroundColor: 'var(--framer-color-bg)',
+                  borderColor: 'var(--framer-color-divider)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--framer-color-tint)'
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+                }}
               >
                 <div className="flex items-start gap-2">
-                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">
+                  <div 
+                    className="flex-shrink-0 w-6 h-6 rounded-full text-white flex items-center justify-center text-xs font-bold"
+                    style={{ backgroundColor: 'var(--framer-color-tint)' }}
+                  >
                     {index + 1}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 truncate">{rec.nodeName}</div>
-                    <div className="text-xs text-gray-600 mt-0.5">{rec.actionable}</div>
-                    <div className="text-xs font-semibold text-blue-700 mt-1">
+                    <div className="text-sm font-medium truncate" style={{ color: 'var(--framer-color-text)' }}>{rec.nodeName}</div>
+                    <div className="text-xs mt-0.5" style={{ color: 'var(--framer-color-text-secondary)' }}>{rec.actionable}</div>
+                    <div className="text-xs font-semibold mt-1" style={{ color: 'var(--framer-color-tint)' }}>
                       Save {formatBytes(rec.potentialSavings)}
                     </div>
                   </div>
@@ -121,41 +152,93 @@ export function RecommendationsPanel({ analysis, selectedPageId }: Recommendatio
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => setFilter('all')}
-          className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-            filter === 'all'
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className="px-3 py-1.5 rounded text-sm font-medium transition-colors"
+          style={filter === 'all' ? {
+            backgroundColor: 'var(--framer-color-tint)',
+            color: 'var(--framer-color-text-reversed)'
+          } : {
+            backgroundColor: 'var(--framer-color-bg-tertiary)',
+            color: 'var(--framer-color-text)'
+          }}
+          onMouseEnter={(e) => {
+            if (filter !== 'all') {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (filter !== 'all') {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
+            }
+          }}
         >
           All ({sortedRecommendations.length})
         </button>
         <button
           onClick={() => setFilter('high')}
-          className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-            filter === 'high'
-              ? 'bg-red-500 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className="px-3 py-1.5 rounded text-sm font-medium transition-colors"
+          style={filter === 'high' ? {
+            backgroundColor: '#ef4444',
+            color: 'white'
+          } : {
+            backgroundColor: 'var(--framer-color-bg-tertiary)',
+            color: 'var(--framer-color-text)'
+          }}
+          onMouseEnter={(e) => {
+            if (filter !== 'high') {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (filter !== 'high') {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
+            }
+          }}
         >
           High ({priorityCounts.high})
         </button>
         <button
           onClick={() => setFilter('medium')}
-          className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-            filter === 'medium'
-              ? 'bg-yellow-500 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className="px-3 py-1.5 rounded text-sm font-medium transition-colors"
+          style={filter === 'medium' ? {
+            backgroundColor: '#eab308',
+            color: 'white'
+          } : {
+            backgroundColor: 'var(--framer-color-bg-tertiary)',
+            color: 'var(--framer-color-text)'
+          }}
+          onMouseEnter={(e) => {
+            if (filter !== 'medium') {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (filter !== 'medium') {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
+            }
+          }}
         >
           Medium ({priorityCounts.medium})
         </button>
         <button
           onClick={() => setFilter('low')}
-          className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-            filter === 'low'
-              ? 'bg-green-500 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className="px-3 py-1.5 rounded text-sm font-medium transition-colors"
+          style={filter === 'low' ? {
+            backgroundColor: '#22c55e',
+            color: 'white'
+          } : {
+            backgroundColor: 'var(--framer-color-bg-tertiary)',
+            color: 'var(--framer-color-text)'
+          }}
+          onMouseEnter={(e) => {
+            if (filter !== 'low') {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (filter !== 'low') {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
+            }
+          }}
         >
           Low ({priorityCounts.low})
         </button>

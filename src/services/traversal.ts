@@ -217,12 +217,12 @@ async function extractAssetInfo(
           debugLog.warn(`Failed to measure image: ${node.name}`, error)
           // Continue without actual dimensions
         }
-        
+
         debugLog.success(`Found backgroundImage: ${node.name}`, { url: imageUrl, type: node.type })
       return {
         nodeId: node.id,
         nodeName: node.name || 'Unnamed',
-          type: 'background',
+          type: 'image',
         estimatedBytes: 0,
         dimensions,
           actualDimensions,
@@ -280,7 +280,7 @@ function getNodeDimensions(
   // Framer nodes should have width and height properties
   // These might be numbers, strings with units (px, %, fr), or CSS values (fit-content, auto)
   
-  const parseDimension = (value: any): number => {
+  const parseDimension = (value: unknown): number => {
     if (typeof value === 'number') {
       return isFinite(value) && !isNaN(value) && value > 0 ? value : 0
     }
@@ -435,7 +435,7 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
         const asset: AssetInfo = {
           nodeId: node.id,
           nodeName: node.name || 'Unnamed',
-          type: 'background',
+          type: 'image',
           estimatedBytes: 0,
           dimensions,
           format: detectImageFormat(image.url),

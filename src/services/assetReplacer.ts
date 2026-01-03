@@ -3,7 +3,7 @@
  * Handles replacing backgroundImage on nodes with optimized versions
  */
 
-import { framer, supportsBackgroundImage, type ImageAsset, type CanvasNode } from 'framer-plugin'
+import { framer, supportsBackgroundImage, type CanvasNode } from 'framer-plugin'
 import { downloadOptimizedImage } from './imageDownloader'
 
 export interface ReplacementResult {
@@ -47,9 +47,7 @@ export async function replaceImageOnNode(
   nodeId: string,
   optimizedImage: Uint8Array,
   format: string,
-  originalName: string,
-  optimizedWidth: number,
-  optimizedHeight: number
+  originalName: string
 ): Promise<ReplacementResult> {
   try {
     // Get the node
@@ -72,24 +70,6 @@ export async function replaceImageOnNode(
     // Framer's addImage expects a Data URL string format, not raw Uint8Array
     // Format should already be a MIME type (e.g., "image/webp", "image/jpeg")
     // But handle both cases for safety
-    const mimeType = format && format.startsWith('image/') 
-      ? format 
-      : `image/${format === 'jpeg' || format === 'jpg' ? 'jpeg' : 'webp'}`
-    
-    const blob = new Blob([optimizedImage], { type: mimeType })
-    const dataUrl = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-          resolve(reader.result)
-        } else {
-          reject(new Error('Failed to convert image to Data URL'))
-        }
-      }
-      reader.onerror = () => reject(new Error('FileReader error'))
-      reader.readAsDataURL(blob)
-    })
-
     // NOTE: Direct replacement via framer.addImage() has limitations:
     // 1. addImage() creates a canvas Image node, not an ImageAsset usable as backgroundImage
     // 2. The image appears at wrong position/size on canvas
@@ -125,7 +105,7 @@ export async function replaceImageOnNode(
           message: 'Image optimized and downloaded. Please replace it manually in Framer.',
           downloadTriggered: true
         }
-      } catch (downloadError) {
+      } catch {
         // Both methods failed
         throw error
       }
@@ -143,9 +123,7 @@ export async function replaceImageEverywhere(
   imageAssetId: string,
   optimizedImage: Uint8Array,
   format: string,
-  originalName: string,
-  optimizedWidth: number,
-  optimizedHeight: number
+  originalName: string
 ): Promise<ReplacementResult> {
   try {
     const nodes = await findAllNodesUsingAsset(imageAssetId)
@@ -161,7 +139,7 @@ export async function replaceImageEverywhere(
     // Try direct replacement on first node
     // If it works, try on all nodes. If not, fall back to download
     try {
-      const firstResult = await replaceImageOnNode(nodes[0].id, optimizedImage, format, originalName, optimizedWidth, optimizedHeight)
+      const firstResult = await replaceImageOnNode(nodes[0].id, optimizedImage, format, originalName)
       
       if (firstResult.method === 'direct' && firstResult.success) {
         // Direct replacement worked! Try on remaining nodes
@@ -170,7 +148,7 @@ export async function replaceImageEverywhere(
 
         for (let i = 1; i < nodes.length; i++) {
           try {
-            const result = await replaceImageOnNode(nodes[i].id, optimizedImage, format, originalName, optimizedWidth, optimizedHeight)
+            const result = await replaceImageOnNode(nodes[i].id, optimizedImage, format, originalName)
             if (result.success && result.method === 'direct') {
               successCount++
             } else {
@@ -199,7 +177,7 @@ export async function replaceImageEverywhere(
         // Direct replacement failed, use download
         return firstResult
       }
-    } catch (error) {
+    } catch {
       // Direct replacement failed completely, use download
       console.warn('Direct replacement failed, using download method')
       await downloadOptimizedImage(optimizedImage, format, originalName)
@@ -213,7 +191,7 @@ export async function replaceImageEverywhere(
     }
   } catch (error) {
     console.error('Error replacing image everywhere:', error)
-    throw error
+    throw error instanceof Error ? error : new Error('Unknown error replacing image')
   }
 }
 

@@ -4,15 +4,18 @@ interface BadgeProps {
 }
 
 export function Badge({ children, variant = 'default' }: BadgeProps) {
-  const variantClasses = {
-    high: 'bg-red-100 text-red-800',
-    medium: 'bg-yellow-100 text-yellow-800',
-    low: 'bg-green-100 text-green-800',
-    default: 'bg-gray-100 text-gray-800'
+  const variantStyles = {
+    high: { backgroundColor: '#fee2e2', color: '#991b1b' },
+    medium: { backgroundColor: '#fef3c7', color: '#92400e' },
+    low: { backgroundColor: '#dcfce7', color: '#166534' },
+    default: { 
+      backgroundColor: 'var(--framer-color-bg-tertiary)', 
+      color: 'var(--framer-color-text)' 
+    }
   }
 
   return (
-    <span className={`px-2 py-1 rounded text-xs font-medium ${variantClasses[variant]}`}>
+    <span className="px-2 py-1 rounded text-xs font-medium" style={variantStyles[variant]}>
       {children}
     </span>
   )

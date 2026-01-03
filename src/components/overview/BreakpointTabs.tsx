@@ -18,11 +18,24 @@ export function BreakpointTabs({ selectedBreakpoint, onBreakpointChange }: Break
         <button
           key={bp.id}
           onClick={() => onBreakpointChange(bp.id)}
-          className={`flex-1 px-3 py-3 rounded-lg text-sm font-medium transition-colors ${
-            selectedBreakpoint === bp.id
-              ? 'bg-blue-500 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-          }`}
+          className="flex-1 px-3 py-3 rounded-lg text-sm font-medium transition-colors"
+          style={selectedBreakpoint === bp.id ? {
+            backgroundColor: 'var(--framer-color-tint)',
+            color: 'var(--framer-color-text-reversed)'
+          } : {
+            backgroundColor: 'var(--framer-color-bg-tertiary)',
+            color: 'var(--framer-color-text)'
+          }}
+          onMouseEnter={(e) => {
+            if (selectedBreakpoint !== bp.id) {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (selectedBreakpoint !== bp.id) {
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
+            }
+          }}
         >
           <div className="font-semibold">{bp.label}</div>
           <div className="text-xs opacity-75 mt-1">{bp.width}</div>

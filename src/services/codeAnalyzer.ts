@@ -135,7 +135,6 @@ export async function analyzeJavaScriptBundle(
   jsUrl: string,
   baseUrl: string
 ): Promise<CodeAnalysisResult> {
-  const assets: CodeAsset[] = []
   const warnings: string[] = []
 
   try {
@@ -175,6 +174,7 @@ export async function analyzeJavaScriptBundle(
 
     // Extract assets from the code
     const extractedAssets = extractAssetsFromCode(jsCode, baseUrl)
+    const assets: CodeAsset[] = []
     
     // Try to get actual sizes for detected assets
     for (const asset of extractedAssets) {
@@ -183,23 +183,24 @@ export async function analyzeJavaScriptBundle(
         if (size > 0) {
           asset.estimatedBytes = size
         }
-      } catch (error) {
+      } catch {
         // If we can't get size, estimate based on type
         asset.estimatedBytes = estimateAssetSize(asset.type)
       }
+      assets.push(asset)
     }
 
-    const totalEstimatedBytes = extractedAssets.reduce(
+    const totalEstimatedBytes = assets.reduce(
       (sum, asset) => sum + (asset.estimatedBytes || 0),
       0
     )
 
-    if (extractedAssets.length > 0) {
-      warnings.push(`Found ${extractedAssets.length} dynamically loaded asset(s) in custom code`)
+    if (assets.length > 0) {
+      warnings.push(`Found ${assets.length} dynamically loaded asset(s) in custom code`)
     }
 
     return {
-      assets: extractedAssets,
+      assets,
       totalEstimatedBytes,
       hasCustomCode: true,
       warnings
