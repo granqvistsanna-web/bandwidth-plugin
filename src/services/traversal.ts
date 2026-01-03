@@ -233,10 +233,11 @@ async function extractAssetInfo(
         visible: true,
           url: imageUrl,
           imageAssetId: image.id,
-          pageId: page?.id,
-          pageName: page?.name,
-          pageUrl: page?.url
-        }
+        pageId: page?.id,
+        pageName: page?.name,
+        pageUrl: page?.url,
+        pageSlug: page?.slug || page?.name // Use slug if available, fallback to name
+      }
       }
     }
 
@@ -254,6 +255,9 @@ async function extractAssetInfo(
       
       // Get the page this node belongs to
       const page = await getPageForNode(node.id)
+      if (!page) {
+        debugLog.warn(`⚠️ No page found for SVG node ${node.name || node.id} - asset will show "Unknown"`)
+      }
       
       return {
         nodeId: node.id,
@@ -266,7 +270,8 @@ async function extractAssetInfo(
         svgContent,
         pageId: page?.id,
         pageName: page?.name,
-        pageUrl: page?.url
+        pageUrl: page?.url,
+        pageSlug: page?.slug || page?.name // Use slug if available, fallback to name
       }
     }
 
@@ -363,20 +368,118 @@ function detectImageFormat(url: string): string {
   return 'unknown'
 }
 
+// Cache of all pages for faster lookup
+let pagesCache: Array<{ id: string; name: string }> | null = null
+
+/**
+ * Clear the pages cache (call this at the start of a new analysis)
+ */
+export function clearPagesCache(): void {
+  pagesCache = null
+  debugLog.info('Cleared pages cache')
+}
+
+/**
+ * Get all pages and cache them
+ */
+async function getAllPagesCached(): Promise<Array<{ id: string; name: string }>> {
+  if (pagesCache) return pagesCache
+  
+  try {
+    const root = await framer.getCanvasRoot()
+    if (!root) {
+      debugLog.warn('getAllPagesCached: No canvas root found')
+      return []
+    }
+    
+    const allPages = await framer.getChildren(root.id)
+    pagesCache = allPages.map(p => ({ id: p.id, name: p.name || 'Unnamed' }))
+    debugLog.info(`Cached ${pagesCache.length} pages for lookup:`, pagesCache.map(p => `${p.name} (${p.id})`))
+    return pagesCache
+  } catch (error) {
+    debugLog.warn('Error getting pages for cache:', error)
+    return []
+  }
+}
+
+/**
+ * Check if a node is a descendant of a page by recursively checking children
+ * Uses cached children for performance
+ */
+async function isNodeDescendantOfPage(nodeId: string, pageId: string, currentDepth: number, maxDepth: number): Promise<boolean> {
+  if (currentDepth >= maxDepth) return false
+  
+  try {
+    const childIds = await getPageChildrenCached(pageId)
+    for (const childId of childIds) {
+      if (childId === nodeId) {
+        return true
+      }
+      // Recursively check grandchildren (but limit depth to avoid performance issues)
+      if (currentDepth < 3) { // Only check 3 levels deep for performance
+        const isGrandchild = await isNodeDescendantOfPage(nodeId, childId, currentDepth + 1, maxDepth)
+        if (isGrandchild) {
+          return true
+        }
+      }
+    }
+  } catch (error) {
+    // Ignore errors
+  }
+  
+  return false
+}
+
 /**
  * Get the page that a node belongs to by traversing up the parent chain
  * Returns the page node if found, null otherwise
  */
-async function getPageForNode(nodeId: string): Promise<{ id: string; name: string } | null> {
+async function getPageForNode(nodeId: string): Promise<{ id: string; name: string; url?: string; slug?: string } | null> {
   try {
+    // Always fetch the full node to ensure we have parent information
+    // Nodes from getNodesWithAttributeSet() may not have parent info
     const node = await framer.getNode(nodeId)
-    if (!node) return null
+    if (!node) {
+      debugLog.warn(`getPageForNode: Node ${nodeId} not found`)
+      return null
+    }
+    
+    // Get all pages for lookup
+    const allPages = await getAllPagesCached()
     
     // If this node is a page, return it
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const nodeAny = node as any
-    if (nodeAny.type === 'Page' || nodeAny.type === 'PageNode' || node.type === 'Page') {
-      return { id: node.id, name: node.name || 'Unnamed' }
+    const nodeType = nodeAny.type || node.type || ''
+    const nodeTypeLower = nodeType.toLowerCase()
+    
+    // Check if this node is a page by type or by ID match
+    if (nodeTypeLower.includes('page') || allPages.some(p => p.id === node.id)) {
+      const pageName = node.name || 'Unnamed'
+      const pageSlug = pageName
+      debugLog.info(`getPageForNode: Node ${nodeId} IS a page "${pageName}" (type: ${nodeType})`)
+      
+      // Try to get published URL only if this is the current page being viewed
+      let pageUrl: string | undefined
+      try {
+        const publishInfo = await framer.getPublishInfo()
+        const currentUrl = publishInfo?.staging?.currentPageUrl || publishInfo?.production?.currentPageUrl
+        if (currentUrl) {
+          try {
+            const urlObj = new URL(currentUrl)
+            const currentSlug = urlObj.pathname.replace(/^\//, '') || urlObj.pathname
+            if (currentSlug === pageName || currentSlug === pageSlug || urlObj.pathname === `/${pageName}`) {
+              pageUrl = currentUrl
+            }
+          } catch {
+            // URL parsing failed, ignore
+          }
+        }
+      } catch (error) {
+        // Ignore publish info errors - page name is the important part
+      }
+      
+      return { id: node.id, name: pageName, url: pageUrl, slug: pageSlug }
     }
     
     // Traverse up the parent chain to find the page
@@ -386,29 +489,119 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
     const maxDepth = 20 // Safety limit
     
     while (current && depth < maxDepth) {
-      // Check if current node is a page
-      if (current.type === 'Page' || current.type === 'PageNode') {
-        return { id: current.id, name: current.name || 'Unnamed' }
+      // Check if current node is a page by type or by ID match
+      const currentType = (current.type || '').toLowerCase()
+      const isPageByType = currentType.includes('page')
+      const isPageById = allPages.some(p => p.id === current.id)
+      
+      if (isPageByType || isPageById) {
+        const pageName = current.name || 'Unnamed'
+        const pageSlug = pageName
+        debugLog.info(`getPageForNode: Found page "${pageName}" (type: ${current.type}, id match: ${isPageById}) in parent chain for node ${nodeId}`)
+        
+        // Try to get published URL only if this is the current page
+        let pageUrl: string | undefined
+        try {
+          const publishInfo = await framer.getPublishInfo()
+          const currentUrl = publishInfo?.staging?.currentPageUrl || publishInfo?.production?.currentPageUrl
+          if (currentUrl) {
+            try {
+              const urlObj = new URL(currentUrl)
+              const currentSlug = urlObj.pathname.replace(/^\//, '') || urlObj.pathname
+              if (currentSlug === pageName || currentSlug === pageSlug || urlObj.pathname === `/${pageName}`) {
+                pageUrl = currentUrl
+              }
+            } catch {
+              // Ignore URL parsing errors
+            }
+          }
+        } catch {
+          // Ignore publish info errors
+        }
+        
+        return { id: current.id, name: pageName, url: pageUrl, slug: pageSlug }
       }
       
       // Get parent ID - parent might be a reference object or just an ID
-      const parentId = current.parent?.id || current.parent
-      if (!parentId) break
+      // Try multiple ways to get parent ID
+      let parentId = current.parent?.id || current.parent
+      
+      // If no parent in the node object, the node might not have parent info loaded
+      // This can happen with nodes from getNodesWithAttributeSet()
+      if (!parentId) {
+        // Try to get children of all pages and see if this node is a child
+        // This is a fallback when parent info is not available
+        // Use a recursive helper to check if node is descendant of page
+        let foundPage: { id: string; name: string } | null = null
+        
+        for (const page of allPages) {
+          try {
+            // Check if node is a direct or indirect child of this page
+            const isDescendant = await isNodeDescendantOfPage(current.id, page.id, 0, 5) // Max 5 levels deep
+            if (isDescendant) {
+              foundPage = page
+              break
+            }
+          } catch (error) {
+            // Continue checking other pages
+          }
+        }
+        
+        if (foundPage) {
+          debugLog.info(`getPageForNode: Found node ${nodeId} as descendant of page ${foundPage.name} via getChildren()`)
+          return { id: foundPage.id, name: foundPage.name, slug: foundPage.name }
+        }
+        
+        debugLog.warn(`getPageForNode: No parent ID for node ${nodeId} at depth ${depth}. Node type: ${current.type || 'unknown'}, Node name: ${current.name || 'unnamed'}`)
+        break
+      }
       
       const parent = await framer.getNode(parentId)
-      if (!parent) break
+      if (!parent) {
+        debugLog.warn(`getPageForNode: Parent ${parentId} not found for node ${nodeId} at depth ${depth}`)
+        break
+      }
       
-      // Check if parent is a page
+      // Check if parent is a page by type or by ID match
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const parentAny = parent as any
-      if (parentAny.type === 'Page' || parentAny.type === 'PageNode' || parent.type === 'Page') {
-        return { id: parent.id, name: parent.name || 'Unnamed' }
+      const parentType = (parentAny.type || parent.type || '').toLowerCase()
+      const isParentPageByType = parentType.includes('page')
+      const isParentPageById = allPages.some(p => p.id === parent.id)
+      
+      if (isParentPageByType || isParentPageById) {
+        const pageName = parent.name || 'Unnamed'
+        const pageSlug = pageName
+        debugLog.info(`getPageForNode: Found page "${pageName}" (type: ${parent.type}, id match: ${isParentPageById}) as parent for node ${nodeId}`)
+        
+        // Try to get published URL only if this is the current page
+        let pageUrl: string | undefined
+        try {
+          const publishInfo = await framer.getPublishInfo()
+          const currentUrl = publishInfo?.staging?.currentPageUrl || publishInfo?.production?.currentPageUrl
+          if (currentUrl) {
+            try {
+              const urlObj = new URL(currentUrl)
+              const currentSlug = urlObj.pathname.replace(/^\//, '') || urlObj.pathname
+              if (currentSlug === pageName || currentSlug === pageSlug || urlObj.pathname === `/${pageName}`) {
+                pageUrl = currentUrl
+              }
+            } catch {
+              // Ignore URL parsing errors
+            }
+          }
+        } catch {
+          // Ignore publish info errors
+        }
+        
+        return { id: parent.id, name: pageName, url: pageUrl, slug: pageSlug }
       }
       
       current = parent
       depth++
     }
     
+    debugLog.warn(`getPageForNode: Could not find page for node ${nodeId} after traversing ${depth} levels. Node type: ${(node as any).type || 'unknown'}, Node name: ${(node as any).name || 'unnamed'}`)
     return null
   } catch (error) {
     debugLog.warn(`Error getting page for node ${nodeId}:`, error)
@@ -492,7 +685,21 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
       }
       
       // Get the page this node belongs to
-      const page = await getPageForNode(node.id)
+      // Note: Nodes from getNodesWithAttributeSet() may not have parent info, so we need to fetch the full node
+      let page = null
+      try {
+        // Fetch the full node to get parent information
+        const fullNode = await framer.getNode(node.id)
+        if (fullNode) {
+          page = await getPageForNode(fullNode.id)
+        } else {
+          // Fallback: try with the node we have
+          page = await getPageForNode(node.id)
+        }
+      } catch (error) {
+        debugLog.warn(`Error getting page for node ${node.id}:`, error)
+        // Continue without page info
+      }
       
       // Skip if node is in an excluded page
       if (page && excludedPageIds.includes(page.id)) {
@@ -517,11 +724,16 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
           url: image.url,
           imageAssetId: image.id,
           pageId: page?.id,
-          pageName: page?.name
+          pageName: page?.name,
+          pageUrl: page?.url,
+          pageSlug: page?.slug || page?.name // Use slug if available, fallback to name
         }
         
         assets.push(asset)
-        debugLog.success(`Found backgroundImage: ${node.name}`, { url: image.url, page: page?.name })
+        if (!page) {
+          debugLog.warn(`⚠️ No page found for node ${node.name || node.id} - asset will show "Unknown"`)
+        }
+        debugLog.success(`Found backgroundImage: ${node.name}`, { url: image.url, page: page?.name || 'NO PAGE' })
       }
     }
     
@@ -538,7 +750,21 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
       }
       
       // Get the page this node belongs to
-      const page = await getPageForNode(node.id)
+      // Note: Nodes from getNodesWithType() may not have parent info, so we need to fetch the full node
+      let page = null
+      try {
+        // Fetch the full node to get parent information
+        const fullNode = await framer.getNode(node.id)
+        if (fullNode) {
+          page = await getPageForNode(fullNode.id)
+        } else {
+          // Fallback: try with the node we have
+          page = await getPageForNode(node.id)
+        }
+      } catch (error) {
+        debugLog.warn(`Error getting page for SVG node ${node.id}:`, error)
+        // Continue without page info
+      }
       
       // Skip if node is in an excluded page
       if (page && excludedPageIds.includes(page.id)) {
@@ -568,10 +794,15 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
           visible: true,
           svgContent,
           pageId: page?.id,
-          pageName: page?.name
+          pageName: page?.name,
+          pageUrl: page?.url,
+          pageSlug: page?.slug || page?.name // Use slug if available, fallback to name
         }
         assets.push(asset)
-        debugLog.success(`Found SVG: ${node.name}`, { hasContent: !!svgContent, page: page?.name })
+        if (!page) {
+          debugLog.warn(`⚠️ No page found for SVG node ${node.name || node.id} - asset will show "Unknown"`)
+        }
+        debugLog.success(`Found SVG: ${node.name}`, { hasContent: !!svgContent, page: page?.name || 'NO PAGE' })
       }
     }
     

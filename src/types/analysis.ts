@@ -26,6 +26,7 @@ export interface AssetInfo {
   isManualEstimate?: boolean // True if this is a manual estimate (CMS assets that couldn't be read)
   manualEstimateNote?: string // Note about manual estimate
   cmsCollectionName?: string // Name of CMS collection this asset belongs to
+  cmsItemSlug?: string // CMS item slug (for CMS assets)
 }
 
 export interface BreakdownData {
@@ -66,8 +67,9 @@ export interface Recommendation {
   url?: string
   usedInPages?: { pageId: string; pageName: string }[]
   pageId?: string
-  pageName?: string
-  pageUrl?: string // URL of the page (if published and available)
+  pageName?: string // Framer page name/slug (route like "about")
+  pageUrl?: string // Full published URL of the page (if published and available)
+  pageSlug?: string // Page slug/route (extracted from pageUrl or pageName)
   imageAssetId?: string // ImageAsset.id for tracking and replacement
   optimalWidth?: number // Target width for optimization
   optimalHeight?: number // Target height for optimization

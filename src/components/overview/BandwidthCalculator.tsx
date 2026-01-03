@@ -140,7 +140,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
 
   return (
     <div 
-      className="rounded-lg p-4"
+      className="rounded-lg p-4 overflow-hidden"
       style={{
         background: 'linear-gradient(to bottom right, var(--framer-color-bg-secondary), var(--framer-color-bg-tertiary))'
       }}
@@ -189,7 +189,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             </div>
           </div>
         </div>
-        <div className="flex gap-1 mb-2">
+        <div className="flex gap-1 mb-2 flex-wrap">
           {[
             { label: 'Landing only', value: 1.0 },
             { label: 'Light (1.5)', value: 1.5 },
@@ -199,7 +199,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             <button
               key={preset.value}
               onClick={() => setAveragePagesPerVisit(preset.value)}
-              className="px-2 py-1 text-xs rounded transition-colors"
+              className="px-1.5 py-1 text-xs rounded transition-colors flex-shrink-0"
               style={Math.abs(averagePagesPerVisit - preset.value) < 0.1 ? {
                 backgroundColor: 'var(--framer-color-tint)',
                 color: 'var(--framer-color-text-reversed)'
@@ -219,7 +219,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
                 }
               }}
             >
-              {preset.label}
+              <span className="whitespace-nowrap">{preset.label}</span>
             </button>
           ))}
         </div>

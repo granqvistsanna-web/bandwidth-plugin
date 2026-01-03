@@ -250,13 +250,21 @@ export function CMSAssetsNotice({
           onAddEstimate={onAddEstimate}
           onUpdateEstimate={onUpdateEstimate}
           onRemoveEstimate={onRemoveEstimate ? (id: string) => {
-            onRemoveEstimate(id)
-            setShowManualEstimateModal(false)
-            setEditingEstimate(undefined)
-            if (onCMSEstimateAdded) {
-              setTimeout(() => {
-                onCMSEstimateAdded()
-              }, 200)
+            try {
+              // Call the actual remove function from props directly
+              if (onRemoveEstimate && typeof onRemoveEstimate === 'function') {
+                onRemoveEstimate(id)
+              } else {
+                framer.notify('Cannot remove estimate: function not available', { variant: 'error' })
+                return
+              }
+
+              // Close modal and clear editing state immediately
+              setShowManualEstimateModal(false)
+              setEditingEstimate(undefined)
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+              framer.notify(`Failed to remove estimate: ${errorMessage}`, { variant: 'error' })
             }
           } : undefined}
         />

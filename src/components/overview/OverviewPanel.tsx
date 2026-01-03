@@ -8,6 +8,7 @@ import { generateMarkdownReport, copyToClipboard, downloadJSON } from '../../uti
 import { PageExclusionSettings } from './PageExclusionSettings'
 import { CMSAssetsNotice } from './CMSAssetsNotice'
 import { debugLog } from '../../utils/debugLog'
+import type { ManualCMSEstimate } from '../../hooks/useAnalysis'
 
 interface OverviewPanelProps {
   analysis: ProjectAnalysis
@@ -15,6 +16,10 @@ interface OverviewPanelProps {
   excludedPageIds?: Set<string>
   onTogglePageExclusion?: (pageId: string) => void
   onRescan?: () => void
+  manualCMSEstimates?: ManualCMSEstimate[]
+  addManualCMSEstimate?: (estimate: Omit<ManualCMSEstimate, 'id' | 'createdAt'>) => void
+  updateManualCMSEstimate?: (id: string, estimate: Partial<Omit<ManualCMSEstimate, 'id' | 'createdAt'>>) => void
+  removeManualCMSEstimate?: (id: string) => void
 }
 
 export function OverviewPanel({ 
@@ -283,26 +288,48 @@ export function OverviewPanel({
           // Edit is handled by the modal in CMSAssetsNotice
         }}
         onRemoveEstimate={(id) => {
-          debugLog.info('Remove estimate called with id:', id)
-          if (removeManualCMSEstimate) {
-            debugLog.info('Calling removeManualCMSEstimate with id:', id)
-            // Remove the estimate from state (this will update localStorage automatically)
+          debugLog.info('OverviewPanel: onRemoveEstimate called with id:', id)
+          
+          if (!id || typeof id !== 'string') {
+            debugLog.error('OverviewPanel: Invalid estimate ID provided:', id)
+            framer.notify('Invalid estimate ID', { variant: 'error' })
+            return
+          }
+
+          if (!removeManualCMSEstimate) {
+            debugLog.error('OverviewPanel: removeManualCMSEstimate is not defined')
+            framer.notify('Cannot remove estimate: function not available', { variant: 'error' })
+            return
+          }
+
+          if (typeof removeManualCMSEstimate !== 'function') {
+            debugLog.error('OverviewPanel: removeManualCMSEstimate is not a function:', typeof removeManualCMSEstimate)
+            framer.notify('Cannot remove estimate: invalid function', { variant: 'error' })
+            return
+          }
+
+          try {
+            debugLog.info('OverviewPanel: Calling removeManualCMSEstimate with id:', id)
+            
+            // Remove the estimate from state (this will update localStorage automatically via useEffect)
             removeManualCMSEstimate(id)
-            debugLog.info('removeManualCMSEstimate completed')
+            
+            debugLog.success('OverviewPanel: removeManualCMSEstimate completed successfully')
             
             // Trigger a rescan to update the analysis with the removed estimate
-            // Use a longer delay to ensure state has updated before rescanning
+            // Use a delay to ensure state has updated before rescanning
             if (onRescan) {
               setTimeout(() => {
-                debugLog.info('Triggering rescan after estimate removal')
+                debugLog.info('OverviewPanel: Triggering rescan after estimate removal')
                 onRescan()
-              }, 300)
+              }, 500)
             } else {
-              debugLog.warn('onRescan not provided, analysis may not update')
+              debugLog.warn('OverviewPanel: onRescan not provided, analysis may not update')
             }
-          } else {
-            debugLog.warn('removeManualCMSEstimate is not defined')
-            framer.notify('Cannot remove estimate: function not available', { variant: 'error' })
+          } catch (error) {
+            debugLog.error('OverviewPanel: Error in removeManualCMSEstimate:', error)
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+            framer.notify(`Failed to remove estimate: ${errorMessage}`, { variant: 'error', durationMs: 3000 })
           }
         }}
         onAddEstimate={addManualCMSEstimate}

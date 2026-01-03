@@ -393,19 +393,31 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
           {/* Prominent node name */}
           <div className="mb-1">
             <h4 className="font-semibold text-base break-words" style={{ color: 'var(--framer-color-text)' }}>{recommendation.nodeName || 'Unnamed'}</h4>
-            {recommendation.pageName && (
-              <div className="text-xs mt-0.5 flex items-center gap-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>On page: {recommendation.pageName}</span>
-                {recommendation.pageUrl && (
-                  <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" title={recommendation.pageUrl}>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
+            <div className="text-xs mt-0.5 flex flex-col gap-0.5" style={{ color: 'var(--framer-color-text-secondary)' }}>
+              <span>Breakpoint: Desktop</span>
+              <div className="flex items-center gap-1">
+                <span>Page:</span>
+                {recommendation.pageSlug || recommendation.pageName ? (
+                  recommendation.pageUrl ? (
+                    <a
+                      href={recommendation.pageUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs underline hover:opacity-80 transition-opacity"
+                      style={{ color: 'var(--framer-color-tint)' }}
+                      onClick={(e) => e.stopPropagation()}
+                      title={recommendation.pageUrl}
+                    >
+                      {recommendation.pageSlug || recommendation.pageName}
+                    </a>
+                  ) : (
+                    <span>{recommendation.pageSlug || recommendation.pageName}</span>
+                  )
+                ) : (
+                  <span style={{ color: 'var(--framer-color-text-tertiary)', fontStyle: 'italic' }}>Unknown</span>
                 )}
               </div>
-            )}
+            </div>
             {!canSelect && (
               <div className="text-xs mt-1" style={{ color: '#f59e0b' }}>
                 <div className="flex items-center gap-1 mb-1">

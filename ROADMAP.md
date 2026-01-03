@@ -15,6 +15,116 @@ Give creators immediate visibility into page weight and actionable recommendatio
 2. ✅ I can see the top 10 heaviest assets and where they are used
 3. ✅ I can get specific recommendations I can act on immediately
 
+### 🚨 Critical Features (Must-Have Before Launch)
+
+These three features are essential for a complete and reliable MVP:
+
+#### 1. ✅ CMS Assets Collection (IN PROGRESS)
+**Status:** Partially implemented, needs refinement for reliability
+
+**Goal:** Ensure the plugin can successfully read and collect CMS assets from the Framer project so CMS images and files are included in the bandwidth estimate.
+
+**Current Implementation:**
+- ✅ CMS collection detection using `framer.getCollections()`
+- ✅ CMS item asset extraction using `collection.getItems()` and `isImageAsset()`
+- ✅ Component controls detection (heuristic)
+- ✅ Published site CMS asset extraction
+- ✅ Manual CMS estimate support
+- ⚠️ **Issue:** CMS assets may not always be detected reliably
+
+**Required Improvements:**
+- [ ] **Robust CMS Detection:** Ensure all CMS collections are discovered, including nested or dynamically loaded collections
+- [ ] **Complete Asset Extraction:** Verify all image/file fields are scanned across all CMS items
+- [ ] **Reliable Published Site Detection:** Improve accuracy when extracting CMS assets from published/staging sites
+- [ ] **Fallback Mechanisms:** Clear user guidance when CMS assets cannot be automatically detected
+- [ ] **Testing:** Validate on projects with various CMS structures (blog posts, product catalogs, team pages, etc.)
+
+**Success Criteria:**
+- ✅ CMS assets appear in asset list with "CMS" badge
+- ✅ CMS assets included in total bandwidth calculations
+- ✅ Manual estimates work as fallback when auto-detection fails
+- [ ] 95%+ of CMS assets detected automatically on typical projects
+- [ ] Clear messaging when CMS assets are missing or estimated
+
+#### 2. 🎨 UI/UX Redesign (PRIORITY)
+**Status:** Needs complete redesign
+
+**Goal:** Redesign the plugin interface to follow a clean, minimal and well-structured UI with simple UX that is fast to understand and easy to use.
+
+**Current State:**
+- ✅ Basic sidebar navigation (collapsible)
+- ✅ Three main panels (Overview, Assets, Recommendations)
+- ⚠️ **Issues:** UI can feel cluttered, information hierarchy unclear, some text clipping, inconsistent spacing
+
+**Required Improvements:**
+- [ ] **Information Architecture:**
+  - Clear visual hierarchy (most important info first)
+  - Logical grouping of related information
+  - Progressive disclosure (show details on demand)
+  - Consistent spacing and alignment throughout
+
+- [ ] **Visual Design:**
+  - Clean, minimal aesthetic (remove unnecessary elements)
+  - Consistent typography scale and weights
+  - Clear color system (use Framer CSS variables for dark mode)
+  - Proper use of whitespace
+  - No text clipping or overflow issues
+
+- [ ] **User Experience:**
+  - Fast to understand (clear labels, helpful tooltips)
+  - Easy to use (intuitive interactions, clear CTAs)
+  - Responsive layout (works on different plugin sizes)
+  - Loading states and empty states are helpful
+  - Error states are clear and actionable
+
+- [ ] **Component Refinement:**
+  - Consistent button styles and sizes
+  - Clear form inputs and controls
+  - Accessible modals and dialogs
+  - Smooth transitions and feedback
+
+**Success Criteria:**
+- [ ] Users can understand the plugin's purpose in <5 seconds
+- [ ] All information is clearly readable (no clipping)
+- [ ] Navigation is intuitive (users know where to find things)
+- [ ] Actions are clear (users know what buttons do)
+- [ ] UI feels polished and professional
+
+#### 3. 📍 Page Location Display (IN PROGRESS)
+**Status:** Partially working, needs refinement
+
+**Goal:** Ensure assets show their page location using the internal page slug or route name (such as "about") so users can quickly understand where assets live on the site and navigate to edit them.
+
+**Current Implementation:**
+- ✅ Page name capture during asset collection
+- ✅ Page slug extraction from Framer page names
+- ✅ CMS item slug support
+- ⚠️ **Issue:** Pages showing as "Unknown" - page detection not working reliably
+
+**Required Improvements:**
+- [ ] **Reliable Page Detection:**
+  - Fix `getPageForNode()` to correctly identify which page each asset belongs to
+  - Use page caching for faster lookups
+  - Handle edge cases (nested components, shared assets, etc.)
+
+- [ ] **Page Name Display:**
+  - Show Framer page name/slug (e.g., "about", "pricing")
+  - For CMS assets, show CMS item slug (e.g., "my-blog-post")
+  - Display page URL when available (for published sites)
+  - Clear fallback when page cannot be determined
+
+- [ ] **Navigation Support:**
+  - "Select in Canvas" works across pages
+  - Page name is clickable/linkable when URL available
+  - Clear indication when navigation is not possible
+
+**Success Criteria:**
+- [ ] All assets show their page location (no "Unknown" pages)
+- [ ] Page names are accurate (match Framer page names/slugs)
+- [ ] CMS assets show CMS item slugs correctly
+- [ ] Users can navigate to assets on different pages
+- [ ] Page information is clearly visible in both Assets and Recommendations panels
+
 ### MVP Features
 
 #### 1. Page and Breakpoint Selector
@@ -92,7 +202,7 @@ Give creators immediate visibility into page weight and actionable recommendatio
 - [x] "Select in canvas" works with cross-page navigation
 - [x] "Top 3 Quick Wins" displays when 3+ high priority recommendations exist
 
-### Current MVP Status: ~95% Complete
+### Current MVP Status: ~85% Complete
 
 **What Works:**
 - ✅ Node traversal and asset discovery
@@ -101,17 +211,19 @@ Give creators immediate visibility into page weight and actionable recommendatio
 - ✅ Sortable asset list
 - ✅ Recommendation generation
 - ✅ Click to select assets in canvas
+- ✅ Asset preview thumbnails
+- ✅ Intrinsic dimensions detection
+- ✅ Usage count per asset
+- ✅ "Top 3 Quick Wins" highlight
+- ✅ Page selector dropdown
+- ✅ Export to Markdown/JSON
+- ✅ Cross-page navigation for recommendations
+- ✅ Basic CMS asset detection
 
-**What's Missing for MVP:**
-- [x] Asset preview thumbnails ✅
-- [x] Intrinsic dimensions detection ✅
-- [x] Usage count per asset ✅
-- [x] "Top 3 Quick Wins" highlight ✅
-- [x] Page selector dropdown ✅
-- [x] Export to Markdown/JSON ✅
-- [x] Better recommendation phrasing ✅
-- [x] Cross-page navigation for recommendations ✅
-- [x] Improved assets list UI ✅
+**What's Missing for MVP (Critical):**
+- [ ] **CMS Assets:** Reliable detection and inclusion in all projects
+- [ ] **UI/UX Redesign:** Clean, minimal, well-structured interface
+- [ ] **Page Location:** All assets show correct page names (fix "Unknown" issue)
 - [ ] Accuracy validation against real builds (final testing needed)
 
 ---
@@ -365,7 +477,35 @@ interface Report {
 
 ## Immediate Next Steps (This Week)
 
-### ✅ Priority 1: Complete Core MVP Features (DONE)
+### 🚨 Priority 1: Critical Features (MUST COMPLETE)
+
+#### 1. Fix CMS Assets Collection
+- [ ] Debug and fix CMS asset detection reliability
+- [ ] Test on projects with various CMS structures
+- [ ] Ensure CMS assets always appear in totals
+- [ ] Improve fallback messaging when detection fails
+- [ ] Add comprehensive testing
+
+#### 2. UI/UX Redesign
+- [ ] Audit current UI for clarity and consistency
+- [ ] Redesign information hierarchy
+- [ ] Fix all text clipping and overflow issues
+- [ ] Implement consistent spacing system
+- [ ] Refine component styles (buttons, inputs, cards)
+- [ ] Improve empty states and loading states
+- [ ] Add helpful tooltips and guidance
+- [ ] Test on different plugin sizes
+
+#### 3. Fix Page Location Display
+- [ ] Debug why pages show as "Unknown"
+- [ ] Fix `getPageForNode()` function
+- [ ] Ensure page names are captured correctly
+- [ ] Test page detection on various project structures
+- [ ] Add page name display to Assets panel
+- [ ] Ensure Recommendations show correct page names
+- [ ] Test cross-page navigation
+
+### ✅ Priority 2: Core MVP Features (DONE)
 - [x] **Asset preview thumbnails** ✅
   - Use Framer image API to get preview URLs
   - Display in Assets table
@@ -470,4 +610,7 @@ interface Report {
 ---
 
 **Last Updated:** 2026-01-03
-**Status:** Phase 1 MVP - 95% complete, ready for final testing and launch
+**Status:** Phase 1 MVP - 85% complete, **3 critical features must be completed before launch:**
+1. CMS Assets Collection (reliability improvements needed)
+2. UI/UX Redesign (complete redesign required)
+3. Page Location Display (fix "Unknown" pages issue)

@@ -96,12 +96,33 @@ export function useAnalysis() {
   }, [])
 
   const removeManualCMSEstimate = useCallback((id: string) => {
-    debugLog.info('removeManualCMSEstimate called with id:', id)
-    setManualCMSEstimates(prev => {
-      const filtered = prev.filter(est => est.id !== id)
-      debugLog.info(`Removed estimate ${id}. Remaining estimates: ${filtered.length}`, filtered.map(e => e.id))
-      return filtered
-    })
+    try {
+      if (!id || typeof id !== 'string') {
+        throw new Error('Invalid estimate ID provided to removeManualCMSEstimate')
+      }
+
+      debugLog.info('removeManualCMSEstimate called with id:', id)
+      
+      setManualCMSEstimates(prev => {
+        const beforeCount = prev.length
+        const filtered = prev.filter(est => est.id !== id)
+        const afterCount = filtered.length
+        
+        if (beforeCount === afterCount) {
+          debugLog.warn(`Estimate with id ${id} was not found in the list`)
+          framer.notify('Estimate not found', { variant: 'warning', durationMs: 2000 })
+        } else {
+          debugLog.success(`Removed estimate ${id}. Remaining estimates: ${afterCount}`, filtered.map(e => e.id))
+        }
+        
+        return filtered
+      })
+    } catch (error) {
+      debugLog.error('Error in removeManualCMSEstimate:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      framer.notify(`Failed to remove estimate: ${errorMessage}`, { variant: 'error', durationMs: 3000 })
+      throw error // Re-throw so callers can handle it
+    }
   }, [])
 
   const runAnalysis = useCallback(async () => {

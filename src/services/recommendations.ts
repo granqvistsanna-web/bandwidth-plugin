@@ -29,7 +29,8 @@ function hasExpensiveSVGFeatures(svgContent: string | undefined): boolean {
 export function generateRecommendations(
   breakpointData: BreakpointData,
   pageId?: string,
-  pageName?: string
+  pageName?: string,
+  pageSlug?: string
 ): Recommendation[] {
   const recommendations: Recommendation[] = []
 
@@ -53,7 +54,10 @@ export function generateRecommendations(
       
       // Only create recommendation if large OR has expensive features
       if (isLarge || hasExpensiveFeatures) {
-        const svgRec = detectSVGOptimization(asset, pageId, pageName, hasExpensiveFeatures)
+        // Use asset's page info (from traversal) instead of parameters
+        const assetPageName = asset.pageName || pageName
+        const assetPageSlug = asset.pageSlug || asset.cmsItemSlug || pageSlug
+        const svgRec = detectSVGOptimization(asset, asset.pageId || pageId, assetPageName, assetPageSlug, hasExpensiveFeatures)
         if (svgRec) {
           recommendations.push(svgRec)
           largeSvgCount++
@@ -64,9 +68,12 @@ export function generateRecommendations(
     }
 
     // Run detection algorithms for non-SVG assets
-    const oversized = detectOversizedImages(asset, pageId, pageName)
-    const format = detectFormatIssues(asset, pageId, pageName)
-    const compression = detectCompressionOpportunities(asset, pageId, pageName)
+    // Use asset's page info (from traversal) instead of parameters - asset knows which page it's on
+    const assetPageName = asset.pageName || pageName
+    const assetPageSlug = asset.pageSlug || asset.cmsItemSlug || pageSlug
+    const oversized = detectOversizedImages(asset, asset.pageId || pageId, assetPageName, assetPageSlug)
+    const format = detectFormatIssues(asset, asset.pageId || pageId, assetPageName, assetPageSlug)
+    const compression = detectCompressionOpportunities(asset, asset.pageId || pageId, assetPageName, assetPageSlug)
 
     if (oversized) recommendations.push(oversized)
     if (format) recommendations.push(format)
@@ -162,8 +169,9 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
         description: `Image is still large (${Math.round(estimatedBytes / 1024)}KB, ${actualWidth}x${actualHeight}px, already WebP/AVIF at recommended size)`,
         actionable: 'Consider reducing quality or using more aggressive compression. Image is already at recommended dimensions.',
         url: asset.url,
-        pageId,
-        pageName,
+        pageId: asset.pageId || pageId,
+        pageName: asset.pageName || pageName,
+        pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
         imageAssetId: asset.imageAssetId,
         optimalWidth,
         optimalHeight
@@ -197,8 +205,9 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
         description: `Image is large (${Math.round(estimatedBytes / 1024)}KB, ${actualWidth}x${actualHeight}px, already WebP/AVIF at optimal size)`,
         actionable: 'Consider reducing quality or using a more aggressive compression. Image is already at recommended dimensions.',
         url: asset.url,
-        pageId,
-        pageName,
+        pageId: asset.pageId || pageId,
+        pageName: asset.pageName || pageName,
+        pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
         imageAssetId: asset.imageAssetId,
         optimalWidth,
         optimalHeight
@@ -221,8 +230,9 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
       description: `Image is very large (${Math.round(estimatedBytes / 1024)}KB, ${actualWidth}x${actualHeight}px${isOptimizedFormat ? ', already WebP/AVIF' : ''})`,
       actionable,
       url: asset.url,
-      pageId,
-      pageName,
+      pageId: asset.pageId || pageId,
+      pageName: asset.pageName || pageName,
+      pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
       imageAssetId: asset.imageAssetId,
       optimalWidth,
       optimalHeight
@@ -269,8 +279,9 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
       description: `Image could be smaller (${Math.round(estimatedBytes / 1024)}KB, ${actualWidth}x${actualHeight}px${isOptimizedFormat ? ', already WebP/AVIF' : ''})`,
       actionable,
       url: asset.url,
-      pageId,
-      pageName,
+      pageId: asset.pageId || pageId,
+      pageName: asset.pageName || pageName,
+      pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
       imageAssetId: asset.imageAssetId,
       optimalWidth,
       optimalHeight
@@ -280,7 +291,7 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
   return null
 }
 
-function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string): Recommendation | null {
+function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string, pageSlug?: string): Recommendation | null {
   const { format, estimatedBytes, type } = asset
 
   // Skip if estimatedBytes is invalid
@@ -317,8 +328,9 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
       description: `PNG format used for photo (${actualWidth}x${actualHeight}px)`,
         actionable: 'Replace with AVIF/WebP format (max 1920px width) for 60% smaller file',
       url: asset.url,
-      pageId,
-      pageName,
+      pageId: asset.pageId || pageId,
+      pageName: asset.pageName || pageName,
+      pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
       imageAssetId: asset.imageAssetId,
       optimalWidth,
       optimalHeight
@@ -348,8 +360,9 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
       description: `Large JPEG (${actualWidth}x${actualHeight}px)`,
       actionable: `Replace with AVIF/WebP format (max ${optimalWidth}px width) for 30% smaller file`,
       url: asset.url,
-      pageId,
-      pageName,
+      pageId: asset.pageId || pageId,
+      pageName: asset.pageName || pageName,
+      pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
       imageAssetId: asset.imageAssetId,
       optimalWidth,
       optimalHeight
@@ -367,6 +380,7 @@ function detectSVGOptimization(
   asset: AssetInfo,
   pageId?: string,
   pageName?: string,
+  pageSlug?: string,
   hasExpensiveFeatures?: boolean
 ): Recommendation | null {
   const { estimatedBytes } = asset
@@ -424,12 +438,13 @@ function detectSVGOptimization(
     description,
     actionable,
     url: asset.url,
-    pageId,
-    pageName
+    pageId: asset.pageId || pageId,
+    pageName: asset.pageName || pageName,
+    pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug
   }
 }
 
-function detectCompressionOpportunities(asset: AssetInfo, pageId?: string, pageName?: string): Recommendation | null {
+function detectCompressionOpportunities(asset: AssetInfo, pageId?: string, pageName?: string, pageSlug?: string): Recommendation | null {
   const { estimatedBytes, format, type } = asset
 
   // Skip SVGs - they're handled separately
@@ -460,10 +475,11 @@ function detectCompressionOpportunities(asset: AssetInfo, pageId?: string, pageN
       description: 'Image could benefit from compression',
       actionable: 'Use TinyPNG, ImageOptim, or Squoosh to compress',
       url: asset.url,
-      pageId,
-      pageName
+      pageId: asset.pageId || pageId,
+      pageName: asset.pageName || pageName,
+      pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug
     }
-  }
+}
 
   return null
 }

@@ -30,6 +30,10 @@ export async function analyzeProject(
 ): Promise<ProjectAnalysis> {
   try {
     debugLog.info('🚀 Starting project analysis...')
+    // Clear pages cache at the start of analysis
+    const { clearPagesCache } = await import('./traversal')
+    clearPagesCache()
+    
     const allPages = await getAllPages(true) // Exclude design pages by default
     
     // Filter out user-excluded pages
@@ -221,7 +225,27 @@ export async function analyzeProject(
           const pageTablet = calculateBreakpointData(pageDesktopAssets, 'tablet')
           
           // Generate recommendations for this page with page context
-          const pageRecommendations = generateRecommendations(pageDesktop, page.id, page.name || 'Unnamed Page')
+          // Try to get page slug from publish info
+          let pageSlug: string | undefined
+          try {
+            const publishInfo = await framer.getPublishInfo()
+            if (publishInfo && publishInfo.currentPageUrl) {
+              try {
+                const urlObj = new URL(publishInfo.currentPageUrl)
+                pageSlug = urlObj.pathname
+                if (pageSlug.startsWith('/')) {
+                  pageSlug = pageSlug.substring(1)
+                }
+              } catch {
+                pageSlug = page.name || 'Unnamed Page'
+              }
+            } else {
+              pageSlug = page.name || 'Unnamed Page'
+            }
+          } catch {
+            pageSlug = page.name || 'Unnamed Page'
+          }
+          const pageRecommendations = generateRecommendations(pageDesktop, page.id, page.name || 'Unnamed Page', pageSlug)
           
           debugLog.success(`Page ${page.name || page.id}: ${pageDesktopAssets.length} assets, ${pageRecommendations.length} recommendations`)
           

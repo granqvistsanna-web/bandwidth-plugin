@@ -28,6 +28,9 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
   const [avgHeight, setAvgHeight] = useState(estimateToEdit?.avgHeight || 1080)
   const [format, setFormat] = useState(estimateToEdit?.format || 'jpeg')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   const estimatedBytesPerImage = Math.round((avgWidth * avgHeight * 4) * (format === 'webp' ? 0.10 : format === 'png' ? 0.40 : 0.15))
   const totalEstimatedBytes = estimatedBytesPerImage * imageCount
@@ -265,38 +268,132 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
         </div>
 
         <div className="flex flex-col gap-2 mt-6">
-          {isEditMode && onRemoveEstimate && estimateToEdit && (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                if (window.confirm(`Delete estimate for "${estimateToEdit.collectionName}"? This cannot be undone.`)) {
-                  try {
-                    onRemoveEstimate(estimateToEdit.id)
-                    framer.notify(`Deleted estimate: ${estimateToEdit.collectionName}`, { variant: 'success', durationMs: 2000 })
-                    onEstimateAdded() // Trigger rescan
-                  } catch (error) {
-                    debugLog.error('Error deleting estimate:', error)
-                    framer.notify('Failed to delete estimate', { variant: 'error' })
-                  }
-                }
-              }}
-              className="w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: 'transparent',
-                color: '#ef4444',
-                border: '1px solid #ef4444'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#fee2e2'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-              }}
-            >
-              Delete Estimate
-            </button>
+          {isEditMode && estimateToEdit && (
+            <>
+              {deleteError && (
+                <div className="p-2 rounded text-xs" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+                  {deleteError}
+                </div>
+              )}
+              {!showDeleteConfirm ? (
+                <button
+                  type="button"
+                  disabled={isDeleting || !onRemoveEstimate}
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    
+                    if (isDeleting) {
+                      return
+                    }
+
+                    if (!onRemoveEstimate) {
+                      setDeleteError('Delete function not available. Please try refreshing the plugin.')
+                      framer.notify('Cannot delete: function not available', { variant: 'error' })
+                      return
+                    }
+
+                    if (!estimateToEdit || !estimateToEdit.id) {
+                      setDeleteError('Invalid estimate data. Cannot delete.')
+                      framer.notify('Cannot delete: invalid estimate', { variant: 'error' })
+                      return
+                    }
+
+                    // Show confirmation UI instead of window.confirm
+                    setShowDeleteConfirm(true)
+                    setDeleteError(null)
+                  }}
+                  className="w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: onRemoveEstimate ? 'transparent' : 'var(--framer-color-bg-secondary)',
+                    color: onRemoveEstimate ? '#ef4444' : 'var(--framer-color-text-tertiary)',
+                    border: `1px solid ${onRemoveEstimate ? '#ef4444' : 'var(--framer-color-divider)'}`,
+                    cursor: onRemoveEstimate && !isDeleting ? 'pointer' : 'not-allowed'
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isDeleting && onRemoveEstimate) {
+                      e.currentTarget.style.backgroundColor = '#fee2e2'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }}
+                >
+                  {isDeleting ? 'Deleting...' : onRemoveEstimate ? 'Delete Estimate' : 'Delete Unavailable'}
+                </button>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  <div className="p-3 rounded text-sm" style={{ backgroundColor: 'var(--framer-color-bg-secondary)', color: 'var(--framer-color-text)' }}>
+                    Delete "{estimateToEdit?.collectionName}"? This cannot be undone.
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        setShowDeleteConfirm(false)
+                      }}
+                      className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                      style={{
+                        backgroundColor: 'var(--framer-color-bg-tertiary)',
+                        color: 'var(--framer-color-text)'
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isDeleting || !onRemoveEstimate}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        e.stopPropagation()
+                        
+                        if (isDeleting || !onRemoveEstimate || !estimateToEdit?.id) {
+                          return
+                        }
+
+                        setIsDeleting(true)
+                        setDeleteError(null)
+
+                        try {
+                          // Call the remove function directly
+                          onRemoveEstimate(estimateToEdit.id)
+                          
+                          // Show success notification
+                          framer.notify(`Deleted estimate: ${estimateToEdit.collectionName}`, { variant: 'success', durationMs: 2000 })
+
+                          // Close the modal
+                          onClose()
+
+                          // Trigger rescan after a delay
+                          setTimeout(() => {
+                            if (onEstimateAdded) {
+                              onEstimateAdded()
+                            }
+                            setIsDeleting(false)
+                            setShowDeleteConfirm(false)
+                          }, 200)
+                        } catch (error) {
+                          setIsDeleting(false)
+                          const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+                          setDeleteError(`Failed to delete: ${errorMessage}`)
+                          framer.notify(`Failed to delete estimate: ${errorMessage}`, { variant: 'error', durationMs: 3000 })
+                        }
+                      }}
+                      className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      style={{
+                        backgroundColor: '#ef4444',
+                        color: 'white',
+                        cursor: isDeleting ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
           <div className="flex gap-2">
             <button
