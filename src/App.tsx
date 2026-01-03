@@ -5,6 +5,7 @@ import { TabNavigation } from "./components/TabNavigation"
 import { OverviewPanel } from "./components/overview/OverviewPanel"
 import { AssetsPanel } from "./components/assets/AssetsPanel"
 import { RecommendationsPanel } from "./components/recommendations/RecommendationsPanel"
+import { DebugPanel } from "./components/DebugPanel"
 import { LoadingSpinner } from "./components/common/LoadingSpinner"
 import { ErrorMessage } from "./components/common/ErrorMessage"
 import { useAnalysis } from "./hooks/useAnalysis"
@@ -20,7 +21,7 @@ framer.showUI({
     maxHeight: 900,
 })
 
-type Tab = 'overview' | 'assets' | 'recommendations'
+type Tab = 'overview' | 'assets' | 'recommendations' | 'debug'
 
 export function App() {
     const [activeTab, setActiveTab] = useState<Tab>('overview')
@@ -54,6 +55,9 @@ export function App() {
                         )}
                         {activeTab === 'recommendations' && (
                             <RecommendationsPanel analysis={analysis} />
+                        )}
+                        {activeTab === 'debug' && (
+                            <DebugPanel analysis={analysis} />
                         )}
                     </>
                 )}

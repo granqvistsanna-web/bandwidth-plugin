@@ -1,4 +1,4 @@
-type Tab = 'overview' | 'assets' | 'recommendations'
+type Tab = 'overview' | 'assets' | 'recommendations' | 'debug'
 
 interface TabNavigationProps {
   activeTab: Tab
@@ -9,7 +9,8 @@ export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
   const tabs: { id: Tab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
     { id: 'assets', label: 'Assets' },
-    { id: 'recommendations', label: 'Recommendations' }
+    { id: 'recommendations', label: 'Recommendations' },
+    { id: 'debug', label: 'Debug' }
   ]
 
   return (
