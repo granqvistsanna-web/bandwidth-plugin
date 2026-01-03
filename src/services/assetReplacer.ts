@@ -5,6 +5,7 @@
 
 import { framer, supportsBackgroundImage, type CanvasNode } from 'framer-plugin'
 import { downloadOptimizedImage } from './imageDownloader'
+import { debugLog } from '../utils/debugLog'
 
 export interface ReplacementResult {
   success: boolean
@@ -34,7 +35,7 @@ export async function findAllNodesUsingAsset(imageAssetId: string): Promise<Canv
     
     return matchingNodes
   } catch (error) {
-    console.error('Error finding nodes using asset:', error)
+    debugLog.error('Error finding nodes using asset:', error)
     return []
   }
 }
@@ -78,7 +79,7 @@ export async function replaceImageOnNode(
     // For reliability, we'll use the download method which always works
     // The user can then drag the downloaded image onto the node to replace it
     
-    console.log('Using download method for reliable image replacement')
+    debugLog.info('Using download method for reliable image replacement')
     
     try {
       await downloadOptimizedImage(optimizedImage, format, originalName)
@@ -89,11 +90,11 @@ export async function replaceImageOnNode(
         downloadTriggered: true
       }
     } catch (downloadError) {
-      console.error('Download also failed:', downloadError)
+      debugLog.error('Download also failed:', downloadError)
       throw new Error(`Failed to replace image: Direct replacement failed and download failed: ${downloadError instanceof Error ? downloadError.message : 'Unknown error'}`)
     }
   } catch (error) {
-    console.error('Error replacing image on node:', error)
+    debugLog.error('Error replacing image on node:', error)
     
     // If it's not already a ReplacementResult, try download as last resort
     if (error instanceof Error && !error.message.includes('download')) {
@@ -157,12 +158,12 @@ export async function replaceImageEverywhere(
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error'
             errors.push(`${nodes[i].name || nodes[i].id}: ${errorMessage}`)
-            console.error(`Failed to replace image on node ${nodes[i].id}:`, error)
+            debugLog.error(`Failed to replace image on node ${nodes[i].id}:`, error)
           }
         }
 
         if (errors.length > 0) {
-          console.warn('Some replacements failed:', errors)
+          debugLog.warn('Some replacements failed:', errors)
         }
 
         return {
@@ -179,7 +180,7 @@ export async function replaceImageEverywhere(
       }
     } catch {
       // Direct replacement failed completely, use download
-      console.warn('Direct replacement failed, using download method')
+      debugLog.warn('Direct replacement failed, using download method')
       await downloadOptimizedImage(optimizedImage, format, originalName)
       return {
         success: true,
@@ -190,7 +191,7 @@ export async function replaceImageEverywhere(
       }
     }
   } catch (error) {
-    console.error('Error replacing image everywhere:', error)
+    debugLog.error('Error replacing image everywhere:', error)
     throw error instanceof Error ? error : new Error('Unknown error replacing image')
   }
 }

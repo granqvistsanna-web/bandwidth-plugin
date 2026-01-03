@@ -1,5 +1,6 @@
 import type { ProjectAnalysis } from '../types/analysis'
 import { formatBytes } from './formatBytes'
+import { debugLog } from './debugLog'
 
 export function generateMarkdownReport(analysis: ProjectAnalysis): string {
   const desktop = analysis.overallBreakpoints.desktop
@@ -138,7 +139,7 @@ export async function downloadJSON(analysis: ProjectAnalysis, filename: string =
     URL.revokeObjectURL(url)
     return true
   } catch (error) {
-    console.error('Failed to download JSON:', error)
+    debugLog.error('Failed to download JSON:', error)
     return false
   }
 }
@@ -148,7 +149,7 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     await navigator.clipboard.writeText(text)
     return true
   } catch (error) {
-    console.error('Failed to copy to clipboard:', error)
+    debugLog.error('Failed to copy to clipboard:', error)
     // Fallback for older browsers
     try {
       const textArea = document.createElement('textarea')
@@ -161,7 +162,7 @@ export async function copyToClipboard(text: string): Promise<boolean> {
       document.body.removeChild(textArea)
       return true
     } catch (fallbackError) {
-      console.error('Fallback copy failed:', fallbackError)
+      debugLog.error('Fallback copy failed:', fallbackError)
       return false
     }
   }

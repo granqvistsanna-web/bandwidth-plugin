@@ -1,5 +1,6 @@
 import { framer } from 'framer-plugin'
 import { analyzeAllJavaScriptBundles, type CodeAnalysisResult } from './codeAnalyzer'
+import { debugLog } from '../utils/debugLog'
 
 export interface PublishedResource {
   url: string
@@ -28,7 +29,7 @@ export interface PublishedAnalysisResult {
 export async function getPublishedUrl(): Promise<string | null> {
   try {
     const publishInfo = await framer.getPublishInfo()
-    console.log('Publish info:', publishInfo)
+    debugLog.info('Publish info:', publishInfo)
 
     // Check if site is published
     if (!publishInfo || !publishInfo.url) {
@@ -37,7 +38,7 @@ export async function getPublishedUrl(): Promise<string | null> {
 
     return publishInfo.url
   } catch (error) {
-    console.error('Error getting publish info:', error)
+    debugLog.error('Error getting publish info:', error)
     return null
   }
 }
@@ -46,7 +47,7 @@ export async function getPublishedUrl(): Promise<string | null> {
  * Analyze the published site by fetching actual resources
  */
 export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAnalysisResult> {
-  console.log('Analyzing published site:', siteUrl)
+  debugLog.info('Analyzing published site:', siteUrl)
 
   const resources: PublishedResource[] = []
   let totalBytes = 0
@@ -63,15 +64,15 @@ export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAn
     }
 
     const html = await response.text()
-    console.log('Fetched HTML, length:', html.length)
+    debugLog.info('Fetched HTML, length:', html.length)
 
     // Parse HTML to find resources
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
 
-    // Find all images
+    // Find all images from various sources
     const images = doc.querySelectorAll('img[src]')
-    console.log('Found images:', images.length)
+    debugLog.info('Found images:', images.length)
 
     for (const img of Array.from(images)) {
       const src = img.getAttribute('src')
@@ -90,6 +91,33 @@ export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAn
       }
     }
 
+    // Find images with srcset (responsive images)
+    const imagesWithSrcset = doc.querySelectorAll('img[srcset]')
+    for (const img of Array.from(imagesWithSrcset)) {
+      const srcset = img.getAttribute('srcset')
+      if (!srcset) continue
+      
+      // Parse srcset (format: "url1 1x, url2 2x" or "url1 100w, url2 200w")
+      const srcsetUrls = srcset.split(',').map(s => s.trim().split(/\s+/)[0])
+      for (const srcsetUrl of srcsetUrls) {
+        if (!srcsetUrl) continue
+        const absoluteUrl = makeAbsoluteUrl(srcsetUrl, siteUrl)
+        const size = await getResourceSize(absoluteUrl)
+        
+        if (size > 0) {
+          // Check if we already have this URL (avoid duplicates)
+          if (!resources.find(r => r.url === absoluteUrl)) {
+            resources.push({
+              url: absoluteUrl,
+              type: 'image',
+              actualBytes: size
+            })
+            totalBytes += size
+          }
+        }
+      }
+    }
+
     // Find CSS background images
     const elementsWithBackgrounds = doc.querySelectorAll('[style*="background"]')
     for (const el of Array.from(elementsWithBackgrounds)) {
@@ -100,6 +128,33 @@ export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAn
         const size = await getResourceSize(absoluteUrl)
 
         if (size > 0) {
+          // Check if we already have this URL
+          if (!resources.find(r => r.url === absoluteUrl)) {
+            resources.push({
+              url: absoluteUrl,
+              type: 'image',
+              actualBytes: size
+            })
+            totalBytes += size
+          }
+        }
+      }
+    }
+    
+    // Find background images from CSS classes (Framer often uses inline styles or CSS)
+    // Also check for picture elements and source elements
+    const pictureElements = doc.querySelectorAll('picture source[srcset]')
+    for (const source of Array.from(pictureElements)) {
+      const srcset = source.getAttribute('srcset')
+      if (!srcset) continue
+      
+      const srcsetUrls = srcset.split(',').map(s => s.trim().split(/\s+/)[0])
+      for (const srcsetUrl of srcsetUrls) {
+        if (!srcsetUrl) continue
+        const absoluteUrl = makeAbsoluteUrl(srcsetUrl, siteUrl)
+        const size = await getResourceSize(absoluteUrl)
+        
+        if (size > 0 && !resources.find(r => r.url === absoluteUrl)) {
           resources.push({
             url: absoluteUrl,
             type: 'image',
@@ -170,7 +225,7 @@ export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAn
           }
         }
       } catch (error) {
-        console.warn('Error analyzing custom code:', error)
+        debugLog.warn('Error analyzing custom code:', error)
       }
     }
 
@@ -192,7 +247,7 @@ export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAn
       customCode: customCodeAnalysis
     }
   } catch (error) {
-    console.error('Error analyzing published site:', error)
+    debugLog.error('Error analyzing published site:', error)
     throw error
   }
 }
@@ -209,14 +264,14 @@ async function getResourceSize(url: string): Promise<number> {
     })
 
     if (!response.ok) {
-      console.warn(`Failed to fetch resource: ${url} (${response.status})`)
+      debugLog.warn(`Failed to fetch resource: ${url} (${response.status})`)
       return 0
     }
 
     const contentLength = response.headers.get('Content-Length')
     return contentLength ? parseInt(contentLength, 10) : 0
   } catch (error) {
-    console.warn(`Error fetching resource ${url}:`, error)
+    debugLog.warn(`Error fetching resource ${url}:`, error)
     return 0
   }
 }

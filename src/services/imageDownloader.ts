@@ -3,6 +3,8 @@
  * Handles downloading optimized images for manual replacement
  */
 
+import { debugLog } from '../utils/debugLog'
+
 /**
  * Download optimized image as a file
  */
@@ -38,7 +40,7 @@ export async function downloadOptimizedImage(
       URL.revokeObjectURL(url)
     }, 100)
   } catch (error) {
-    console.error('Error downloading image:', error)
+    debugLog.error('Error downloading image:', error)
     throw new Error(`Failed to download image: ${error instanceof Error ? error.message : 'Unknown error'}`)
   }
 }

@@ -6,6 +6,7 @@ import { formatBytes } from '../../utils/formatBytes'
 import { optimizeImage } from '../../services/imageOptimizer'
 import { replaceImageOnNode, replaceImageEverywhere, canReplaceImage } from '../../services/assetReplacer'
 import { ReplaceImageModal } from './ReplaceImageModal'
+import { debugLog } from '../../utils/debugLog'
 
 interface RecommendationCardProps {
   recommendation: Recommendation
@@ -179,7 +180,7 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
         throw new Error('No node ID or image asset ID available')
       }
     } catch (error) {
-      console.error('Optimization error:', error)
+      debugLog.error('Optimization error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       
       if (errorMessage.includes('CORS') || errorMessage.includes('Cannot access')) {
@@ -199,7 +200,7 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
     e.preventDefault()
     e.stopPropagation()
     
-    console.log('Select in Canvas clicked:', {
+    debugLog.info('Select in Canvas clicked:', {
       nodeId: recommendation.nodeId,
       nodeName: recommendation.nodeName,
       pageId: recommendation.pageId,
@@ -217,7 +218,7 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
       // If recommendation has page info, try to navigate to that page first
       if (recommendation.pageId && recommendation.pageName) {
         try {
-          console.log(`Navigating to page: ${recommendation.pageName} (${recommendation.pageId})`)
+          debugLog.info(`Navigating to page: ${recommendation.pageName} (${recommendation.pageId})`)
           
           // Try to get the page node and set it as selection to navigate
           // Framer doesn't have a direct navigateToPage API, but selecting the page node should work
@@ -228,19 +229,19 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
             await framer.setSelection([recommendation.pageId])
             // Small delay to allow page navigation to complete
             await new Promise(resolve => setTimeout(resolve, 300))
-            console.log(`Navigated to page: ${recommendation.pageName}`)
+            debugLog.info(`Navigated to page: ${recommendation.pageName}`)
           } else {
-            console.warn(`Page node not found: ${recommendation.pageId}, continuing with node selection`)
+            debugLog.warn(`Page node not found: ${recommendation.pageId}, continuing with node selection`)
             framer.notify(`Could not navigate to page "${recommendation.pageName}". Selecting node directly...`, { variant: 'info', durationMs: 2000 })
           }
         } catch (pageNavError) {
-          console.warn('Page navigation failed, continuing with node selection:', pageNavError)
+          debugLog.warn('Page navigation failed, continuing with node selection:', pageNavError)
           // Continue with node selection even if page navigation fails
           framer.notify(`Could not navigate to page "${recommendation.pageName}". Selecting node directly...`, { variant: 'info', durationMs: 2000 })
         }
       }
       
-      console.log('Attempting to select node:', {
+      debugLog.info('Attempting to select node:', {
         nodeId: recommendation.nodeId,
         nodeName: recommendation.nodeName
       })
@@ -250,11 +251,11 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
       
       if (!node) {
         const pageInfo = recommendation.pageName ? ` on page "${recommendation.pageName}"` : ''
-        framer.notify(`Node "${recommendation.nodeName}"${pageInfo} not found. It may have been deleted.`, { variant: 'error' })
+        framer.notify(`Node "${recommendation.nodeName}"${pageInfo} not found. It may have been moved or deleted. Try rescanning.`, { variant: 'error' })
         return
       }
       
-      console.log('Node found:', {
+      debugLog.info('Node found:', {
         id: node.id,
         name: node.name,
         type: node.type
@@ -263,11 +264,11 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
       // Attempt selection
       await framer.setSelection([recommendation.nodeId])
       
-      console.log('Selection successful')
+      debugLog.info('Selection successful')
       const pageInfo = recommendation.pageName ? ` on "${recommendation.pageName}"` : ''
       framer.notify(`Selected "${recommendation.nodeName}"${pageInfo} in canvas`, { variant: 'success', durationMs: 2000 })
     } catch (error) {
-      console.error('Selection failed:', error)
+      debugLog.error('Selection failed:', error)
       
       // Try to get more info about the error
       try {
@@ -276,14 +277,14 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
         
         if (node) {
           // Node exists but selection failed - this is unusual
-          framer.notify(`Found node but couldn't select it${pageInfo}. Try selecting "${recommendation.nodeName}" manually in the canvas.`, { variant: 'error', durationMs: 4000 })
+          framer.notify(`Found node but couldn't select it${pageInfo}. Try selecting "${recommendation.nodeName}" manually in the canvas, or click Rescan to refresh the analysis.`, { variant: 'error', durationMs: 4000 })
         } else {
-          framer.notify(`Node "${recommendation.nodeName}"${pageInfo} not found. It may have been deleted or renamed.`, { variant: 'error' })
+          framer.notify(`Node "${recommendation.nodeName}"${pageInfo} not found. It may have been moved or deleted. Try rescanning.`, { variant: 'error' })
         }
       } catch (getNodeError) {
-        console.error('getNode failed:', getNodeError)
+        debugLog.error('getNode failed:', getNodeError)
         const pageInfo = recommendation.pageName ? ` on page "${recommendation.pageName}"` : ''
-        framer.notify(`Could not find "${recommendation.nodeName}"${pageInfo}. Look for it manually in the canvas.`, { variant: 'error', durationMs: 4000 })
+        framer.notify(`Could not find "${recommendation.nodeName}"${pageInfo}. It may have been moved or deleted. Click Rescan to refresh, or look for it manually in the canvas.`, { variant: 'error', durationMs: 4000 })
       }
     }
   }
@@ -371,8 +372,21 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
             {typeLabels[recommendation.type]}
           </Badge>
         </div>
-            <div className="text-sm font-semibold flex-shrink-0" style={{ color: '#22c55e' }}>
+            <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+              <div className="text-base font-bold" style={{ color: '#22c55e' }}>
           Save {formatBytes(recommendation.potentialSavings)}
+              </div>
+              {recommendation.currentBytes > 0 && (
+                <div className="text-xs font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>
+                  {Math.round((recommendation.potentialSavings / recommendation.currentBytes) * 100)}% reduction
+                </div>
+              )}
+              <div className="text-xs px-1.5 py-0.5 rounded mt-1" style={{ 
+                backgroundColor: recommendation.priority === 'high' ? '#fee2e2' : recommendation.priority === 'medium' ? '#fef3c7' : '#dcfce7',
+                color: recommendation.priority === 'high' ? '#991b1b' : recommendation.priority === 'medium' ? '#92400e' : '#166534'
+              }}>
+                {recommendation.priority === 'high' ? 'High Impact' : recommendation.priority === 'medium' ? 'Medium Impact' : 'Low Impact'}
+              </div>
             </div>
           </div>
 
@@ -384,7 +398,12 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
                 <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                <span>Page: {recommendation.pageName}</span>
+                <span>On page: {recommendation.pageName}</span>
+                {recommendation.pageUrl && (
+                  <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" title={recommendation.pageUrl}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                )}
               </div>
             )}
             {!canSelect && (

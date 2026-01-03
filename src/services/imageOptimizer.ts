@@ -158,7 +158,7 @@ export async function optimizeImage(options: OptimizeImageOptions): Promise<Opti
 
   // Warn if PNG with transparency and user wants JPEG
   if (hasTransparency && format === 'jpeg') {
-    console.warn('Image has transparency but JPEG format requested. Transparency will be lost.')
+    debugLog.warn('Image has transparency but JPEG format requested. Transparency will be lost.')
   }
 
   // Load image

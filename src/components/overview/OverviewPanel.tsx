@@ -5,13 +5,29 @@ import { formatBytes } from '../../utils/formatBytes'
 import { BreakdownChart } from './BreakdownChart'
 import { BandwidthCalculator } from './BandwidthCalculator'
 import { generateMarkdownReport, copyToClipboard, downloadJSON } from '../../utils/exportReport'
+import { PageExclusionSettings } from './PageExclusionSettings'
+import { CMSAssetsNotice } from './CMSAssetsNotice'
+import { debugLog } from '../../utils/debugLog'
 
 interface OverviewPanelProps {
   analysis: ProjectAnalysis
   onNavigateToRecommendations?: () => void
+  excludedPageIds?: Set<string>
+  onTogglePageExclusion?: (pageId: string) => void
+  onRescan?: () => void
 }
 
-export function OverviewPanel({ analysis, onNavigateToRecommendations }: OverviewPanelProps) {
+export function OverviewPanel({ 
+  analysis, 
+  onNavigateToRecommendations,
+  excludedPageIds,
+  onTogglePageExclusion,
+  onRescan,
+  manualCMSEstimates = [],
+  removeManualCMSEstimate,
+  addManualCMSEstimate,
+  updateManualCMSEstimate
+}: OverviewPanelProps) {
   const [showPageWeightInfo, setShowPageWeightInfo] = useState(false)
   const [showBreakdownInfo, setShowBreakdownInfo] = useState(false)
   
@@ -31,7 +47,7 @@ export function OverviewPanel({ analysis, onNavigateToRecommendations }: Overvie
         framer.notify('Failed to copy report', { variant: 'error' })
       }
     } catch (error) {
-      console.error('Export failed:', error)
+      debugLog.error('Export failed:', error)
       framer.notify('Export failed', { variant: 'error' })
     }
   }
@@ -45,7 +61,7 @@ export function OverviewPanel({ analysis, onNavigateToRecommendations }: Overvie
         framer.notify('Failed to download report', { variant: 'error' })
       }
     } catch (error) {
-      console.error('JSON export failed:', error)
+      debugLog.error('JSON export failed:', error)
       framer.notify('Export failed', { variant: 'error' })
     }
   }
@@ -104,15 +120,15 @@ export function OverviewPanel({ analysis, onNavigateToRecommendations }: Overvie
       >
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h3 className="text-sm font-medium mb-1" style={{ color: 'var(--framer-color-tint)' }}>Estimated Page Weight</h3>
-            <div className="text-4xl font-bold" style={{ color: 'var(--framer-color-text)' }}>
+            <h3 className="text-xs font-medium mb-3 uppercase tracking-wide" style={{ color: 'var(--framer-color-text-tertiary)' }}>Estimated Page Weight</h3>
+            <div className="text-5xl font-bold mb-3 leading-tight" style={{ color: 'var(--framer-color-text)' }}>
               {formatBytes(breakpointData.totalBytes)}
             </div>
-            <p className="text-sm mt-2" style={{ color: 'var(--framer-color-text-secondary)' }}>
-              First page load across {pageCount} {pageCount === 1 ? 'page' : 'pages'}
+            <p className="text-xs mt-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
+              Desktop breakpoint • {pageCount} {pageCount === 1 ? 'page' : 'pages'} analyzed
             </p>
-            <p className="text-xs mt-1 opacity-75" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-              Desktop viewport • Canvas estimates
+            <p className="text-xs mt-0.5 opacity-75" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+              First page load estimate • Canvas data
             </p>
           </div>
           <div className="ml-2 relative">
@@ -181,7 +197,7 @@ export function OverviewPanel({ analysis, onNavigateToRecommendations }: Overvie
                   </button>
                 </div>
                 <p className="mb-2 leading-relaxed" style={{ color: 'var(--framer-color-text-reversed)', opacity: 0.9 }}>
-                  Estimated total bytes transferred on first page load. Includes images, SVGs, fonts, and base HTML/CSS/JS overhead.
+                  Estimated total bytes for the desktop breakpoint (1440px viewport). Includes images, SVGs, fonts, and base HTML/CSS/JS overhead. Data is aggregated across all pages in your project.
                 </p>
                 <p className="pt-2 border-t leading-relaxed" style={{ color: 'var(--framer-color-text-reversed)', opacity: 0.8, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
                   <strong>Note:</strong> Video files, external scripts, and third-party resources are not included in this estimate.
@@ -192,8 +208,119 @@ export function OverviewPanel({ analysis, onNavigateToRecommendations }: Overvie
         </div>
       </div>
 
+      {/* Savings Potential Card */}
+      {recommendations.length > 0 && (() => {
+        const totalSavings = recommendations.reduce((sum, r) => sum + r.potentialSavings, 0)
+        const currentTotal = breakpointData.totalBytes
+        const optimizedTotal = Math.max(0, currentTotal - totalSavings)
+        const savingsPercent = currentTotal > 0 ? ((totalSavings / currentTotal) * 100).toFixed(1) : '0'
+        
+        return (
+          <div 
+            className="rounded-lg p-5 border-2"
+            style={{
+              background: 'linear-gradient(to bottom right, #22c55e, #16a34a)',
+              borderColor: '#16a34a',
+              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <div className="mb-3">
+              <div className="flex items-center gap-2 mb-2">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="white">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                <h3 className="text-sm font-semibold" style={{ color: 'white' }}>Potential Savings</h3>
+              </div>
+              <div className="text-4xl font-bold mb-2" style={{ color: 'white' }}>
+                {formatBytes(totalSavings)}
+              </div>
+              <div className="text-sm font-semibold mb-1" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
+                {savingsPercent}% reduction possible
+              </div>
+              <div className="text-xs font-medium mb-3" style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                {formatBytes(currentTotal)} → {formatBytes(optimizedTotal)}
+              </div>
+              {onNavigateToRecommendations && (
+                <button
+                  onClick={onNavigateToRecommendations}
+                  className="w-full px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm"
+                  style={{
+                    backgroundColor: 'white',
+                    color: '#16a34a'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '0.9'
+                    e.currentTarget.style.transform = 'scale(1.02)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '1'
+                    e.currentTarget.style.transform = 'scale(1)'
+                  }}
+                >
+                  Optimize Now
+                </button>
+              )}
+            </div>
+            <div className="pt-3 border-t border-white/20">
+              <div className="flex items-center justify-between text-xs" style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
+                <span>Current: <span className="font-semibold">{formatBytes(currentTotal)}</span></span>
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+                <span>Optimized: <span className="font-semibold">{formatBytes(optimizedTotal)}</span></span>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
+
+      {/* CMS Assets Notice */}
+      <CMSAssetsNotice 
+        analysis={analysis}
+        onCMSEstimateAdded={onRescan}
+        manualCMSEstimates={manualCMSEstimates}
+        onEditEstimate={(estimate) => {
+          // Edit is handled by the modal in CMSAssetsNotice
+        }}
+        onRemoveEstimate={(id) => {
+          debugLog.info('Remove estimate called with id:', id)
+          if (removeManualCMSEstimate) {
+            debugLog.info('Calling removeManualCMSEstimate with id:', id)
+            // Remove the estimate from state (this will update localStorage automatically)
+            removeManualCMSEstimate(id)
+            debugLog.info('removeManualCMSEstimate completed')
+            
+            // Trigger a rescan to update the analysis with the removed estimate
+            // Use a longer delay to ensure state has updated before rescanning
+            if (onRescan) {
+              setTimeout(() => {
+                debugLog.info('Triggering rescan after estimate removal')
+                onRescan()
+              }, 300)
+            } else {
+              debugLog.warn('onRescan not provided, analysis may not update')
+            }
+          } else {
+            debugLog.warn('removeManualCMSEstimate is not defined')
+            framer.notify('Cannot remove estimate: function not available', { variant: 'error' })
+          }
+        }}
+        onAddEstimate={addManualCMSEstimate}
+        onUpdateEstimate={updateManualCMSEstimate}
+      />
+
+      {/* Page Exclusion Settings */}
+      {excludedPageIds !== undefined && onTogglePageExclusion && onRescan && (
+        <PageExclusionSettings
+          analysis={analysis}
+          excludedPageIds={excludedPageIds}
+          onTogglePageExclusion={onTogglePageExclusion}
+          onRescan={onRescan}
+        />
+      )}
+
       {/* Bandwidth Calculator */}
-      <BandwidthCalculator pageWeightBytes={breakpointData.totalBytes} />
+            <BandwidthCalculator analysis={analysis} />
 
       <div>
         <div className="flex items-center gap-2 mb-3">
@@ -439,7 +566,7 @@ export function OverviewPanel({ analysis, onNavigateToRecommendations }: Overvie
           <div className="flex justify-between">
             <span style={{ color: 'var(--framer-color-text-secondary)' }}>Images:</span>
             <span className="font-mono font-semibold" style={{ color: 'var(--framer-color-text)' }}>
-              {breakpointData.assets.filter(a => a.type === 'image' || a.type === 'background').length}
+              {breakpointData.assets.filter(a => a.type === 'image' || a.type === 'svg').length}
             </span>
           </div>
           <div className="flex justify-between">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { findAllNodesUsingAsset } from '../../services/assetReplacer'
+import { debugLog } from '../../utils/debugLog'
 
 interface ReplaceImageModalProps {
   isOpen: boolean
@@ -30,7 +31,7 @@ export function ReplaceImageModal({
           setSelectedOption('single')
         })
         .catch(error => {
-          console.error('Error finding usage count:', error)
+          debugLog.error('Error finding usage count:', error)
           setUsageCount(1) // Default to 1 if we can't determine
           setSelectedOption('single')
         })

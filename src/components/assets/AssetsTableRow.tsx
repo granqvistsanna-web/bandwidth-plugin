@@ -116,13 +116,13 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         )}
       </td>
 
-      {/* Name + Type */}
+      {/* Name + Type + Page */}
       <td style={{ minWidth: '200px', padding: '16px 20px' }}>
         <div className="flex flex-col gap-1">
           <div className="font-medium text-sm truncate" style={{ color: 'var(--framer-color-text)' }} title={asset.nodeName}>
             {asset.nodeName || 'Unnamed'}
           </div>
-          <div>
+          <div className="flex items-center gap-2 flex-wrap">
             <span
               className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase"
               style={
@@ -133,6 +133,59 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             >
               {asset.type}
             </span>
+            {asset.isCMSAsset && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold"
+                style={{
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  backgroundColor: (asset as any).cmsStatus === 'not_found' 
+                    ? 'var(--framer-color-bg-tertiary)' 
+                    : 'var(--framer-color-tint-dimmed)',
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  color: (asset as any).cmsStatus === 'not_found'
+                    ? 'var(--framer-color-text-secondary)'
+                    : 'var(--framer-color-tint)'
+                }}
+                title={
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (asset as any).cmsStatus === 'not_found' 
+                    ? 'CMS asset not found - estimated' 
+                    : asset.isManualEstimate 
+                      ? 'Manual CMS estimate' 
+                      : 'CMS asset'
+                }
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {(asset as any).cmsStatus === 'not_found' 
+                  ? 'CMS (Not Found)' 
+                  : asset.isManualEstimate 
+                    ? 'CMS (Manual)' 
+                    : 'CMS'}
+              </span>
+            )}
+            {asset.pageName && !asset.isCMSAsset && (
+              <span
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]"
+                style={{
+                  backgroundColor: 'var(--framer-color-bg-tertiary)',
+                  color: 'var(--framer-color-text-secondary)'
+                }}
+                title={asset.pageUrl ? `On page: ${asset.pageName}\nURL: ${asset.pageUrl}` : `On page: ${asset.pageName}`}
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {asset.pageName}
+                {asset.pageUrl && (
+                  <svg className="w-2.5 h-2.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" title={asset.pageUrl}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                  </svg>
+                )}
+              </span>
+            )}
           </div>
         </div>
       </td>

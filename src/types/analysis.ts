@@ -3,7 +3,7 @@ export type Breakpoint = 'mobile' | 'tablet' | 'desktop'
 export interface AssetInfo {
   nodeId: string
   nodeName: string
-  type: 'image' | 'svg'
+  type: 'image' | 'svg' // Removed 'background' - all background images are now 'image'
   estimatedBytes: number
   dimensions: {
     width: number
@@ -17,9 +17,15 @@ export interface AssetInfo {
   visible: boolean
   url?: string
   usageCount?: number
-  usedInPages?: string[]
+  usedInPages?: { pageId: string; pageName: string }[] // Pages where this asset is used
+  pageId?: string // The page this asset instance belongs to
+  pageName?: string // The page name this asset instance belongs to
   svgContent?: string // For SVG nodes, store the SVG markup to analyze features
   imageAssetId?: string // ImageAsset.id for tracking and replacement
+  isCMSAsset?: boolean // True if this asset comes from CMS
+  isManualEstimate?: boolean // True if this is a manual estimate (CMS assets that couldn't be read)
+  manualEstimateNote?: string // Note about manual estimate
+  cmsCollectionName?: string // Name of CMS collection this asset belongs to
 }
 
 export interface BreakdownData {
@@ -61,6 +67,7 @@ export interface Recommendation {
   usedInPages?: { pageId: string; pageName: string }[]
   pageId?: string
   pageName?: string
+  pageUrl?: string // URL of the page (if published and available)
   imageAssetId?: string // ImageAsset.id for tracking and replacement
   optimalWidth?: number // Target width for optimization
   optimalHeight?: number // Target height for optimization

@@ -26,7 +26,19 @@ type Tab = 'overview' | 'assets' | 'recommendations' | 'debug'
 export function App() {
     const [activeTab, setActiveTab] = useState<Tab>('overview')
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null)
-    const { analysis, loading, error, runAnalysis, lastScanned } = useAnalysis()
+    const { 
+      analysis, 
+      loading, 
+      error, 
+      runAnalysis, 
+      lastScanned, 
+      excludedPageIds, 
+      togglePageExclusion,
+      manualCMSEstimates,
+      addManualCMSEstimate,
+      updateManualCMSEstimate,
+      removeManualCMSEstimate
+    } = useAnalysis()
 
     // Auto-run analysis on mount
     useEffect(() => {
@@ -50,10 +62,17 @@ export function App() {
                     {analysis && !loading && !error && (
                         <>
                             {activeTab === 'overview' && (
-                                <OverviewPanel 
-                                    analysis={analysis} 
-                                    onNavigateToRecommendations={() => setActiveTab('recommendations')}
-                                />
+            <OverviewPanel
+              analysis={analysis}
+              onNavigateToRecommendations={() => setActiveTab('recommendations')}
+              excludedPageIds={excludedPageIds}
+              onTogglePageExclusion={togglePageExclusion}
+              onRescan={runAnalysis}
+              manualCMSEstimates={manualCMSEstimates}
+              addManualCMSEstimate={addManualCMSEstimate}
+              updateManualCMSEstimate={updateManualCMSEstimate}
+              removeManualCMSEstimate={removeManualCMSEstimate}
+            />
                             )}
                             {activeTab === 'assets' && (
                                 <AssetsPanel

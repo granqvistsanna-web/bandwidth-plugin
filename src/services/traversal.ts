@@ -218,18 +218,24 @@ async function extractAssetInfo(
           // Continue without actual dimensions
         }
 
-        debugLog.success(`Found backgroundImage: ${node.name}`, { url: imageUrl, type: node.type })
+        // Get the page this node belongs to
+        const page = await getPageForNode(node.id)
+        
+        debugLog.success(`Found backgroundImage: ${node.name}`, { url: imageUrl, type: node.type, page: page?.name })
       return {
         nodeId: node.id,
         nodeName: node.name || 'Unnamed',
-          type: 'image',
+          type: 'image', // Changed from 'background' to 'image' for consistency
         estimatedBytes: 0,
         dimensions,
           actualDimensions,
           format: detectImageFormat(imageUrl),
         visible: true,
           url: imageUrl,
-          imageAssetId: image.id
+          imageAssetId: image.id,
+          pageId: page?.id,
+          pageName: page?.name,
+          pageUrl: page?.url
         }
       }
     }
@@ -246,6 +252,9 @@ async function extractAssetInfo(
         svgContent = nodeAny.__svgContent
       }
       
+      // Get the page this node belongs to
+      const page = await getPageForNode(node.id)
+      
       return {
         nodeId: node.id,
         nodeName: node.name || 'Unnamed',
@@ -254,7 +263,10 @@ async function extractAssetInfo(
         dimensions,
         format: 'svg',
         visible: true,
-        svgContent
+        svgContent,
+        pageId: page?.id,
+        pageName: page?.name,
+        pageUrl: page?.url
       }
     }
 
@@ -352,6 +364,59 @@ function detectImageFormat(url: string): string {
 }
 
 /**
+ * Get the page that a node belongs to by traversing up the parent chain
+ * Returns the page node if found, null otherwise
+ */
+async function getPageForNode(nodeId: string): Promise<{ id: string; name: string } | null> {
+  try {
+    const node = await framer.getNode(nodeId)
+    if (!node) return null
+    
+    // If this node is a page, return it
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const nodeAny = node as any
+    if (nodeAny.type === 'Page' || nodeAny.type === 'PageNode' || node.type === 'Page') {
+      return { id: node.id, name: node.name || 'Unnamed' }
+    }
+    
+    // Traverse up the parent chain to find the page
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let current: any = node
+    let depth = 0
+    const maxDepth = 20 // Safety limit
+    
+    while (current && depth < maxDepth) {
+      // Check if current node is a page
+      if (current.type === 'Page' || current.type === 'PageNode') {
+        return { id: current.id, name: current.name || 'Unnamed' }
+      }
+      
+      // Get parent ID - parent might be a reference object or just an ID
+      const parentId = current.parent?.id || current.parent
+      if (!parentId) break
+      
+      const parent = await framer.getNode(parentId)
+      if (!parent) break
+      
+      // Check if parent is a page
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const parentAny = parent as any
+      if (parentAny.type === 'Page' || parentAny.type === 'PageNode' || parent.type === 'Page') {
+        return { id: parent.id, name: parent.name || 'Unnamed' }
+      }
+      
+      current = parent
+      depth++
+    }
+    
+    return null
+  } catch (error) {
+    debugLog.warn(`Error getting page for node ${nodeId}:`, error)
+    return null
+  }
+}
+
+/**
  * Check if a node belongs to a design page by traversing up the parent chain
  */
 async function isNodeInDesignPage(nodeId: string): Promise<boolean> {
@@ -407,7 +472,7 @@ async function isNodeInDesignPage(nodeId: string): Promise<boolean> {
  * Efficiently collect all assets using Framer's optimized APIs
  * This uses getNodesWithAttributeSet which is much faster than tree traversal
  */
-export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeDesignPages: boolean = true): Promise<AssetInfo[]> {
+export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeDesignPages: boolean = true, excludedPageIds: string[] = []): Promise<AssetInfo[]> {
   const assets: AssetInfo[] = []
   
   try {
@@ -426,26 +491,37 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
         continue
       }
       
+      // Get the page this node belongs to
+      const page = await getPageForNode(node.id)
+      
+      // Skip if node is in an excluded page
+      if (page && excludedPageIds.includes(page.id)) {
+        continue
+      }
+      
       // Use the trait function to ensure type safety
       if (supportsBackgroundImage(node) && node.backgroundImage) {
         const image = node.backgroundImage
         uniqueImages.set(image.id, image)
         
         const dimensions = getNodeDimensions(node)
+        
         const asset: AssetInfo = {
           nodeId: node.id,
           nodeName: node.name || 'Unnamed',
-          type: 'image',
+          type: 'image', // Changed from 'background' to 'image' for consistency
           estimatedBytes: 0,
           dimensions,
           format: detectImageFormat(image.url),
           visible: node.visible !== false,
           url: image.url,
-          imageAssetId: image.id
+          imageAssetId: image.id,
+          pageId: page?.id,
+          pageName: page?.name
         }
         
         assets.push(asset)
-        debugLog.success(`Found backgroundImage: ${node.name}`, { url: image.url })
+        debugLog.success(`Found backgroundImage: ${node.name}`, { url: image.url, page: page?.name })
       }
     }
     
@@ -458,6 +534,14 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
     for (const node of svgNodes) {
       // Skip if node is in a design page
       if (excludeDesignPages && await isNodeInDesignPage(node.id)) {
+        continue
+      }
+      
+      // Get the page this node belongs to
+      const page = await getPageForNode(node.id)
+      
+      // Skip if node is in an excluded page
+      if (page && excludedPageIds.includes(page.id)) {
         continue
       }
       
@@ -482,10 +566,12 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
           dimensions,
           format: 'svg',
           visible: true,
-          svgContent
+          svgContent,
+          pageId: page?.id,
+          pageName: page?.name
         }
         assets.push(asset)
-        debugLog.success(`Found SVG: ${node.name}`, { hasContent: !!svgContent })
+        debugLog.success(`Found SVG: ${node.name}`, { hasContent: !!svgContent, page: page?.name })
       }
     }
     

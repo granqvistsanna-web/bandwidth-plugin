@@ -1,13 +1,16 @@
 import type { AssetInfo } from '../../types/analysis'
 
+export type GroupByOption = 'none' | 'impact' | 'page' | 'type' | 'recommendation'
+
 export interface FilterState {
-  type: 'all' | 'image' | 'svg'
+  type: 'all' | 'image' | 'svg' | 'cms'
   sizeRange: {
     min: number
     max: number
   }
   format: 'all' | 'png' | 'jpg' | 'webp' | 'gif' | 'svg'
   pageUsage: 'all' | 'single' | 'multiple'
+  groupBy?: GroupByOption
 }
 
 export interface SortConfig {
@@ -19,6 +22,7 @@ export interface AssetCounts {
   all: number
   images: number
   svgs: number
+  cms: number
 }
 
 export interface AssetFiltersProps {

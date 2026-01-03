@@ -97,8 +97,13 @@ export function AssetFilters({
     }
 
     if (filters.type !== 'all') {
+      const typeLabels: Record<string, string> = {
+        image: 'Images',
+        svg: 'SVGs',
+        cms: 'CMS Assets'
+      }
       active.push({
-        label: `Type: ${filters.type === 'image' ? 'Images' : 'SVGs'}`,
+        label: `Type: ${typeLabels[filters.type] || filters.type}`,
         onClear: () => handleTypeChange('all')
       })
     }
@@ -172,6 +177,7 @@ export function AssetFilters({
           <option value="all">All ({assetCounts.all})</option>
           <option value="image">Images ({assetCounts.images})</option>
           <option value="svg">SVGs ({assetCounts.svgs})</option>
+          <option value="cms">CMS Assets ({assetCounts.cms})</option>
         </select>
       </div>
 

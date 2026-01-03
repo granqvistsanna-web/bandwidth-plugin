@@ -1,104 +1,90 @@
-# QA Report - Bandwidth Check Plugin
+# QA Report - Bandwidth Inspector Plugin
 
-**Date:** $(date)  
-**Status:** ✅ All Issues Fixed
+## Build Status
+✅ **PASS** - Build completes successfully with no errors
 
-## Issues Found and Fixed
+## Linting Status
+✅ **PASS** - No linting errors found
 
-### 1. ✅ Indentation Bug
-**File:** `src/services/traversal.ts:81`  
-**Issue:** Missing indentation for `framer.notify()` call  
-**Fix:** Corrected indentation to match code block structure  
-**Impact:** Low - cosmetic only, but could cause confusion
+## Bugs Found & Fixed
 
-### 2. ✅ Excessive Console Logging
-**File:** `src/services/traversal.ts:208`  
-**Issue:** `console.log()` in `getNodeDimensions()` was logging on every node check  
-**Fix:** Removed console.log statement (debug logging is handled by debugLog utility)  
-**Impact:** Medium - improved performance and reduced console noise
+### 1. CMS Assets Duplication Bug (FIXED)
+**Location**: `src/services/analyzer.ts:123`
+**Issue**: When CMS assets were extracted from published site, the code was replacing `desktopAssets` but missing previously detected CMS assets from canvas (`cmsAssetInfos`), potentially causing duplicates or missing assets.
+**Fix**: Merged all CMS assets (canvas + published) and deduplicated by URL/nodeId before combining with canvas assets.
 
-### 3. ✅ Verbose Warning Logs
-**File:** `src/services/traversal.ts:186`  
-**Issue:** Warning logged for every node without an asset, creating excessive log noise  
-**Fix:** Only log warnings for Frame/Image nodes at depth < 3, changed to info level  
-**Impact:** High - significantly reduced log volume and improved performance
+### 2. Potential Null/Undefined Access
+**Location**: Multiple files
+**Status**: Most are handled with optional chaining (`?.`) or null checks
+**Recommendation**: Continue using defensive coding patterns
 
-### 4. ✅ Invisible Node Logging
-**File:** `src/services/traversal.ts:96`  
-**Issue:** Logging every invisible node, even deep in the tree  
-**Fix:** Only log invisible nodes at depth < 2  
-**Impact:** Medium - reduced log noise
+## Code Quality Issues
 
-### 5. ✅ Full Structure Logging Optimization
-**File:** `src/services/traversal.ts:101-134`  
-**Issue:** Logging full node structure for all nodes at depth < 2  
-**Fix:** Only log full structure for Image nodes or Frame nodes with backgroundImage  
-**Impact:** High - reduced performance overhead and log size
+### Console Logs
+- Found 49 instances of `console.log/error/warn`
+- **Recommendation**: Consider replacing with `debugLog` for consistency, especially in production code
+- **Priority**: Low (debug logs are acceptable for development)
 
-### 6. ✅ Unused Import
-**File:** `src/services/traversal.ts:1`  
-**Issue:** `isFrameNode` imported but never used  
-**Fix:** Removed unused import  
-**Impact:** Low - code cleanliness
+### Type Safety
+- Found 72 instances of `any` type or `@ts-ignore`
+- **Status**: Most are justified (Framer API types, dynamic CMS data)
+- **Recommendation**: Keep as-is, but document why `any` is needed
 
-### 7. ✅ TypeScript Linting Errors
-**Files:** Multiple  
-**Issue:** 10 TypeScript linting errors related to `any` types  
-**Fix:** Added appropriate `eslint-disable-next-line` comments for necessary `any` types  
-**Impact:** Low - code quality and type safety
+### Error Handling
+✅ **GOOD** - Most async functions have try-catch blocks
+✅ **GOOD** - Error messages are user-friendly
+✅ **GOOD** - Fallbacks are in place for critical operations
 
-## Code Quality Improvements
+## Potential Edge Cases to Test
 
-### Performance Optimizations
-- ✅ Reduced logging overhead by limiting verbose logs to relevant nodes only
-- ✅ Optimized full structure logging to only occur for image-related nodes
-- ✅ Removed unnecessary console.log statements
+1. **Empty Project**: Test with a project that has no pages/assets
+2. **Unpublished Site**: Test CMS detection when site is not published
+3. **Large Projects**: Test with projects containing 100+ assets
+4. **Missing Assets**: Test when CMS assets cannot be fetched
+5. **Network Errors**: Test when published site analysis fails due to network issues
+6. **Invalid Node IDs**: Test when recommendation nodeId is invalid or deleted
 
-### Code Cleanliness
-- ✅ Fixed all linting errors
-- ✅ Removed unused imports
-- ✅ Improved code structure and readability
+## Recommendations
 
-## Testing Recommendations
+### High Priority
+- ✅ Fixed CMS assets duplication bug
+- Consider adding retry logic for network requests (published site analysis)
 
-### Manual Testing Checklist
-- [ ] Run analysis on a project with images - verify assets are detected
-- [ ] Check debug panel - verify logs are not excessive
-- [ ] Test with projects containing:
-  - [ ] Frame nodes with background images
-  - [ ] SVG nodes
-  - [ ] Multiple pages
-  - [ ] Deeply nested node structures
-- [ ] Verify performance - analysis should complete in reasonable time
-- [ ] Check console - should not be flooded with logs
+### Medium Priority
+- Replace `console.log` with `debugLog` for consistency
+- Add unit tests for critical functions (CMS detection, asset extraction)
 
-### Edge Cases to Test
-- [ ] Projects with no images
-- [ ] Projects with only SVGs
-- [ ] Projects with very deep nesting (100+ levels)
-- [ ] Projects with many invisible nodes
-- [ ] Empty projects
+### Low Priority
+- Consider adding loading states for long-running operations
+- Add telemetry/metrics for error tracking
 
-## Remaining Considerations
+## Test Checklist
 
-### Future Optimizations
-1. **Efficient Collection Method**: `collectAllAssetsEfficient()` is implemented but not used. Consider:
-   - Using it for faster asset collection
-   - Or removing if tree traversal is preferred for breakpoint-specific analysis
+- [ ] Plugin opens without errors
+- [ ] Analysis runs successfully on a project with assets
+- [ ] CMS assets are detected from published site
+- [ ] Manual CMS estimates can be added
+- [ ] Recommendations are generated correctly
+- [ ] "Select in Canvas" works for cross-page navigation
+- [ ] Image optimization/download works
+- [ ] Assets filter dropdown works (Images/SVGs/CMS)
+- [ ] Page exclusion works
+- [ ] Export functionality works
+- [ ] Dark mode styling is consistent
+- [ ] No console errors in browser dev tools
 
-2. **Breakpoint Handling**: Currently, breakpoint parameter is passed but nodes don't seem to have breakpoint-specific properties. Consider:
-   - Verifying if Framer nodes have breakpoint-specific visibility/properties
-   - Or removing breakpoint parameter if not needed for traversal
+## Overall Assessment
 
-3. **Error Handling**: Consider adding more specific error messages for common failure scenarios
+**Status**: ✅ **READY FOR TESTING**
 
-## Summary
+The codebase is in good shape with:
+- Proper error handling
+- Type safety where possible
+- Good logging/debugging support
+- One critical bug fixed (CMS assets duplication)
 
-✅ **All critical issues fixed**  
-✅ **All linting errors resolved**  
-✅ **Performance optimizations applied**  
-✅ **Code quality improved**
-
-The plugin is now ready for testing and should perform better with reduced logging overhead and cleaner code structure.
-
-
+The plugin should be ready for user testing. Focus testing on:
+1. CMS asset detection accuracy
+2. Cross-page navigation
+3. Image optimization workflow
+4. Edge cases (empty projects, unpublished sites)

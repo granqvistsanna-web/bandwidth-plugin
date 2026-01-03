@@ -21,9 +21,11 @@ export function BreakdownChart({ breakdown, totalBytes }: BreakdownChartProps) {
 
         return (
           <div key={item.label}>
-            <div className="flex justify-between text-sm mb-1">
+            <div className="flex justify-between text-sm mb-1.5">
               <span className="font-medium" style={{ color: 'var(--framer-color-text)' }}>{item.label}</span>
-              <span style={{ color: 'var(--framer-color-text-secondary)' }}>{formatBytes(item.bytes)} ({percentage.toFixed(1)}%)</span>
+              <span className="font-semibold" style={{ color: 'var(--framer-color-text-secondary)' }}>
+                {formatBytes(item.bytes)} <span className="font-normal opacity-75">({percentage.toFixed(1)}%)</span>
+              </span>
             </div>
             <div 
               className="w-full rounded-full h-2"

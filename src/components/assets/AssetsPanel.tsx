@@ -5,6 +5,7 @@ import type { FilterState, SortConfig, AssetCounts } from './types'
 import { PageSelector } from './PageSelector'
 import { AssetFilters } from './AssetFilters'
 import { AssetsTable } from './AssetsTable'
+import { debugLog } from '../../utils/debugLog'
 
 interface AssetsPanelProps {
   analysis: ProjectAnalysis
@@ -42,8 +43,20 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPa
   const filteredAssets = useMemo(() => {
     return baseAssets.filter(asset => {
       // Type filter
-      if (filters.type !== 'all' && asset.type !== filters.type) {
-        return false
+      if (filters.type !== 'all') {
+        if (filters.type === 'cms') {
+          // Filter for CMS assets
+          if (!asset.isCMSAsset) {
+            return false
+          }
+        } else if (filters.type === 'image') {
+          // Treat both 'image' and 'background' as images
+          if (asset.type !== 'image') {
+            return false
+          }
+        } else if (asset.type !== filters.type) {
+          return false
+        }
       }
 
       // Size range filter
@@ -77,6 +90,7 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPa
   const sortedAssets = useMemo(() => {
     const sorted = [...filteredAssets]
 
+    // Stable sort: add secondary/tertiary keys for consistent ordering
     sorted.sort((a, b) => {
       let comparison = 0
 
@@ -100,7 +114,13 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPa
           break
       }
 
-      return sortConfig.direction === 'asc' ? comparison : -comparison
+      // Apply sort direction
+      if (comparison !== 0) {
+        return sortConfig.direction === 'asc' ? comparison : -comparison
+      }
+      
+      // Secondary sort: by node ID for stable ordering when primary values are equal
+      return a.nodeId.localeCompare(b.nodeId)
     })
 
     return sorted
@@ -112,6 +132,7 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPa
       all: baseAssets.length,
       images: baseAssets.filter(a => a.type === 'image').length,
       svgs: baseAssets.filter(a => a.type === 'svg').length,
+      cms: baseAssets.filter(a => a.isCMSAsset).length
     }
   }, [baseAssets])
 
@@ -125,15 +146,15 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPa
     try {
       const node = await framer.getNode(nodeId)
       if (!node) {
-        framer.notify('Node not found in canvas', { variant: 'error' })
+        framer.notify('Node not found in canvas. It may have been moved or deleted. Try rescanning to refresh the analysis.', { variant: 'error' })
         return
       }
 
       await framer.setSelection([nodeId])
       framer.notify('Node selected in canvas', { variant: 'success', durationMs: 1500 })
     } catch (error) {
-      console.warn('Failed to select node:', nodeId, error)
-      framer.notify('Could not select node. It may have been deleted.', { variant: 'error' })
+      debugLog.warn('Failed to select node:', { nodeId, error })
+      framer.notify('Could not select node. It may have been moved or deleted. Try rescanning.', { variant: 'error' })
     }
   }
 
@@ -168,17 +189,39 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPa
           />
         ) : (
           <div className="h-full flex items-center justify-center">
-            <div className="text-center py-12 px-4">
-              <div className="text-4xl mb-3">
+            <div className="text-center py-12 px-4 max-w-sm mx-auto">
+              <div className="text-4xl mb-4">
                 {baseAssets.length === 0 ? '📦' : '🔍'}
               </div>
-              <div className="font-medium mb-1" style={{ color: 'var(--framer-color-text)' }}>
+              <div className="font-semibold text-lg mb-2" style={{ color: 'var(--framer-color-text)' }}>
                 {baseAssets.length === 0 ? 'No Assets Found' : 'No Matching Assets'}
               </div>
-              <div className="text-sm max-w-xs mx-auto" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                {baseAssets.length === 0
-                  ? 'No images or SVGs were detected in your project. Make sure you have frames with background images or SVG elements.'
-                  : 'Try adjusting your filters or search query to find assets.'}
+              <div className="text-sm mb-4 leading-relaxed" style={{ color: 'var(--framer-color-text-secondary)' }}>
+                {baseAssets.length === 0 ? (
+                  <>
+                    <p className="mb-2">No images or SVGs were detected in your project.</p>
+                    <p className="text-xs mb-3" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+                      Make sure your pages contain frames with background images or SVG elements. 
+                      Images need to be set as background images on frames to be detected. 
+                      <a 
+                        href="https://www.framer.com/learn/design/images/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="underline ml-1"
+                        style={{ color: 'var(--framer-color-tint)' }}
+                      >
+                        Learn about adding images in Framer
+                      </a>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="mb-2">No assets match your current filters or search query.</p>
+                    <p className="text-xs" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+                      Try adjusting your filters, clearing the search, or selecting a different page.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>

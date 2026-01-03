@@ -17,7 +17,7 @@ export function RecommendationsPanel({ analysis }: RecommendationsPanelProps) {
   // The page filter in the UI is informational only - recommendations show all pages
   const allRecommendations = analysis.allRecommendations
   
-  // Sort globally by potentialSavings (already sorted in generateRecommendations, but ensure it here)
+  // Stable sort: ensure consistent ordering across renders
   const sortedRecommendations = [...allRecommendations].sort((a, b) => {
     // Primary sort: by potential savings (descending)
     if (b.potentialSavings !== a.potentialSavings) {
@@ -25,7 +25,18 @@ export function RecommendationsPanel({ analysis }: RecommendationsPanelProps) {
     }
     // Secondary sort: by priority
     const priorityOrder = { high: 0, medium: 1, low: 2 }
-    return priorityOrder[a.priority] - priorityOrder[b.priority]
+    const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
+    if (priorityDiff !== 0) {
+      return priorityDiff
+    }
+    // Tertiary sort: by node name (alphabetical) for stable ordering
+    const nameA = a.nodeName || ''
+    const nameB = b.nodeName || ''
+    if (nameA !== nameB) {
+      return nameA.localeCompare(nameB)
+    }
+    // Final sort: by node ID for complete stability
+    return (a.nodeId || a.id).localeCompare(b.nodeId || b.id)
   })
 
   const filteredRecommendations = filter === 'all'
@@ -45,7 +56,18 @@ export function RecommendationsPanel({ analysis }: RecommendationsPanelProps) {
   const highPriorityRecs = sortedRecommendations.filter(r => r.priority === 'high')
   const top3QuickWins = highPriorityRecs.length >= 3
     ? [...highPriorityRecs]
-        .sort((a, b) => b.potentialSavings - a.potentialSavings)
+        .sort((a, b) => {
+          // Stable sort: primary by savings, secondary by name, tertiary by ID
+          if (b.potentialSavings !== a.potentialSavings) {
+            return b.potentialSavings - a.potentialSavings
+          }
+          const nameA = a.nodeName || ''
+          const nameB = b.nodeName || ''
+          if (nameA !== nameB) {
+            return nameA.localeCompare(nameB)
+          }
+          return (a.nodeId || a.id).localeCompare(b.nodeId || b.id)
+        })
         .slice(0, 3)
     : []
 
@@ -97,21 +119,30 @@ export function RecommendationsPanel({ analysis }: RecommendationsPanelProps) {
       {/* Top 3 Quick Wins Section */}
       {top3QuickWins.length > 0 && (
         <div 
-          className="border-2 rounded-lg p-4 mb-4"
+          className="border-2 rounded-xl p-5 mb-4 shadow-sm"
           style={{
-            backgroundColor: 'var(--framer-color-tint-dimmed)',
-            borderColor: 'var(--framer-color-tint)'
+            background: 'linear-gradient(to bottom right, var(--framer-color-tint-dimmed), var(--framer-color-bg-secondary))',
+            borderColor: 'var(--framer-color-tint)',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)'
           }}
         >
-          <div className="flex items-center gap-2 mb-3">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-tint)' }}>
+          <div className="flex items-center gap-2 mb-1">
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-tint)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            <h3 className="font-semibold" style={{ color: 'var(--framer-color-text)' }}>Top 3 Quick Wins</h3>
-            <span className="ml-auto text-sm font-medium" style={{ color: 'var(--framer-color-tint)' }}>
-              Save {formatBytes(top3Savings)}
+            <h3 className="font-bold text-base" style={{ color: 'var(--framer-color-text)' }}>Top 3 Quick Wins</h3>
+          </div>
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="text-3xl font-bold" style={{ color: 'var(--framer-color-tint)' }}>
+              {formatBytes(top3Savings)}
+            </span>
+            <span className="text-xs font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>
+              combined savings
             </span>
           </div>
+          <p className="text-xs mb-4 font-semibold" style={{ color: 'var(--framer-color-tint)' }}>
+            ⚡ Start here for maximum impact
+          </p>
           <div className="space-y-2">
             {top3QuickWins.map((rec, index) => (
               <div
@@ -254,16 +285,29 @@ export function RecommendationsPanel({ analysis }: RecommendationsPanelProps) {
         ))}
 
         {filteredRecommendations.length === 0 && sortedRecommendations.length > 0 && (
-          <div className="text-center py-12 text-gray-500">
-            No {filter} priority recommendations
+          <div className="text-center py-12 px-4">
+            <div className="text-3xl mb-3">🔍</div>
+            <div className="font-semibold mb-2" style={{ color: 'var(--framer-color-text)' }}>
+              No {filter} Priority Recommendations
+            </div>
+            <div className="text-sm" style={{ color: 'var(--framer-color-text-secondary)' }}>
+              Try selecting a different priority filter to see other recommendations.
+            </div>
           </div>
         )}
 
         {sortedRecommendations.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-4xl mb-3">✓</div>
-            <div className="font-medium text-gray-900">No Recommendations</div>
-            <div className="text-sm text-gray-600 mt-1">Your bandwidth is optimized!</div>
+          <div className="text-center py-12 px-4 max-w-sm mx-auto">
+            <div className="text-5xl mb-4">✓</div>
+            <div className="font-semibold text-lg mb-2" style={{ color: 'var(--framer-color-text)' }}>
+              Great! No Optimization Needed
+            </div>
+            <div className="text-sm mb-4 leading-relaxed" style={{ color: 'var(--framer-color-text-secondary)' }}>
+              <p className="mb-2">Your assets are well-optimized.</p>
+              <p className="text-xs" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+                Your images are properly sized and formatted. All assets are under recommended thresholds and using efficient formats like WebP or AVIF.
+              </p>
+            </div>
           </div>
         )}
       </div>

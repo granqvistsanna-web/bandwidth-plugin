@@ -1,8 +1,22 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../types/analysis'
 import { analyzeProject } from '../services/analyzer'
 import { debugLog } from '../utils/debugLog'
+
+const EXCLUDED_PAGES_STORAGE_KEY = 'bandwidth-inspector-excluded-pages'
+const MANUAL_ESTIMATES_STORAGE_KEY = 'bandwidth-inspector-cms-manual-estimates'
+
+export type ManualCMSEstimate = {
+  id: string
+  collectionName: string
+  imageCount: number
+  avgWidth: number
+  avgHeight: number
+  format: string
+  estimatedBytes: number
+  createdAt?: string
+}
 
 export function useAnalysis() {
   const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null)
@@ -10,6 +24,85 @@ export function useAnalysis() {
   const [error, setError] = useState<Error | null>(null)
   const [selectedPageId, setSelectedPageId] = useState<string | 'all'>('all')
   const [lastScanned, setLastScanned] = useState<Date | null>(null)
+  const [excludedPageIds, setExcludedPageIds] = useState<Set<string>>(new Set())
+  const [manualCMSEstimates, setManualCMSEstimates] = useState<ManualCMSEstimate[]>([])
+
+  // Load excluded pages and manual CMS estimates from localStorage on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(EXCLUDED_PAGES_STORAGE_KEY)
+      if (stored) {
+        const ids = JSON.parse(stored) as string[]
+        setExcludedPageIds(new Set(ids))
+      }
+    } catch (error) {
+      debugLog.warn('Failed to load excluded pages from localStorage:', error)
+    }
+
+    try {
+      const stored = localStorage.getItem(MANUAL_ESTIMATES_STORAGE_KEY)
+      if (stored) {
+        const estimates = JSON.parse(stored) as ManualCMSEstimate[]
+        setManualCMSEstimates(estimates)
+      }
+    } catch (error) {
+      debugLog.warn('Failed to load manual CMS estimates from localStorage:', error)
+    }
+  }, [])
+
+  // Save excluded pages to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(EXCLUDED_PAGES_STORAGE_KEY, JSON.stringify(Array.from(excludedPageIds)))
+    } catch (error) {
+      debugLog.warn('Failed to save excluded pages to localStorage:', error)
+    }
+  }, [excludedPageIds])
+
+  const togglePageExclusion = useCallback((pageId: string) => {
+    setExcludedPageIds(prev => {
+      const next = new Set(prev)
+      if (next.has(pageId)) {
+        next.delete(pageId)
+      } else {
+        next.add(pageId)
+      }
+      return next
+    })
+  }, [])
+
+  // Save manual CMS estimates to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(MANUAL_ESTIMATES_STORAGE_KEY, JSON.stringify(manualCMSEstimates))
+    } catch (error) {
+      debugLog.warn('Failed to save manual CMS estimates to localStorage:', error)
+    }
+  }, [manualCMSEstimates])
+
+  const addManualCMSEstimate = useCallback((estimate: Omit<ManualCMSEstimate, 'id' | 'createdAt'>) => {
+    const newEstimate: ManualCMSEstimate = {
+      ...estimate,
+      id: `manual-${Date.now()}`,
+      createdAt: new Date().toISOString()
+    }
+    setManualCMSEstimates(prev => [...prev, newEstimate])
+  }, [])
+
+  const updateManualCMSEstimate = useCallback((id: string, estimate: Partial<Omit<ManualCMSEstimate, 'id' | 'createdAt'>>) => {
+    setManualCMSEstimates(prev => prev.map(est => 
+      est.id === id ? { ...est, ...estimate } : est
+    ))
+  }, [])
+
+  const removeManualCMSEstimate = useCallback((id: string) => {
+    debugLog.info('removeManualCMSEstimate called with id:', id)
+    setManualCMSEstimates(prev => {
+      const filtered = prev.filter(est => est.id !== id)
+      debugLog.info(`Removed estimate ${id}. Remaining estimates: ${filtered.length}`, filtered.map(e => e.id))
+      return filtered
+    })
+  }, [])
 
   const runAnalysis = useCallback(async () => {
     setLoading(true)
@@ -18,7 +111,7 @@ export function useAnalysis() {
     debugLog.info('Starting new analysis...')
 
     try {
-      const result = await analyzeProject('canvas')
+      const result = await analyzeProject('canvas', Array.from(excludedPageIds), manualCMSEstimates)
       setAnalysis(result)
       setLastScanned(new Date())
       debugLog.success(`Analysis complete! Found ${result.overallBreakpoints.desktop.assets.length} assets`)
@@ -28,11 +121,10 @@ export function useAnalysis() {
       setError(error)
       debugLog.error('Analysis failed', error)
       framer.notify('Analysis failed: ' + error.message, { variant: 'error' })
-      console.error('Analysis error:', err)
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [excludedPageIds, manualCMSEstimates])
 
   return {
     analysis,
@@ -41,6 +133,12 @@ export function useAnalysis() {
     runAnalysis,
     selectedPageId,
     setSelectedPageId,
-    lastScanned
+    lastScanned,
+    excludedPageIds,
+    togglePageExclusion,
+    manualCMSEstimates,
+    addManualCMSEstimate,
+    updateManualCMSEstimate,
+    removeManualCMSEstimate
   }
 }
