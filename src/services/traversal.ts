@@ -6,9 +6,13 @@ export async function getAllPages() {
     const root = await framer.getCanvasRoot()
     console.log('Canvas root:', root)
 
+    // Try to show what we got
+    framer.notify(`Canvas root type: ${root?.type || 'unknown'}`, { durationMs: 3000 })
+
     // getCanvasRoot returns a single node, we need to get its children (the pages)
     if (!root) {
       console.error('No canvas root found')
+      framer.notify('No canvas root found!', { variant: 'error' })
       return []
     }
 
@@ -16,9 +20,12 @@ export async function getAllPages() {
     const pages = await framer.getChildren(root.id)
     console.log('Found pages:', pages.length, pages)
 
+    framer.notify(`Found ${pages.length} pages`, { durationMs: 3000 })
+
     return pages
   } catch (error) {
     console.error('Error getting canvas root:', error)
+    framer.notify(`Error: ${error}`, { variant: 'error' })
     return []
   }
 }
@@ -36,12 +43,24 @@ export async function traverseNodeTree(
   try {
     const node = await framer.getNode(nodeId)
 
+    // Show what type of node we're looking at (first level only)
+    if (currentDepth === 0) {
+      framer.notify(`Scanning node: ${node.name || 'unnamed'} (${node.type || 'unknown type'})`, { durationMs: 2000 })
+    }
+
     // Extract asset info from current node
     const asset = await extractAssetInfo(node)
-    if (asset) assets.push(asset)
+    if (asset) {
+      assets.push(asset)
+      framer.notify(`✓ Found asset: ${asset.nodeName}`, { variant: 'success', durationMs: 1500 })
+    }
 
     // Get children and process them
     const children = await framer.getChildren(nodeId)
+
+    if (currentDepth === 0) {
+      framer.notify(`Node has ${children.length} children`, { durationMs: 2000 })
+    }
 
     // Process in batches to avoid blocking
     const BATCH_SIZE = 20
@@ -57,8 +76,13 @@ export async function traverseNodeTree(
       // Yield to event loop
       await new Promise(resolve => setTimeout(resolve, 0))
     }
+
+    if (currentDepth === 0 && assets.length > 0) {
+      framer.notify(`Total assets found: ${assets.length}`, { variant: 'success', durationMs: 3000 })
+    }
   } catch (error) {
     console.error(`Error traversing node ${nodeId}:`, error)
+    framer.notify(`Error scanning: ${error}`, { variant: 'error' })
   }
 
   return assets
@@ -69,8 +93,20 @@ async function extractAssetInfo(
   node: any
 ): Promise<AssetInfo | null> {
   try {
+    // LOG EVERYTHING about this node
+    console.log('=== CHECKING NODE ===')
+    console.log('Node name:', node.name)
+    console.log('Node type/class:', node.type, node.__class, node.constructor?.name)
+    console.log('Has background?', !!node.background)
+    console.log('Has image?', !!node.image)
+    console.log('Node keys:', Object.keys(node).slice(0, 20))
+    console.log('Full node:', node)
+
     // Check if node is visible
-    if (node.visible === false) return null
+    if (node.visible === false) {
+      console.log('→ Node is invisible, skipping')
+      return null
+    }
 
     // Check if node has image background
     if (node.background && Array.isArray(node.background)) {
