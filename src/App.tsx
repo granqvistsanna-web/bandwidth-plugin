@@ -24,7 +24,7 @@ type Tab = 'overview' | 'assets' | 'recommendations'
 
 export function App() {
     const [activeTab, setActiveTab] = useState<Tab>('overview')
-    const { analysis, loading, error, selectedBreakpoint, setSelectedBreakpoint, runAnalysis } = useAnalysis()
+    const { analysis, loading, error, runAnalysis } = useAnalysis()
 
     // Auto-run analysis on mount
     useEffect(() => {
@@ -47,17 +47,10 @@ export function App() {
                 {analysis && !loading && !error && (
                     <>
                         {activeTab === 'overview' && (
-                            <OverviewPanel
-                                analysis={analysis}
-                                selectedBreakpoint={selectedBreakpoint}
-                                onBreakpointChange={setSelectedBreakpoint}
-                            />
+                            <OverviewPanel analysis={analysis} />
                         )}
                         {activeTab === 'assets' && (
-                            <AssetsPanel
-                                analysis={analysis}
-                                selectedBreakpoint={selectedBreakpoint}
-                            />
+                            <AssetsPanel analysis={analysis} />
                         )}
                         {activeTab === 'recommendations' && (
                             <RecommendationsPanel analysis={analysis} />

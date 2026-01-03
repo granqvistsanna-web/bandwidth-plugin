@@ -7,6 +7,14 @@ export function estimateImageBytes(
 ): number {
   const { width, height } = asset.dimensions
 
+  console.log('Estimating bytes for asset:', asset.nodeName, 'dimensions:', width, 'x', height)
+
+  // If dimensions are 0, return a default estimate
+  if (width === 0 || height === 0) {
+    console.warn('Asset has 0 dimensions, using default estimate:', asset.nodeName)
+    return 100 * 1024 // Default 100KB for unknown size
+  }
+
   // Apply pixel density multiplier
   const pixelDensity = getPixelDensity(breakpoint)
   const effectiveWidth = width * pixelDensity
@@ -19,7 +27,10 @@ export function estimateImageBytes(
   // Apply compression ratio based on format
   const compressionRatio = getCompressionRatio(asset.format || 'unknown', asset.type)
 
-  return rawBytes * compressionRatio
+  const estimatedBytes = rawBytes * compressionRatio
+  console.log('Estimated bytes:', estimatedBytes, 'format:', asset.format, 'type:', asset.type)
+
+  return estimatedBytes
 }
 
 function getCompressionRatio(format: string, type: string): number {

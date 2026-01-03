@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import { framer } from 'framer-plugin'
-import type { ProjectAnalysis, Breakpoint } from '../../types/analysis'
+import type { ProjectAnalysis } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
 
 interface AssetsPanelProps {
   analysis: ProjectAnalysis
-  selectedBreakpoint: Breakpoint
 }
 
-export function AssetsPanel({ analysis, selectedBreakpoint }: AssetsPanelProps) {
+export function AssetsPanel({ analysis }: AssetsPanelProps) {
   const [sortBy, setSortBy] = useState<'size' | 'name'>('size')
 
-  const assets = analysis.overallBreakpoints[selectedBreakpoint].assets
+  // Use desktop breakpoint (simplified for MVP)
+  const assets = analysis.overallBreakpoints.desktop.assets
 
   const sortedAssets = [...assets].sort((a, b) => {
     if (sortBy === 'size') {

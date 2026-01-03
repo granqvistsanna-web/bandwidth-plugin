@@ -1,26 +1,17 @@
-import type { ProjectAnalysis, Breakpoint } from '../../types/analysis'
+import type { ProjectAnalysis } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
-import { BreakpointTabs } from './BreakpointTabs'
 import { BreakdownChart } from './BreakdownChart'
 
 interface OverviewPanelProps {
   analysis: ProjectAnalysis
-  selectedBreakpoint: Breakpoint
-  onBreakpointChange: (breakpoint: Breakpoint) => void
 }
 
-export function OverviewPanel({ analysis, selectedBreakpoint, onBreakpointChange }: OverviewPanelProps) {
-  const breakpointData = analysis.overallBreakpoints[selectedBreakpoint]
+export function OverviewPanel({ analysis }: OverviewPanelProps) {
+  // Use desktop breakpoint for now (simplified for MVP)
+  const breakpointData = analysis.overallBreakpoints.desktop
 
   return (
     <div className="p-4 space-y-6">
-      <div>
-        <h2 className="text-sm font-medium text-gray-600 mb-2">Breakpoint</h2>
-        <BreakpointTabs
-          selectedBreakpoint={selectedBreakpoint}
-          onBreakpointChange={onBreakpointChange}
-        />
-      </div>
 
       <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg p-6">
         <h3 className="text-sm font-medium text-blue-900 mb-1">Estimated Page Weight</h3>
@@ -29,6 +20,9 @@ export function OverviewPanel({ analysis, selectedBreakpoint, onBreakpointChange
         </div>
         <p className="text-sm text-blue-700 mt-2">
           First page load across {analysis.totalPages} page{analysis.totalPages !== 1 ? 's' : ''}
+        </p>
+        <p className="text-xs text-blue-600 mt-1 opacity-75">
+          Desktop viewport • Canvas estimates
         </p>
       </div>
 

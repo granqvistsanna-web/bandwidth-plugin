@@ -136,6 +136,8 @@ function getNodeDimensions(
   const width = node.width || 0
   const height = node.height || 0
 
+  console.log('Node dimensions for', node.name || 'unnamed', ':', width, 'x', height, 'node:', node)
+
   return { width, height }
 }
 
