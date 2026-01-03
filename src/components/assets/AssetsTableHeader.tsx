@@ -36,7 +36,7 @@ function SortableHeader({ label, column, sortConfig, onSort, align = 'left' }: S
         style={{
           color: isActive ? 'var(--framer-color-text)' : 'var(--framer-color-text-secondary)',
           justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start',
-          padding: '12px 20px'
+          padding: '8px 12px'
         }}
       >
         {label}
@@ -90,7 +90,7 @@ export function AssetsTableHeader({ sortConfig, onSort }: AssetsTableHeaderProps
         </th>
 
         {/* Actions */}
-        <th style={{ width: '100px', textAlign: 'right', padding: '12px 20px' }}>
+        <th style={{ width: '100px', textAlign: 'right', padding: '8px 12px' }}>
           <div className="text-xs font-medium" style={{ color: 'var(--framer-color-text-tertiary)' }}>
             Action
           </div>

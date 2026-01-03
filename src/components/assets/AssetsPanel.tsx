@@ -2,7 +2,6 @@ import { useState, useMemo } from 'react'
 import { framer } from 'framer-plugin'
 import type { ProjectAnalysis, AssetInfo } from '../../types/analysis'
 import type { FilterState, SortConfig, AssetCounts } from './types'
-import { PageSelector } from './PageSelector'
 import { AssetFilters } from './AssetFilters'
 import { AssetsTable } from './AssetsTable'
 import { debugLog } from '../../utils/debugLog'
@@ -159,7 +158,7 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPa
   }
 
   return (
-    <div className="h-full flex flex-col" style={{ backgroundColor: 'var(--framer-color-bg)' }}>
+    <div className="h-full flex flex-col p-6 space-y-4" style={{ backgroundColor: 'var(--framer-color-bg)' }}>
       {/* Filters */}
       <AssetFilters
         filters={filters}

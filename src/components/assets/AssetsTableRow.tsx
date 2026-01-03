@@ -1,6 +1,8 @@
 import { memo } from 'react'
 import type { AssetInfo } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
+import { Badge } from '../primitives/Badge'
+import { spacing, typography, colors } from '../../styles/designTokens'
 
 interface AssetsTableRowProps {
   asset: AssetInfo
@@ -8,23 +10,11 @@ interface AssetsTableRowProps {
   style?: React.CSSProperties
 }
 
-function getSizeColor(bytes: number) {
+function getSizeIndicator(bytes: number): { label: string; shade: string } {
   const kb = bytes / 1024
-  if (kb >= 500) {
-    return { bg: '#fee2e2', color: '#991b1b', border: '#f87171' }
-  } else if (kb >= 200) {
-    return { bg: '#fef3c7', color: '#92400e', border: '#facc15' }
-  } else {
-    return { bg: '#dcfce7', color: '#166534', border: '#22c55e' }
-  }
-}
-
-function getSizeLabel(bytes: number): string {
-  const kb = bytes / 1024
-  if (kb >= 1000) return 'Very Large'
-  if (kb >= 500) return 'Large'
-  if (kb >= 200) return 'Medium'
-  return 'Small'
+  if (kb >= 500) return { label: 'Large', shade: colors.gray[800] }
+  if (kb >= 200) return { label: 'Medium', shade: colors.gray[600] }
+  return { label: 'Small', shade: colors.gray[400] }
 }
 
 export const AssetsTableRow = memo(function AssetsTableRow({
@@ -32,50 +22,67 @@ export const AssetsTableRow = memo(function AssetsTableRow({
   onClick,
   style
 }: AssetsTableRowProps) {
-  const sizeColor = getSizeColor(asset.estimatedBytes)
-  const sizeLabel = getSizeLabel(asset.estimatedBytes)
+  const sizeIndicator = getSizeIndicator(asset.estimatedBytes)
+  const isCMS = asset.isCMSAsset || asset.isManualEstimate || !!asset.cmsItemSlug
+  const canClick = !isCMS && asset.nodeId && asset.nodeId.trim() !== ''
 
   return (
     <tr
-      onClick={() => onClick(asset.nodeId)}
-      className="cursor-pointer transition-colors"
+      onClick={() => canClick && onClick(asset.nodeId)}
       style={{
         ...style,
-        backgroundColor: 'var(--framer-color-bg)',
-        borderBottom: `1px solid var(--framer-color-divider)`,
+        backgroundColor: colors.white,
+        cursor: canClick ? 'pointer' : 'default',
+        transition: 'background-color 0.15s ease',
+        opacity: canClick ? 1 : 0.7
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+        if (canClick) {
+          e.currentTarget.style.backgroundColor = colors.gray[50]
+        }
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+        if (canClick) {
+          e.currentTarget.style.backgroundColor = colors.white
+        }
       }}
     >
-      {/* Preview */}
-      <td style={{ width: '100px', padding: '16px 20px', textAlign: 'center' }}>
+      {/* Preview - 64px square */}
+      <td style={{ width: '80px', padding: `${spacing.sm} ${spacing.sm}` }}>
         {asset.type === 'svg' ? (
           asset.svgContent ? (
             <div
-              className="w-16 h-16 rounded border flex items-center justify-center overflow-hidden flex-shrink-0 mx-auto"
               style={{
-                borderColor: 'var(--framer-color-divider)',
-                backgroundColor: '#f3e8ff',
-                aspectRatio: '1 / 1',
-                padding: '4px'
+                width: '48px',
+                height: '48px',
+                borderRadius: '4px',
+                border: `1px solid ${colors.gray[200]}`,
+                backgroundColor: colors.gray[50],
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden' as const,
+                margin: '0 auto',
+                padding: '4px',
               }}
               dangerouslySetInnerHTML={{ __html: asset.svgContent }}
             />
           ) : (
             <div
-              className="w-16 h-16 rounded border flex items-center justify-center flex-shrink-0 mx-auto"
               style={{
-                borderColor: 'var(--framer-color-divider)',
-                backgroundColor: '#f3e8ff',
-                aspectRatio: '1 / 1'
+                width: '48px',
+                height: '48px',
+                borderRadius: '4px',
+                border: `1px solid ${colors.gray[200]}`,
+                backgroundColor: colors.gray[50],
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto',
               }}
             >
-              <svg className="w-7 h-7 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={colors.gray[400]} strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
               </svg>
             </div>
           )
@@ -83,183 +90,125 @@ export const AssetsTableRow = memo(function AssetsTableRow({
           <img
             src={asset.url}
             alt={asset.nodeName}
-            className="w-16 h-16 rounded object-cover border flex-shrink-0 mx-auto"
-            style={{ borderColor: 'var(--framer-color-divider)', aspectRatio: '1 / 1' }}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '4px',
+              border: `1px solid ${colors.gray[200]}`,
+              objectFit: 'cover' as const,
+              display: 'block',
+              margin: '0 auto',
+            }}
             onError={(e) => {
               const target = e.target as HTMLImageElement
               target.style.display = 'none'
-              const parent = target.parentElement
-              if (parent) {
-                parent.innerHTML = `
-                  <div class="w-16 h-16 rounded border flex items-center justify-center flex-shrink-0 mx-auto" style="border-color: var(--framer-color-divider); background-color: var(--framer-color-bg-secondary); aspect-ratio: 1 / 1;">
-                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style="color: var(--framer-color-text-tertiary)">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  </div>
-                `
-              }
             }}
           />
         ) : (
           <div
-            className="w-16 h-16 rounded border flex items-center justify-center flex-shrink-0 mx-auto"
             style={{
-              borderColor: 'var(--framer-color-divider)',
-              backgroundColor: 'var(--framer-color-bg-secondary)',
-              aspectRatio: '1 / 1'
+              width: '48px',
+              height: '48px',
+              borderRadius: '4px',
+              border: `1px solid ${colors.gray[200]}`,
+              backgroundColor: colors.gray[50],
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto',
             }}
           >
-            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={colors.gray[400]} strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
         )}
       </td>
 
-      {/* Name + Type + Page */}
-      <td style={{ minWidth: '200px', padding: '16px 20px' }}>
-        <div className="flex flex-col gap-1">
-          <div className="font-medium text-sm truncate" style={{ color: 'var(--framer-color-text)' }} title={asset.nodeName}>
+      {/* Name + Type */}
+      <td style={{ minWidth: '200px', padding: `${spacing.sm} ${spacing.sm}` }}>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '2px' }}>
+          <div
+            style={{
+              fontSize: typography.fontSize.sm,
+              fontWeight: typography.fontWeight.medium,
+              color: colors.black,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap' as const,
+            }}
+            title={asset.nodeName}
+          >
             {asset.nodeName || 'Unnamed'}
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
-            <span
-              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase"
-              style={
-                asset.type === 'svg'
-                  ? { backgroundColor: '#f3e8ff', color: '#7c3aed' }
-                  : { backgroundColor: '#dcfce7', color: '#166534' }
-              }
-            >
-              {asset.type}
-            </span>
-            {asset.isCMSAsset && (
-              <span
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold"
-                style={{
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  backgroundColor: (asset as any).cmsStatus === 'not_found' 
-                    ? 'var(--framer-color-bg-tertiary)' 
-                    : 'var(--framer-color-tint-dimmed)',
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  color: (asset as any).cmsStatus === 'not_found'
-                    ? 'var(--framer-color-text-secondary)'
-                    : 'var(--framer-color-tint)'
-                }}
-                title={
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  (asset as any).cmsStatus === 'not_found' 
-                    ? 'CMS asset not found - estimated' 
-                    : asset.isManualEstimate 
-                      ? 'Manual CMS estimate' 
-                      : 'CMS asset'
-                }
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {(asset as any).cmsStatus === 'not_found' 
-                  ? 'CMS (Not Found)' 
-                  : asset.isManualEstimate 
-                    ? 'CMS (Manual)' 
-                    : 'CMS'}
-              </span>
-            )}
-            {asset.pageName && !asset.isCMSAsset && (
-              <span
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px]"
-                style={{
-                  backgroundColor: 'var(--framer-color-bg-tertiary)',
-                  color: 'var(--framer-color-text-secondary)'
-                }}
-                title={asset.pageUrl ? `On page: ${asset.pageName}\nURL: ${asset.pageUrl}` : `On page: ${asset.pageName}`}
-              >
-                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                {asset.pageName}
-                {asset.pageUrl && (
-                  <svg className="w-2.5 h-2.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" title={asset.pageUrl}>
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                  </svg>
-                )}
-              </span>
-            )}
-          </div>
+          <Badge variant={asset.type === 'svg' ? 'svg' : 'image'}>{asset.type}</Badge>
         </div>
       </td>
 
       {/* Dimensions */}
-      <td style={{ width: '140px', padding: '16px 20px' }}>
-        <div className="flex items-center text-xs gap-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
-          <span>{Math.round(asset.dimensions.width)}</span>
-          <span>×</span>
-          <span>{Math.round(asset.dimensions.height)}</span>
+      <td style={{ width: '120px', padding: `${spacing.sm} ${spacing.sm}` }}>
+        <div
+          style={{
+            fontSize: typography.fontSize.xs,
+            color: colors.gray[500],
+          }}
+        >
+          {Math.round(asset.dimensions.width)} × {Math.round(asset.dimensions.height)}
         </div>
       </td>
 
       {/* Format */}
-      <td style={{ width: '120px', padding: '16px 20px' }}>
+      <td style={{ width: '100px', padding: `${spacing.sm} ${spacing.sm}` }}>
         {asset.format ? (
-          <span
-            className="px-2 py-0.5 rounded text-[10px] font-medium uppercase"
-            style={{
-              backgroundColor: 'var(--framer-color-bg-tertiary)',
-              color: 'var(--framer-color-text-secondary)'
-            }}
-          >
-            {asset.format}
-          </span>
+          <Badge variant="default">{asset.format}</Badge>
         ) : (
-          <span className="text-xs" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-            —
-          </span>
+          <span style={{ fontSize: typography.fontSize.xs, color: colors.gray[400] }}>—</span>
         )}
       </td>
 
       {/* Size */}
-      <td style={{ width: '160px', padding: '16px 20px' }}>
-        <div className="flex flex-col gap-0.5">
+      <td style={{ width: '140px', padding: `${spacing.sm} ${spacing.sm}` }}>
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: '1px' }}>
           <div
-            className="text-xs font-bold whitespace-nowrap px-2 py-1 rounded"
             style={{
-              backgroundColor: sizeColor.bg,
-              color: sizeColor.color,
-              border: `1px solid ${sizeColor.border}`
+              fontSize: typography.fontSize.sm,
+              fontWeight: typography.fontWeight.semibold,
+              color: sizeIndicator.shade,
             }}
           >
             {formatBytes(asset.estimatedBytes)}
           </div>
-          <div className="text-[9px] font-medium" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-            {sizeLabel}
+          <div
+            style={{
+              fontSize: typography.fontSize.xs,
+              color: colors.gray[500],
+            }}
+          >
+            {sizeIndicator.label}
           </div>
         </div>
       </td>
 
       {/* Usage */}
-      <td style={{ width: '120px', padding: '16px 20px', textAlign: 'center' }}>
+      <td style={{ width: '100px', padding: `${spacing.sm} ${spacing.sm}`, textAlign: 'center' as const }}>
         {asset.usageCount && asset.usageCount > 1 ? (
-          <span
-            className="text-xs px-2 py-0.5 rounded font-semibold"
-            style={{
-              backgroundColor: 'var(--framer-color-tint-dimmed)',
-              color: 'var(--framer-color-tint)'
-            }}
-          >
-            {asset.usageCount}×
-          </span>
+          <Badge variant="outline">{asset.usageCount}×</Badge>
         ) : (
-          <span className="text-xs" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-            1×
-          </span>
+          <span style={{ fontSize: typography.fontSize.xs, color: colors.gray[400] }}>1×</span>
         )}
       </td>
 
       {/* Action */}
-      <td style={{ width: '100px', padding: '16px 20px', textAlign: 'right' }}>
-        <div className="text-xs font-medium" style={{ color: 'var(--framer-color-tint)' }}>
-          Select
+      <td style={{ width: '80px', padding: `${spacing.sm} ${spacing.sm}`, textAlign: 'right' as const }}>
+        <div
+          style={{
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            color: isCMS ? colors.gray[400] : colors.gray[500],
+          }}
+          title={isCMS ? 'CMS assets cannot be selected in canvas. Edit them in the CMS collection instead.' : 'Click to select in canvas'}
+        >
+          {isCMS ? 'CMS' : 'Select'}
         </div>
       </td>
     </tr>

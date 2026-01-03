@@ -121,8 +121,9 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
       <div
         className="rounded-lg p-6 max-w-md w-full max-h-[90vh] overflow-y-auto"
         style={{
-          backgroundColor: 'var(--framer-color-bg)',
-          border: '1px solid var(--framer-color-divider)'
+          backgroundColor: '#FAF9F8',
+          border: '1px solid var(--framer-color-divider)',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
         }}
         onClick={(e) => e.stopPropagation()}
       >
@@ -161,11 +162,19 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
               value={collectionName}
               onChange={(e) => setCollectionName(e.target.value)}
               placeholder="e.g., Blog Posts, Products"
-              className="w-full px-3 py-2 rounded border text-sm"
+              className="w-full px-3 py-2 rounded-md border text-sm transition-colors"
               style={{
-                backgroundColor: 'var(--framer-color-bg-secondary)',
+                backgroundColor: 'var(--framer-color-bg)',
                 borderColor: 'var(--framer-color-divider)',
                 color: 'var(--framer-color-text)'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
               }}
             />
           </div>
@@ -271,7 +280,7 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
           {isEditMode && estimateToEdit && (
             <>
               {deleteError && (
-                <div className="p-2 rounded text-xs" style={{ backgroundColor: '#fee2e2', color: '#dc2626' }}>
+                <div className="p-3 rounded text-xs" style={{ backgroundColor: 'var(--framer-color-bg-secondary)', color: 'var(--framer-color-text)', border: '1px solid var(--framer-color-divider)' }}>
                   {deleteError}
                 </div>
               )}
@@ -304,20 +313,22 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                     setDeleteError(null)
                   }}
                   className="w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    backgroundColor: onRemoveEstimate ? 'transparent' : 'var(--framer-color-bg-secondary)',
-                    color: onRemoveEstimate ? '#ef4444' : 'var(--framer-color-text-tertiary)',
-                    border: `1px solid ${onRemoveEstimate ? '#ef4444' : 'var(--framer-color-divider)'}`,
-                    cursor: onRemoveEstimate && !isDeleting ? 'pointer' : 'not-allowed'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isDeleting && onRemoveEstimate) {
-                      e.currentTarget.style.backgroundColor = '#fee2e2'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                  }}
+              style={{
+                backgroundColor: onRemoveEstimate ? 'transparent' : 'var(--framer-color-bg-secondary)',
+                color: onRemoveEstimate ? 'var(--framer-color-text)' : 'var(--framer-color-text-tertiary)',
+                border: `1px solid ${onRemoveEstimate ? 'var(--framer-color-divider)' : 'var(--framer-color-divider)'}`,
+                cursor: onRemoveEstimate && !isDeleting ? 'pointer' : 'not-allowed'
+              }}
+              onMouseEnter={(e) => {
+                if (!isDeleting && onRemoveEstimate) {
+                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                  e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+              }}
                 >
                   {isDeleting ? 'Deleting...' : onRemoveEstimate ? 'Delete Estimate' : 'Delete Unavailable'}
                 </button>
@@ -383,9 +394,22 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                       }}
                       className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
-                        backgroundColor: '#ef4444',
-                        color: 'white',
+                        backgroundColor: 'var(--framer-color-bg)',
+                        color: 'var(--framer-color-text)',
+                        border: '1px solid var(--framer-color-divider)',
                         cursor: isDeleting ? 'not-allowed' : 'pointer'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isDeleting) {
+                          e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                          e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isDeleting) {
+                          e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+                          e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+                        }
                       }}
                     >
                       {isDeleting ? 'Deleting...' : 'Confirm Delete'}
@@ -419,19 +443,22 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
               style={{
                 backgroundColor: isSubmitting || !collectionName.trim()
                   ? 'var(--framer-color-bg-tertiary)'
-                  : 'var(--framer-color-tint)',
+                  : 'var(--framer-color-bg)',
                 color: isSubmitting || !collectionName.trim()
                   ? 'var(--framer-color-text-tertiary)'
-                  : 'var(--framer-color-text-reversed)'
+                  : 'var(--framer-color-text)',
+                border: '1px solid var(--framer-color-divider)'
               }}
               onMouseEnter={(e) => {
                 if (!isSubmitting && collectionName.trim()) {
-                  e.currentTarget.style.opacity = '0.9'
+                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                  e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
                 }
               }}
               onMouseLeave={(e) => {
                 if (!isSubmitting && collectionName.trim()) {
-                  e.currentTarget.style.opacity = '1'
+                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+                  e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
                 }
               }}
             >

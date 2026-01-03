@@ -73,6 +73,8 @@ export interface Recommendation {
   imageAssetId?: string // ImageAsset.id for tracking and replacement
   optimalWidth?: number // Target width for optimization
   optimalHeight?: number // Target height for optimization
+  isCMSAsset?: boolean // True if this recommendation is for a CMS asset
+  cmsItemSlug?: string // CMS item slug (for CMS assets)
 }
 
 export interface CostEstimation {

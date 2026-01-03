@@ -42,28 +42,20 @@ export function CMSAssetsNotice({
       <div
         className="rounded-lg p-4 border"
         style={{
-          backgroundColor: cmsCount === 0 
-            ? 'var(--framer-color-bg-secondary)' 
-            : hasManualEstimates 
-              ? 'var(--framer-color-bg-secondary)' 
-              : 'var(--framer-color-bg)',
-          borderColor: cmsCount === 0
-            ? 'var(--framer-color-tint-dimmed)'
-            : hasManualEstimates 
-              ? 'var(--framer-color-tint-dimmed)' 
-              : 'var(--framer-color-divider)',
-          borderWidth: (cmsCount === 0 || hasManualEstimates) ? '2px' : '1px'
+          backgroundColor: '#FAF9F8',
+          borderColor: 'var(--framer-color-divider)',
+          borderWidth: '1px'
         }}
       >
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 mt-0.5">
             {cmsCount === 0 ? (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-tint)' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--framer-color-text-secondary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             ) : hasManualEstimates ? (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-tint)' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--framer-color-text-secondary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             ) : (
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-text-secondary)' }}>
@@ -81,8 +73,8 @@ export function CMSAssetsNotice({
                 <span
                   className="px-2 py-0.5 rounded text-xs font-semibold"
                   style={{
-                    backgroundColor: 'var(--framer-color-tint-dimmed)',
-                    color: 'var(--framer-color-tint)'
+                    backgroundColor: 'var(--framer-color-bg-secondary)',
+                    color: 'var(--framer-color-text)'
                   }}
                 >
                   {cmsCount} detected
@@ -92,8 +84,8 @@ export function CMSAssetsNotice({
                 <span
                   className="px-2 py-0.5 rounded text-xs font-semibold"
                   style={{
-                    backgroundColor: 'var(--framer-color-tint-dimmed)',
-                    color: 'var(--framer-color-tint)'
+                    backgroundColor: 'var(--framer-color-bg-secondary)',
+                    color: 'var(--framer-color-text)'
                   }}
                 >
                   Manual Estimates

@@ -295,9 +295,10 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
     compression: 'Compression'
   }
 
-  const canSelect = recommendation.nodeId && recommendation.nodeId.trim() !== ''
+  const isCMS = recommendation.isCMSAsset || !!recommendation.cmsItemSlug
+  const canSelect = !isCMS && recommendation.nodeId && recommendation.nodeId.trim() !== ''
   const hasPreview = recommendation.url && !recommendation.url.includes('.svg')
-  const canOptimize = recommendation.url && 
+  const canOptimize = !isCMS && recommendation.url && 
                       recommendation.optimalWidth && 
                       recommendation.optimalHeight && 
                       recommendation.type !== 'compression' && // Skip compression-only recommendations for now
@@ -313,25 +314,25 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
         nodeName={recommendation.nodeName}
       />
     <div 
-      className="border rounded-lg p-4 transition-all"
+      className="border rounded-lg p-3 transition-all"
       style={{
-        backgroundColor: 'var(--framer-color-bg)',
+        backgroundColor: '#FAF9F8',
         borderColor: 'var(--framer-color-divider)'
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--framer-color-tint)'
-        e.currentTarget.style.boxShadow = '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+        e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.04)'
       }}
       onMouseLeave={(e) => {
         e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
         e.currentTarget.style.boxShadow = 'none'
       }}
     >
-      <div className="flex items-start gap-3 mb-3">
+      <div className="flex items-start gap-2.5 mb-2.5">
         {/* Preview thumbnail */}
         {hasPreview && (
           <div 
-            className="flex-shrink-0 w-16 h-16 rounded border overflow-hidden"
+            className="flex-shrink-0 w-14 h-14 rounded border overflow-hidden"
             style={{
               borderColor: 'var(--framer-color-divider)',
               backgroundColor: 'var(--framer-color-bg-secondary)'
@@ -350,135 +351,128 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
         )}
         {!hasPreview && (
           <div 
-            className="flex-shrink-0 w-16 h-16 rounded border flex items-center justify-center"
+            className="flex-shrink-0 w-14 h-14 rounded border flex items-center justify-center"
             style={{
               borderColor: 'var(--framer-color-divider)',
               backgroundColor: 'var(--framer-color-bg-secondary)'
             }}
           >
-            <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-text-tertiary)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
         )}
         
         <div className="flex-1 min-w-0">
-      <div className="flex items-start justify-between mb-2">
-            <div className="flex gap-2 flex-wrap">
+          {/* Header: Node name, badges, and savings in one row */}
+          <div className="flex items-start justify-between gap-2 mb-1.5">
+            <div className="flex-1 min-w-0">
+              <h4 className="font-semibold text-sm break-words mb-1" style={{ color: 'var(--framer-color-text)' }}>
+                {recommendation.nodeName || 'Unnamed'}
+              </h4>
+              <div className="flex items-center gap-1.5 flex-wrap">
           <Badge variant={recommendation.priority}>
             {recommendation.priority.toUpperCase()}
           </Badge>
           <Badge variant="default">
             {typeLabels[recommendation.type]}
           </Badge>
-        </div>
-            <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
-              <div className="text-base font-bold" style={{ color: '#22c55e' }}>
-          Save {formatBytes(recommendation.potentialSavings)}
+                {recommendation.currentBytes > 0 && (
+                  <span className="text-xs font-medium" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+                    {Math.round((recommendation.potentialSavings / recommendation.currentBytes) * 100)}% off
+                  </span>
+                )}
               </div>
-              {recommendation.currentBytes > 0 && (
-                <div className="text-xs font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                  {Math.round((recommendation.potentialSavings / recommendation.currentBytes) * 100)}% reduction
-                </div>
-              )}
-              <div className="text-xs px-1.5 py-0.5 rounded mt-1" style={{ 
-                backgroundColor: recommendation.priority === 'high' ? '#fee2e2' : recommendation.priority === 'medium' ? '#fef3c7' : '#dcfce7',
-                color: recommendation.priority === 'high' ? '#991b1b' : recommendation.priority === 'medium' ? '#92400e' : '#166534'
-              }}>
-                {recommendation.priority === 'high' ? 'High Impact' : recommendation.priority === 'medium' ? 'Medium Impact' : 'Low Impact'}
+            </div>
+            <div className="flex-shrink-0 text-right">
+              <div className="text-base font-semibold" style={{ color: 'var(--framer-color-text)' }}>
+                {formatBytes(recommendation.potentialSavings)}
+              </div>
+              <div className="text-xs font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>
+                savings
               </div>
             </div>
           </div>
 
-          {/* Prominent node name */}
-          <div className="mb-1">
-            <h4 className="font-semibold text-base break-words" style={{ color: 'var(--framer-color-text)' }}>{recommendation.nodeName || 'Unnamed'}</h4>
-            <div className="text-xs mt-0.5 flex flex-col gap-0.5" style={{ color: 'var(--framer-color-text-secondary)' }}>
-              <span>Breakpoint: Desktop</span>
-              <div className="flex items-center gap-1">
-                <span>Page:</span>
-                {recommendation.pageSlug || recommendation.pageName ? (
-                  recommendation.pageUrl ? (
-                    <a
-                      href={recommendation.pageUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs underline hover:opacity-80 transition-opacity"
-                      style={{ color: 'var(--framer-color-tint)' }}
-                      onClick={(e) => e.stopPropagation()}
-                      title={recommendation.pageUrl}
-                    >
-                      {recommendation.pageSlug || recommendation.pageName}
-                    </a>
-                  ) : (
-                    <span>{recommendation.pageSlug || recommendation.pageName}</span>
-                  )
+          {/* Page info and description */}
+          <div className="text-xs mb-2" style={{ color: 'var(--framer-color-text-secondary)' }}>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span>Page:</span>
+              {recommendation.pageSlug || recommendation.pageName ? (
+                recommendation.pageUrl ? (
+                  <a
+                    href={recommendation.pageUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline hover:opacity-70 transition-opacity"
+                    style={{ color: 'var(--framer-color-text)' }}
+                    onClick={(e) => e.stopPropagation()}
+                    title={recommendation.pageUrl}
+                  >
+                    {recommendation.pageSlug || recommendation.pageName}
+                  </a>
                 ) : (
-                  <span style={{ color: 'var(--framer-color-text-tertiary)', fontStyle: 'italic' }}>Unknown</span>
-                )}
-              </div>
-            </div>
-            {!canSelect && (
-              <div className="text-xs mt-1" style={{ color: '#f59e0b' }}>
-                <div className="flex items-center gap-1 mb-1">
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <span>{recommendation.pageSlug || recommendation.pageName}</span>
+                )
+              ) : (
+                <span style={{ color: 'var(--framer-color-text-tertiary)', fontStyle: 'italic' }}>Unknown</span>
+              )}
+              {!canSelect && (
+                <span className="flex items-center gap-1" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <span>CMS/Settings image - cannot select in canvas</span>
-                </div>
-                {recommendation.usedInPages && recommendation.usedInPages.length > 0 && (
-                  <div className="mt-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                    Used on: {recommendation.usedInPages.map(p => p.pageName).join(', ')}
-                  </div>
-                )}
-              </div>
-            )}
+                  <span>CMS/Settings</span>
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Description and action combined */}
+          <div className="text-xs mb-2 leading-relaxed" style={{ color: 'var(--framer-color-text-secondary)', lineHeight: '1.5' }}>
+            {recommendation.description}
+          </div>
+          <div className="text-xs font-medium" style={{ color: 'var(--framer-color-text)' }}>
+            {recommendation.actionable}
           </div>
         </div>
       </div>
 
-      <p className="text-sm mb-3" style={{ color: 'var(--framer-color-text-secondary)' }}>{recommendation.description}</p>
-
-      <div 
-        className="border rounded p-3 mb-3"
-        style={{
-          backgroundColor: 'var(--framer-color-tint-dimmed)',
-          borderColor: 'var(--framer-color-divider)'
-        }}
-      >
-        <div className="text-xs font-medium mb-1" style={{ color: 'var(--framer-color-tint)' }}>Action</div>
-        <div className="text-sm" style={{ color: 'var(--framer-color-text)' }}>{recommendation.actionable}</div>
-      </div>
-
-      <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
         {canOptimize && (
           <button
             onClick={handleOptimize}
             disabled={isOptimizing}
-            className="w-full px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 min-w-0"
+            className="flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1.5 min-w-0"
             style={isOptimizing ? {
               backgroundColor: 'var(--framer-color-bg-tertiary)',
               color: 'var(--framer-color-text-tertiary)',
-              cursor: 'not-allowed'
+              cursor: 'not-allowed',
+              border: '1px solid var(--framer-color-divider)'
             } : {
-              backgroundColor: '#22c55e',
-              color: 'white'
+              backgroundColor: 'var(--framer-color-bg)',
+              color: 'var(--framer-color-text)',
+              border: '1px solid var(--framer-color-divider)'
             }}
             onMouseEnter={(e) => {
               if (!isOptimizing) {
-                e.currentTarget.style.backgroundColor = '#16a34a'
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
               }
             }}
             onMouseLeave={(e) => {
               if (!isOptimizing) {
-                e.currentTarget.style.backgroundColor = '#22c55e'
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+                e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
               }
             }}
-            title={isOptimizing ? optimizationProgress : 'Resize and compress this image automatically'}
+            title={isCMS 
+              ? 'CMS assets cannot be optimized automatically. Edit them in the CMS collection instead.'
+              : isOptimizing ? optimizationProgress : 'Resize and compress this image automatically'}
           >
             {isOptimizing ? (
               <>
-                <svg className="w-4 h-4 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -486,10 +480,10 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
               </>
             ) : (
               <>
-                <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span className="truncate">Resize & Compress</span>
+                <span className="truncate">Optimize</span>
               </>
             )}
           </button>
@@ -497,39 +491,45 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
       <button
         onClick={handleNavigate}
           disabled={!canSelect || isOptimizing}
-          className="w-full px-3 py-2 rounded text-sm font-medium transition-colors flex items-center justify-center gap-2 min-w-0"
+          className="flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1.5 min-w-0"
           style={!canSelect || isOptimizing ? {
             backgroundColor: 'var(--framer-color-bg-tertiary)',
             color: 'var(--framer-color-text-tertiary)',
-            cursor: 'not-allowed'
+            cursor: 'not-allowed',
+            border: '1px solid var(--framer-color-divider)'
           } : {
-            backgroundColor: 'var(--framer-color-tint)',
-            color: 'var(--framer-color-text-reversed)'
+            backgroundColor: 'var(--framer-color-bg)',
+            color: 'var(--framer-color-text)',
+            border: '1px solid var(--framer-color-divider)'
           }}
           onMouseEnter={(e) => {
             if (canSelect && !isOptimizing) {
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-tint-dark)'
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+              e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
             }
           }}
           onMouseLeave={(e) => {
             if (canSelect && !isOptimizing) {
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-tint)'
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
             }
           }}
-          title={!canSelect 
-            ? 'This recommendation applies to multiple items' 
-            : `Select "${recommendation.nodeName}" in canvas`
+          title={isCMS 
+            ? 'CMS assets cannot be selected in canvas. Edit them in the CMS collection instead.'
+            : !canSelect 
+              ? 'This recommendation applies to multiple items' 
+              : `Select "${recommendation.nodeName}" in canvas`
           }
         >
           {canSelect ? (
             <>
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
               </svg>
               <span className="truncate">
                 {recommendation.pageName 
                   ? `Select on "${recommendation.pageName}"`
-                  : `Select "${recommendation.nodeName}"`
+                  : 'Select in Canvas'
                 }
               </span>
             </>

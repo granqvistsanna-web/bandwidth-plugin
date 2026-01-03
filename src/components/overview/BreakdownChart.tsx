@@ -1,5 +1,6 @@
 import type { BreakdownData } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
+import { spacing, typography, colors } from '../../styles/designTokens'
 
 interface BreakdownChartProps {
   breakdown: BreakdownData
@@ -8,36 +9,62 @@ interface BreakdownChartProps {
 
 export function BreakdownChart({ breakdown, totalBytes }: BreakdownChartProps) {
   const items = [
-    { label: 'Images', bytes: breakdown.images, color: '#3b82f6' },
-    { label: 'Fonts', bytes: breakdown.fonts, color: '#a855f7' },
-    { label: 'HTML/CSS/JS', bytes: breakdown.htmlCss, color: '#22c55e' },
-    { label: 'SVG', bytes: breakdown.svg, color: '#eab308' }
+    { label: 'Images', bytes: breakdown.images, shade: colors.gray[800] },
+    { label: 'Fonts', bytes: breakdown.fonts, shade: colors.gray[600] },
+    { label: 'HTML/CSS/JS', bytes: breakdown.htmlCss, shade: colors.gray[400] },
+    { label: 'SVG', bytes: breakdown.svg, shade: colors.gray[300] }
   ]
 
   return (
-    <div className="space-y-3">
+    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: spacing.sm }}>
       {items.map(item => {
         const percentage = totalBytes > 0 ? (item.bytes / totalBytes) * 100 : 0
 
         return (
           <div key={item.label}>
-            <div className="flex justify-between text-sm mb-1.5">
-              <span className="font-medium" style={{ color: 'var(--framer-color-text)' }}>{item.label}</span>
-              <span className="font-semibold" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                {formatBytes(item.bytes)} <span className="font-normal opacity-75">({percentage.toFixed(1)}%)</span>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '4px',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: typography.fontSize.sm,
+                  fontWeight: typography.fontWeight.medium,
+                  color: colors.black,
+                }}
+              >
+                {item.label}
+              </span>
+              <span
+                style={{
+                  fontSize: typography.fontSize.xs,
+                  color: colors.gray[500],
+                }}
+              >
+                {formatBytes(item.bytes)} <span style={{ opacity: 0.7 }}>({percentage.toFixed(1)}%)</span>
               </span>
             </div>
-            <div 
-              className="w-full rounded-full h-2"
-              style={{ backgroundColor: 'var(--framer-color-bg-tertiary)' }}
+            <div
+              style={{
+                width: '100%',
+                height: '6px',
+                borderRadius: '3px',
+                backgroundColor: colors.gray[100],
+                overflow: 'hidden' as const,
+              }}
             >
               <div
-                className="h-2 rounded-full transition-all"
-                style={{ 
+                style={{
+                  height: '100%',
                   width: `${percentage}%`,
-                  backgroundColor: item.color
+                  backgroundColor: item.shade,
+                  transition: 'width 0.3s ease',
                 }}
-              ></div>
+              />
             </div>
           </div>
         )

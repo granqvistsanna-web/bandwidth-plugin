@@ -133,26 +133,41 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
   }
 
   const riskStyles = {
-    safe: { backgroundColor: '#dcfce7', borderColor: '#86efac', color: '#166534' },
-    warning: { backgroundColor: '#fef3c7', borderColor: '#facc15', color: '#92400e' },
-    danger: { backgroundColor: '#fee2e2', borderColor: '#f87171', color: '#991b1b' }
+    safe: { 
+      backgroundColor: '#FAF9F8', 
+      borderColor: 'var(--framer-color-divider)', 
+      color: 'var(--framer-color-text)',
+      borderWidth: '1px'
+    },
+    warning: { 
+      backgroundColor: '#FAF9F8', 
+      borderColor: 'var(--framer-color-text-secondary)', 
+      color: 'var(--framer-color-text)',
+      borderWidth: '1px'
+    },
+    danger: { 
+      backgroundColor: '#FAF9F8', 
+      borderColor: 'var(--framer-color-text)', 
+      color: 'var(--framer-color-text)',
+      borderWidth: '2px'
+    }
   }
 
   return (
     <div 
-      className="rounded-lg p-4 overflow-hidden"
+      className="rounded-lg p-6 overflow-hidden border"
       style={{
-        background: 'linear-gradient(to bottom right, var(--framer-color-bg-secondary), var(--framer-color-bg-tertiary))'
+        backgroundColor: '#FAF9F8',
+        borderColor: 'var(--framer-color-divider)'
       }}
     >
-      <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--framer-color-text)' }}>Bandwidth Usage Estimator</h3>
 
       {/* Per 1,000 Pageviews - Prominent Display */}
       <div 
         className="rounded-lg p-3 border-2 mb-4 shadow-sm"
         style={{
-          backgroundColor: 'var(--framer-color-bg)',
-          borderColor: 'var(--framer-color-tint)'
+          backgroundColor: '#FAF9F8',
+          borderColor: 'var(--framer-color-divider)'
         }}
       >
         <div className="flex items-center gap-1.5 mb-1">
@@ -201,21 +216,22 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
               onClick={() => setAveragePagesPerVisit(preset.value)}
               className="px-1.5 py-1 text-xs rounded transition-colors flex-shrink-0"
               style={Math.abs(averagePagesPerVisit - preset.value) < 0.1 ? {
-                backgroundColor: 'var(--framer-color-tint)',
-                color: 'var(--framer-color-text-reversed)'
+                backgroundColor: 'var(--framer-color-text)',
+                color: 'var(--framer-color-bg)',
+                border: '1px solid var(--framer-color-text)'
               } : {
-                backgroundColor: 'var(--framer-color-bg-secondary)',
+                backgroundColor: '#FAF9F8',
                 color: 'var(--framer-color-text)',
                 border: '1px solid var(--framer-color-divider)'
               }}
               onMouseEnter={(e) => {
                 if (Math.abs(averagePagesPerVisit - preset.value) >= 0.1) {
-                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
+                  e.currentTarget.style.backgroundColor = '#F5F4F3'
                 }
               }}
               onMouseLeave={(e) => {
                 if (Math.abs(averagePagesPerVisit - preset.value) >= 0.1) {
-                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                  e.currentTarget.style.backgroundColor = '#FAF9F8'
                 }
               }}
             >
@@ -230,12 +246,12 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
           className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2"
           style={{
             borderColor: 'var(--framer-color-divider)',
-            backgroundColor: 'var(--framer-color-bg)',
+            backgroundColor: '#FAF9F8',
             color: 'var(--framer-color-text)'
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--framer-color-tint)'
-            e.currentTarget.style.boxShadow = '0 0 0 2px var(--framer-color-tint-dimmed)'
+            e.currentTarget.style.borderColor = 'var(--framer-color-text)'
+            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
           }}
           onBlur={(e) => {
             e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
@@ -265,12 +281,12 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
           className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2"
           style={{
             borderColor: 'var(--framer-color-divider)',
-            backgroundColor: 'var(--framer-color-bg)',
+            backgroundColor: '#FAF9F8',
             color: 'var(--framer-color-text)'
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--framer-color-tint)'
-            e.currentTarget.style.boxShadow = '0 0 0 2px var(--framer-color-tint-dimmed)'
+            e.currentTarget.style.borderColor = 'var(--framer-color-text)'
+            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
           }}
           onBlur={(e) => {
             e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
@@ -289,7 +305,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
       <div 
         className="rounded-lg p-3 border mb-3"
         style={{
-          backgroundColor: 'var(--framer-color-bg)',
+          backgroundColor: '#F5F4F3',
           borderColor: 'var(--framer-color-divider)'
         }}
       >
@@ -318,22 +334,23 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
               onClick={() => setSelectedPlan(plan)}
               className="px-2 py-1.5 text-xs font-medium rounded transition-colors"
               style={selectedPlan === plan ? {
-                backgroundColor: 'var(--framer-color-tint)',
-                color: 'var(--framer-color-text-reversed)',
-                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)'
+                backgroundColor: 'var(--framer-color-text)',
+                color: 'var(--framer-color-bg)',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                border: '1px solid var(--framer-color-text)'
               } : {
-                backgroundColor: 'var(--framer-color-bg)',
+                backgroundColor: '#FAF9F8',
                 color: 'var(--framer-color-text)',
                 border: '1px solid var(--framer-color-divider)'
               }}
               onMouseEnter={(e) => {
                 if (selectedPlan !== plan) {
-                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                  e.currentTarget.style.backgroundColor = '#F5F4F3'
                 }
               }}
               onMouseLeave={(e) => {
                 if (selectedPlan !== plan) {
-                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+                  e.currentTarget.style.backgroundColor = '#FAF9F8'
                 }
               }}
             >
@@ -354,7 +371,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
           if (recommendedPlan && recommendedPlan !== selectedPlan) {
             return (
               <div className="text-xs mt-2 pt-2 border-t" style={{ borderColor: 'var(--framer-color-divider)', color: 'var(--framer-color-text-secondary)' }}>
-                💡 Based on your estimate, we recommend the <strong>{FRAMER_PLANS[recommendedPlan].name}</strong> plan
+                Based on your estimate, we recommend the <strong style={{ color: 'var(--framer-color-text)' }}>{FRAMER_PLANS[recommendedPlan].name}</strong> plan
               </div>
             )
           }
@@ -364,41 +381,41 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
 
       {/* Risk Warning */}
       <div 
-        className="rounded-lg p-3 border-2"
+        className="rounded-lg p-4 border"
         style={riskStyles[riskLevel]}
       >
         <div className="flex items-start gap-2">
           <div className="flex-1">
-            <div className="text-sm font-semibold mb-1">
+            <div className="text-sm font-semibold mb-1.5" style={{ color: 'var(--framer-color-text)' }}>
               {riskLevel === 'danger' && '⚠️ Risk of Overage'}
               {riskLevel === 'warning' && '⚡ Approaching Limit'}
               {riskLevel === 'safe' && '✓ Within Plan Limits'}
             </div>
-            <div className="text-xs">
+            <div className="text-xs" style={{ color: 'var(--framer-color-text-secondary)' }}>
               {riskMessage}
             </div>
             {overageGB > 0 && (
-              <div className="text-xs mt-2 font-medium opacity-90">
+              <div className="text-xs mt-2 font-medium" style={{ color: 'var(--framer-color-text)' }}>
                 Estimated monthly overage: <span className="font-bold">{overageGB.toFixed(2)} GB</span> beyond plan limit
               </div>
             )}
             {usagePercent > 0 && usagePercent <= 100 && (
-              <div className="mt-2">
+              <div className="mt-3">
                 <div 
                   className="w-full rounded-full h-2"
-                  style={{ backgroundColor: 'var(--framer-color-bg-tertiary)' }}
+                  style={{ backgroundColor: 'var(--framer-color-divider)' }}
                 >
                   <div
                     className="h-2 rounded-full transition-all"
                     style={{ 
                       width: `${Math.min(usagePercent, 100)}%`,
-                      backgroundColor: riskLevel === 'danger' ? '#ef4444' :
-                                      riskLevel === 'warning' ? '#eab308' :
-                                      '#22c55e'
+                      backgroundColor: riskLevel === 'danger' ? 'var(--framer-color-text)' :
+                                      riskLevel === 'warning' ? 'var(--framer-color-text-secondary)' :
+                                      'var(--framer-color-text-tertiary)'
                     }}
                   />
                 </div>
-                <div className="text-xs mt-1 opacity-75">
+                <div className="text-xs mt-1.5" style={{ color: 'var(--framer-color-text-tertiary)' }}>
                   {usagePercent.toFixed(1)}% of monthly plan limit used
                 </div>
               </div>
@@ -406,7 +423,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
           </div>
         </div>
         {overageGB > 0 && (
-          <div className="text-xs mt-2 pt-2 border-t" style={{ borderColor: 'currentColor', opacity: 0.2 }}>
+          <div className="text-xs mt-3 pt-3 border-t" style={{ borderColor: 'var(--framer-color-divider)', color: 'var(--framer-color-text-secondary)' }}>
             <strong>Action needed:</strong> Optimize images (see Recommendations) or upgrade to a higher plan to avoid monthly overage charges.
           </div>
         )}
@@ -415,15 +432,15 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
       {/* Quick Tips */}
       {usagePercent > 80 && (
         <div 
-          className="mt-3 text-xs rounded p-2"
+          className="mt-4 text-xs rounded-lg p-3 border"
           style={{
             color: 'var(--framer-color-text)',
-            backgroundColor: 'var(--framer-color-bg)',
-            opacity: 0.9
+            backgroundColor: '#FAF9F8',
+            borderColor: 'var(--framer-color-divider)'
           }}
         >
-          <div className="font-medium mb-1">Quick fixes:</div>
-          <ul className="list-disc list-inside space-y-0.5 opacity-90">
+          <div className="font-medium mb-1.5" style={{ color: 'var(--framer-color-text)' }}>Quick fixes:</div>
+          <ul className="list-disc list-inside space-y-0.5" style={{ color: 'var(--framer-color-text-secondary)' }}>
             <li>Optimize your largest images (see Recommendations)</li>
             <li>Convert PNGs to WebP format</li>
             <li>Enable Framer's image optimization</li>

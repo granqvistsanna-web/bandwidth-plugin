@@ -1,41 +1,6 @@
+import { useState } from 'react'
 import type { AssetFiltersProps, FilterState } from './types'
-
-interface FilterPillProps {
-  label: string
-  count: number
-  isActive: boolean
-  onClick: () => void
-}
-
-function FilterPill({ label, count, isActive, onClick }: FilterPillProps) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
-      style={{
-        backgroundColor: isActive ? 'var(--framer-color-tint)' : 'var(--framer-color-bg-secondary)',
-        color: isActive ? 'white' : 'var(--framer-color-text-secondary)',
-      }}
-    >
-      {label} <span style={{ opacity: 0.7 }}>({count})</span>
-    </button>
-  )
-}
-
-interface SizeRangeOption {
-  label: string
-  min: number
-  max: number
-}
-
-const sizeRangeOptions: SizeRangeOption[] = [
-  { label: 'All sizes', min: 0, max: Infinity },
-  { label: '<100 KB', min: 0, max: 100 * 1024 },
-  { label: '100-200 KB', min: 100 * 1024, max: 200 * 1024 },
-  { label: '200-500 KB', min: 200 * 1024, max: 500 * 1024 },
-  { label: '500 KB-1 MB', min: 500 * 1024, max: 1024 * 1024 },
-  { label: '1 MB+', min: 1024 * 1024, max: Infinity },
-]
+import { spacing, typography, borders, colors } from '../../styles/designTokens'
 
 export function AssetFilters({
   filters,
@@ -44,25 +9,32 @@ export function AssetFilters({
   onSearchChange,
   assetCounts
 }: AssetFiltersProps) {
-  const handleTypeChange = (type: FilterState['type']) => {
+  const [showFiltersPopover, setShowFiltersPopover] = useState(false)
+
+  const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const type = e.target.value as FilterState['type']
     onFiltersChange({ ...filters, type })
   }
 
-  const handleSizeRangeChange = (range: { min: number; max: number }) => {
-    onFiltersChange({ ...filters, sizeRange: range })
+  const toggleLargeFiles = () => {
+    const isActive = filters.sizeRange.min === 500 * 1024
+    onFiltersChange({
+      ...filters,
+      sizeRange: isActive ? { min: 0, max: Infinity } : { min: 500 * 1024, max: Infinity }
+    })
   }
 
-  const handleFormatChange = (format: FilterState['format']) => {
-    onFiltersChange({ ...filters, format })
+  const toggleUnoptimized = () => {
+    const isActive = filters.format === 'png' || filters.format === 'jpg'
+    onFiltersChange({
+      ...filters,
+      format: isActive ? 'all' : 'png'
+    })
   }
 
-  const handlePageUsageChange = (pageUsage: FilterState['pageUsage']) => {
-    onFiltersChange({ ...filters, pageUsage })
-  }
-
-  const clearSearch = () => {
-    onSearchChange('')
-  }
+  const isLargeFilesActive = filters.sizeRange.min === 500 * 1024
+  const isUnoptimizedActive = filters.format === 'png' || filters.format === 'jpg'
+  const activeFilterCount = (isLargeFilesActive ? 1 : 0) + (isUnoptimizedActive ? 1 : 0)
 
   const clearAllFilters = () => {
     onFiltersChange({
@@ -74,205 +46,301 @@ export function AssetFilters({
     onSearchChange('')
   }
 
-  const activeSizeRange = sizeRangeOptions.find(
-    option => option.min === filters.sizeRange.min && option.max === filters.sizeRange.max
-  ) || sizeRangeOptions[0]
-
-  // Check if any filters are active
-  const hasActiveFilters =
-    filters.type !== 'all' ||
-    filters.format !== 'all' ||
-    (filters.sizeRange.min !== 0 || filters.sizeRange.max !== Infinity) ||
-    searchQuery.length > 0
-
-  // Get active filter labels
-  const getActiveFilters = () => {
-    const active: Array<{ label: string; onClear: () => void }> = []
-
-    if (searchQuery) {
-      active.push({
-        label: `Search: "${searchQuery}"`,
-        onClear: clearSearch
-      })
-    }
-
-    if (filters.type !== 'all') {
-      const typeLabels: Record<string, string> = {
-        image: 'Images',
-        svg: 'SVGs',
-        cms: 'CMS Assets'
-      }
-      active.push({
-        label: `Type: ${typeLabels[filters.type] || filters.type}`,
-        onClear: () => handleTypeChange('all')
-      })
-    }
-
-    if (activeSizeRange.label !== 'All sizes') {
-      active.push({
-        label: `Size: ${activeSizeRange.label}`,
-        onClear: () => handleSizeRangeChange({ min: 0, max: Infinity })
-      })
-    }
-
-    if (filters.format !== 'all') {
-      active.push({
-        label: `Format: ${filters.format.toUpperCase()}`,
-        onClear: () => handleFormatChange('all')
-      })
-    }
-
-    return active
-  }
-
-  const activeFilters = getActiveFilters()
-
   return (
-    <div className="flex flex-col gap-3 px-4 py-3 border-b" style={{ borderColor: 'var(--framer-color-divider)' }}>
-      {/* Search and Type Filter Row */}
-      <div className="flex gap-2">
-        {/* Search bar */}
-        <div className="relative flex-1">
+    <div
+      style={{
+        padding: spacing.sm,
+        backgroundColor: 'var(--framer-color-bg)',
+      }}
+    >
+      {/* Single Row: Search + Type + Filters */}
+      <div style={{ display: 'flex', gap: spacing.sm, alignItems: 'center' }}>
+        {/* Search Input */}
+        <div className="relative" style={{ flex: 1, minWidth: 0 }}>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            placeholder="Search assets..."
-            className="w-full pl-3 pr-10 py-2 rounded-lg text-sm border focus:outline-none focus:ring-1"
+            placeholder="Search..."
             style={{
-              backgroundColor: 'var(--framer-color-bg)',
-              borderColor: 'var(--framer-color-divider)',
+              width: '100%',
+              padding: `6px ${spacing.sm}`,
+              paddingRight: searchQuery ? '28px' : spacing.sm,
+              fontSize: typography.fontSize.xs,
               color: 'var(--framer-color-text)',
+              backgroundColor: 'var(--framer-color-bg)',
+              border: `1px solid var(--framer-color-divider)`,
+              borderRadius: borders.radius.md,
+              transition: 'border-color 0.15s ease',
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-tint)'
+              e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
             }}
           />
-          <svg
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 pointer-events-none"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            style={{ color: 'var(--framer-color-text-tertiary)' }}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          {searchQuery && (
+            <button
+              onClick={() => onSearchChange('')}
+              className="absolute right-1.5 top-1/2 transform -translate-y-1/2"
+              style={{
+                color: 'var(--framer-color-text-tertiary)',
+                padding: '2px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = 'var(--framer-color-text)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = 'var(--framer-color-text-tertiary)'
+              }}
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
+            </button>
+          )}
         </div>
 
-        {/* Type filter dropdown */}
+        {/* Type Dropdown */}
         <select
           value={filters.type}
-          onChange={(e) => handleTypeChange(e.target.value as FilterState['type'])}
-          className="px-3 py-2 rounded-lg text-sm border cursor-pointer"
+          onChange={handleTypeChange}
           style={{
-            backgroundColor: 'var(--framer-color-bg-secondary)',
-            borderColor: 'var(--framer-color-divider)',
+            padding: `6px ${spacing.sm}`,
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
             color: 'var(--framer-color-text)',
-            minWidth: '160px'
+            backgroundColor: 'var(--framer-color-bg)',
+            border: `1px solid var(--framer-color-divider)`,
+            borderRadius: borders.radius.md,
+            cursor: 'pointer',
+            minWidth: '90px',
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
           }}
         >
           <option value="all">All ({assetCounts.all})</option>
           <option value="image">Images ({assetCounts.images})</option>
           <option value="svg">SVGs ({assetCounts.svgs})</option>
-          <option value="cms">CMS Assets ({assetCounts.cms})</option>
+          <option value="cms">CMS ({assetCounts.cms})</option>
         </select>
-      </div>
 
-      {/* Advanced filters */}
-      <div className="flex flex-wrap gap-3">
-        {/* Size range dropdown */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>
-            Size
-          </label>
-          <select
-            value={sizeRangeOptions.indexOf(activeSizeRange)}
-            onChange={(e) => handleSizeRangeChange(sizeRangeOptions[parseInt(e.target.value)])}
-            className="px-3 py-1.5 rounded-lg text-sm border cursor-pointer"
+        {/* Filters Button with Popover */}
+        <div style={{ position: 'relative' }}>
+          <button
+            onClick={() => setShowFiltersPopover(!showFiltersPopover)}
             style={{
-              backgroundColor: 'var(--framer-color-bg-secondary)',
-              borderColor: 'var(--framer-color-divider)',
-              color: 'var(--framer-color-text)',
-              minWidth: '130px'
+              padding: `6px ${spacing.sm}`,
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              color: activeFilterCount > 0 ? 'var(--framer-color-bg)' : 'var(--framer-color-text)',
+              backgroundColor: activeFilterCount > 0 ? 'var(--framer-color-text)' : 'var(--framer-color-bg)',
+              border: `1px solid ${activeFilterCount > 0 ? 'var(--framer-color-text)' : 'var(--framer-color-divider)'}`,
+              borderRadius: borders.radius.md,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              if (activeFilterCount === 0) {
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (activeFilterCount === 0) {
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+              }
             }}
           >
-            {sizeRangeOptions.map((option, index) => (
-              <option key={index} value={index}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Format dropdown */}
-        <div className="flex flex-col gap-1">
-          <label className="text-xs font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>
-            Format
-          </label>
-          <select
-            value={filters.format}
-            onChange={(e) => handleFormatChange(e.target.value as FilterState['format'])}
-            className="px-3 py-1.5 rounded-lg text-sm border cursor-pointer"
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            {activeFilterCount > 0 && (
+              <span
             style={{
-              backgroundColor: 'var(--framer-color-bg-secondary)',
-              borderColor: 'var(--framer-color-divider)',
-              color: 'var(--framer-color-text)',
-              minWidth: '130px'
-            }}
-          >
-            <option value="all">All formats</option>
-            <option value="png">PNG</option>
-            <option value="jpg">JPG</option>
-            <option value="webp">WebP</option>
-            <option value="gif">GIF</option>
-            <option value="svg">SVG</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Active Filters Section */}
-      {hasActiveFilters && (
-        <div className="flex items-center gap-2 flex-wrap pt-2 border-t" style={{ borderColor: 'var(--framer-color-divider)' }}>
-          <span className="text-xs font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>
-            Active filters:
+                  fontSize: '10px',
+                  fontWeight: typography.fontWeight.semibold,
+                  minWidth: '16px',
+                  height: '16px',
+                  borderRadius: '8px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  backgroundColor: colors.white,
+                  color: colors.gray[800],
+                }}
+              >
+                {activeFilterCount}
           </span>
+            )}
+          </button>
 
-          {activeFilters.map((filter, index) => (
+          {/* Filters Popover */}
+          {showFiltersPopover && (
             <div
-              key={index}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium"
               style={{
-                backgroundColor: 'var(--framer-color-tint-dimmed)',
-                color: 'var(--framer-color-tint)'
+                position: 'absolute',
+                top: 'calc(100% + 4px)',
+                right: 0,
+                zIndex: 50,
+                minWidth: '200px',
+                padding: spacing.sm,
+                backgroundColor: 'var(--framer-color-bg)',
+                border: `1px solid var(--framer-color-divider)`,
+                borderRadius: borders.radius.md,
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
               }}
             >
-              <span>{filter.label}</span>
-              <button
-                onClick={filter.onClear}
-                className="hover:opacity-70 transition-opacity"
-                aria-label="Clear filter"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xs }}>
+                {/* Large Files Toggle */}
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    padding: `${spacing.xs} ${spacing.sm}`,
+                    cursor: 'pointer',
+                    borderRadius: borders.radius.sm,
+                    transition: 'background-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isLargeFilesActive}
+                    onChange={toggleLargeFiles}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <span
+                    style={{
+                      fontSize: typography.fontSize.xs,
+                      fontWeight: typography.fontWeight.medium,
+                      color: 'var(--framer-color-text)',
+                      flex: 1,
+                    }}
+                  >
+                    Large files (500KB+)
+                  </span>
+                </label>
 
-          {activeFilters.length > 1 && (
+                {/* Unoptimized Toggle */}
+                <label
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.sm,
+                    padding: `${spacing.xs} ${spacing.sm}`,
+                    cursor: 'pointer',
+                    borderRadius: borders.radius.sm,
+                    transition: 'background-color 0.15s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isUnoptimizedActive}
+                    onChange={toggleUnoptimized}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <span
+                    style={{
+                      fontSize: typography.fontSize.xs,
+                      fontWeight: typography.fontWeight.medium,
+                      color: 'var(--framer-color-text)',
+                      flex: 1,
+                    }}
+                  >
+                    Unoptimized (PNG/JPG)
+                  </span>
+                </label>
+
+                {/* Clear Filters */}
+                {activeFilterCount > 0 && (
+                  <>
+                    <div style={{ height: '1px', backgroundColor: 'var(--framer-color-divider)', margin: `${spacing.xs} 0` }} />
+              <button
+                      onClick={() => {
+                        onFiltersChange({ ...filters, sizeRange: { min: 0, max: Infinity }, format: 'all' })
+                        setShowFiltersPopover(false)
+                      }}
+                      style={{
+                        padding: `${spacing.xs} ${spacing.sm}`,
+                        fontSize: typography.fontSize.xs,
+                        fontWeight: typography.fontWeight.medium,
+                        color: 'var(--framer-color-text-secondary)',
+                        textAlign: 'left',
+                        backgroundColor: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderRadius: borders.radius.sm,
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                        e.currentTarget.style.color = 'var(--framer-color-text)'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.backgroundColor = 'transparent'
+                        e.currentTarget.style.color = 'var(--framer-color-text-secondary)'
+                      }}
+                    >
+                      Clear filters
+              </button>
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Clear All Button (only if search or type filter active) */}
+        {(searchQuery || filters.type !== 'all') && (
             <button
               onClick={clearAllFilters}
-              className="text-xs font-medium hover:opacity-70 transition-opacity px-2 py-1"
-              style={{ color: 'var(--framer-color-text-tertiary)' }}
-            >
-              Clear all
+            style={{
+              padding: `6px ${spacing.sm}`,
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              color: 'var(--framer-color-text-secondary)',
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--framer-color-text)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--framer-color-text-secondary)'
+            }}
+          >
+            Clear
             </button>
           )}
         </div>
-      )}
     </div>
   )
 }

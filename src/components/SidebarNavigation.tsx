@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { spacing, typography, borders, colors } from '../styles/designTokens'
 
-type Tab = 'overview' | 'assets' | 'recommendations' | 'debug'
+type Tab = 'overview' | 'assets' | 'recommendations' | 'bandwidth' | 'settings' | 'debug'
 
 interface SidebarNavigationProps {
   activeTab: Tab
@@ -43,6 +44,24 @@ export function SidebarNavigation({ activeTab, onTabChange }: SidebarNavigationP
       )
     },
     {
+      id: 'bandwidth',
+      label: 'Bandwidth',
+      icon: (
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+        </svg>
+      )
+    },
+    {
+      id: 'settings',
+      label: 'Settings',
+      icon: (
+        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
+        </svg>
+      )
+    },
+    {
       id: 'debug',
       label: 'Debug',
       icon: (
@@ -58,53 +77,79 @@ export function SidebarNavigation({ activeTab, onTabChange }: SidebarNavigationP
       {/* Backdrop overlay only when explicitly expanded (not on hover) */}
       {!isCollapsed && (
         <div
-          className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity duration-300"
+          className="fixed inset-0 z-40 transition-opacity duration-300"
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+          }}
           onClick={() => setIsCollapsed(true)}
         />
       )}
 
       {/* Sidebar */}
-      <div 
-        className={`fixed left-0 top-0 bottom-0 flex flex-col transition-all duration-300 ease-out shadow-[4px_0_24px_rgba(0,0,0,0.08)] z-50 ${
+      <div
+        className={`fixed left-0 top-0 bottom-0 flex flex-col transition-all duration-300 ease-out z-50 ${
           isExpanded ? 'w-64' : 'w-16'
         }`}
         style={{
-          background: `linear-gradient(to bottom, var(--framer-color-bg), var(--framer-color-bg-secondary))`,
-          borderRight: `1px solid var(--framer-color-divider)`
+          backgroundColor: colors.white,
+          borderRight: `${borders.width.thin} solid ${colors.gray[200]}`,
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
         }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
         {/* Header */}
-        <div 
-          className="px-4 py-4 border-b flex items-center justify-between min-h-[68px] backdrop-blur-sm"
+        <div
+          className="px-4 py-4 border-b flex items-center justify-between min-h-[68px]"
           style={{
-            borderColor: 'var(--framer-color-divider)',
-            backgroundColor: 'var(--framer-color-bg)'
+            borderColor: colors.gray[200],
+            backgroundColor: colors.white,
           }}
         >
           {isExpanded && (
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md flex-shrink-0 ring-2" style={{ 
-                background: 'linear-gradient(to bottom right, var(--framer-color-tint), var(--framer-color-tint-dark))',
-                ringColor: 'var(--framer-color-tint-dimmed)'
-              }}>
-                <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{
+                  backgroundColor: colors.black,
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
+                }}
+              >
+                <svg className="w-5 h-5" fill={colors.white} viewBox="0 0 20 20">
                   <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                 </svg>
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-bold text-[15px] leading-tight tracking-tight" style={{ color: 'var(--framer-color-text)' }}>Bandwidth</div>
-                <div className="text-[11px] leading-tight mt-0.5 font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>Check</div>
+                <div
+                  className="font-bold leading-tight tracking-tight"
+                  style={{
+                    fontSize: typography.fontSize.md,
+                    color: colors.black,
+                  }}
+                >
+                  Bandwidth
+                </div>
+                <div
+                  className="leading-tight mt-0.5 font-medium"
+                  style={{
+                    fontSize: typography.fontSize.xs,
+                    color: colors.gray[500],
+                  }}
+                >
+                  Check
+                </div>
               </div>
             </div>
           )}
           {!isExpanded && (
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-md mx-auto flex-shrink-0 ring-2" style={{ 
-              background: 'linear-gradient(to bottom right, var(--framer-color-tint), var(--framer-color-tint-dark))',
-              ringColor: 'var(--framer-color-tint-dimmed)'
-            }}>
-              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center mx-auto flex-shrink-0"
+              style={{
+                backgroundColor: colors.black,
+                boxShadow: '0 1px 2px rgba(0, 0, 0, 0.08)',
+              }}
+            >
+              <svg className="w-5 h-5" fill={colors.white} viewBox="0 0 20 20">
                 <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
               </svg>
             </div>
@@ -126,52 +171,65 @@ export function SidebarNavigation({ activeTab, onTabChange }: SidebarNavigationP
                     setIsHovered(false)
                   }
                 }}
-                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-semibold transition-all duration-200 relative group text-left active:scale-[0.98]"
-                style={isActive ? {
-                  background: `linear-gradient(to right, var(--framer-color-tint-dimmed), var(--framer-color-bg-secondary))`,
-                  color: 'var(--framer-color-tint)',
-                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                  border: '1px solid var(--framer-color-tint-dimmed)'
-                } : {
-                  color: 'var(--framer-color-text-secondary)'
-                }}
+                className="w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 relative group text-left active:scale-[0.98]"
+                style={
+                  isActive
+                    ? {
+                        backgroundColor: colors.gray[100],
+                        color: colors.black,
+                        boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.04)',
+                        border: `${borders.width.thin} solid ${colors.gray[200]}`,
+                        fontSize: typography.fontSize.sm,
+                        fontWeight: typography.fontWeight.semibold,
+                      }
+                    : {
+                        color: colors.gray[600],
+                        fontSize: typography.fontSize.sm,
+                        fontWeight: typography.fontWeight.medium,
+                        backgroundColor: 'transparent',
+                        border: `${borders.width.thin} solid transparent`,
+                      }
+                }
                 onMouseEnter={(e) => {
                   if (!isActive) {
-                    e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                    e.currentTarget.style.color = 'var(--framer-color-text)'
+                    e.currentTarget.style.backgroundColor = colors.gray[50]
+                    e.currentTarget.style.color = colors.black
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isActive) {
                     e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.color = 'var(--framer-color-text-secondary)'
+                    e.currentTarget.style.color = colors.gray[600]
                   }
                 }}
                 title={isCollapsed ? tab.label : undefined}
               >
                 {/* Active indicator - refined left accent */}
                 {isActive && (
-                  <div 
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 rounded-r-full shadow-sm"
-                    style={{ background: 'linear-gradient(to bottom, var(--framer-color-tint), var(--framer-color-tint-dark))' }}
+                  <div
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 rounded-r-full"
+                    style={{
+                      backgroundColor: colors.black,
+                      boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+                    }}
                   />
                 )}
                 
-                <span 
+                <span
                   className="flex-shrink-0 transition-all duration-200"
                   style={{
-                    color: isActive ? 'var(--framer-color-tint)' : 'var(--framer-color-text-tertiary)',
-                    transform: isActive ? 'scale(1.1)' : 'scale(1)'
+                    color: isActive ? colors.black : colors.gray[500],
+                    transform: isActive ? 'scale(1.1)' : 'scale(1)',
                   }}
                   onMouseEnter={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.color = 'var(--framer-color-text-secondary)'
+                      e.currentTarget.style.color = colors.black
                       e.currentTarget.style.transform = 'scale(1.05)'
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isActive) {
-                      e.currentTarget.style.color = 'var(--framer-color-text-tertiary)'
+                      e.currentTarget.style.color = colors.gray[500]
                       e.currentTarget.style.transform = 'scale(1)'
                     }
                   }}
@@ -189,17 +247,19 @@ export function SidebarNavigation({ activeTab, onTabChange }: SidebarNavigationP
 
                 {/* Tooltip when collapsed */}
                 {!isExpanded && (
-                  <div 
-                    className="absolute left-full ml-3 px-3 py-2 text-xs font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50 shadow-2xl"
+                  <div
+                    className="absolute left-full ml-3 px-3 py-2 font-semibold rounded-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 z-50"
                     style={{
-                      backgroundColor: 'var(--framer-color-text)',
-                      color: 'var(--framer-color-text-reversed)'
+                      backgroundColor: colors.black,
+                      color: colors.white,
+                      fontSize: typography.fontSize.xs,
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
                     }}
                   >
                     {tab.label}
-                    <div 
+                    <div
                       className="absolute right-full top-1/2 -translate-y-1/2 w-0 h-0 border-t-[6px] border-b-[6px] border-r-[6px] border-transparent"
-                      style={{ borderRightColor: 'var(--framer-color-text)' }}
+                      style={{ borderRightColor: colors.black }}
                     />
                   </div>
                 )}

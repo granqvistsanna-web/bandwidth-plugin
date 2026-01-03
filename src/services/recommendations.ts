@@ -104,7 +104,7 @@ export function generateRecommendations(
   return deduplicateAndSort(recommendations)
 }
 
-function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: string): Recommendation | null {
+function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: string, pageSlug?: string): Recommendation | null {
   // For MVP, flag images larger than certain thresholds
   const { estimatedBytes, dimensions, format } = asset
 
@@ -174,7 +174,9 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
         pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
         imageAssetId: asset.imageAssetId,
         optimalWidth,
-        optimalHeight
+        optimalHeight,
+        isCMSAsset: asset.isCMSAsset,
+        cmsItemSlug: asset.cmsItemSlug
       }
     }
     // Image is optimized, at good dimensions, and reasonable size - no recommendation needed
@@ -210,7 +212,9 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
         pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
         imageAssetId: asset.imageAssetId,
         optimalWidth,
-        optimalHeight
+        optimalHeight,
+        isCMSAsset: asset.isCMSAsset,
+        cmsItemSlug: asset.cmsItemSlug
       }
     }
 
@@ -235,7 +239,9 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
       pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
       imageAssetId: asset.imageAssetId,
       optimalWidth,
-      optimalHeight
+      optimalHeight,
+      isCMSAsset: asset.isCMSAsset,
+      cmsItemSlug: asset.cmsItemSlug
     }
   }
 
@@ -284,7 +290,9 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
       pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
       imageAssetId: asset.imageAssetId,
       optimalWidth,
-      optimalHeight
+      optimalHeight,
+      isCMSAsset: asset.isCMSAsset,
+      cmsItemSlug: asset.cmsItemSlug
     }
   }
 
@@ -333,7 +341,9 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
       pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
       imageAssetId: asset.imageAssetId,
       optimalWidth,
-      optimalHeight
+      optimalHeight,
+      isCMSAsset: asset.isCMSAsset,
+      cmsItemSlug: asset.cmsItemSlug
     }
   }
 
@@ -365,7 +375,9 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
       pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
       imageAssetId: asset.imageAssetId,
       optimalWidth,
-      optimalHeight
+      optimalHeight,
+      isCMSAsset: asset.isCMSAsset,
+      cmsItemSlug: asset.cmsItemSlug
     }
   }
 
@@ -440,7 +452,9 @@ function detectSVGOptimization(
     url: asset.url,
     pageId: asset.pageId || pageId,
     pageName: asset.pageName || pageName,
-    pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug
+    pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
+    isCMSAsset: asset.isCMSAsset,
+    cmsItemSlug: asset.cmsItemSlug
   }
 }
 
@@ -477,7 +491,9 @@ function detectCompressionOpportunities(asset: AssetInfo, pageId?: string, pageN
       url: asset.url,
       pageId: asset.pageId || pageId,
       pageName: asset.pageName || pageName,
-      pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug
+      pageSlug: asset.pageSlug || asset.cmsItemSlug || pageSlug,
+      isCMSAsset: asset.isCMSAsset,
+      cmsItemSlug: asset.cmsItemSlug
     }
 }
 

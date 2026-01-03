@@ -1,3 +1,5 @@
+import { spacing, typography, borders, colors } from '../styles/designTokens'
+
 interface HeaderProps {
   onRefresh: () => void
   loading: boolean
@@ -20,31 +22,42 @@ function formatTimestamp(date: Date): string {
 
 export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
   return (
-    <div 
-      className="px-6 py-4 border-b backdrop-blur-sm"
-      style={{ 
+    <div
+      className="px-6 py-4 border-b"
+      style={{
         borderColor: 'var(--framer-color-divider)',
-        background: 'linear-gradient(to bottom, var(--framer-color-bg), var(--framer-color-bg-secondary))'
+        backgroundColor: 'var(--framer-color-bg)',
       }}
     >
       <div className="flex flex-col gap-3">
         {/* Title and Status */}
         <div className="flex items-center gap-3">
-          <h1 
-            className="text-lg font-bold leading-tight tracking-tight"
-            style={{ color: 'var(--framer-color-text)' }}
+          <h1
+            className="leading-tight tracking-tight"
+            style={{
+              fontSize: typography.fontSize.lg,
+              fontWeight: typography.fontWeight.semibold,
+              color: 'var(--framer-color-text)',
+            }}
           >
             Bandwidth Check
           </h1>
           {lastScanned && (
             <div className="flex items-center gap-1.5">
-              <div 
-                className={`w-1.5 h-1.5 rounded-full ${loading ? 'animate-pulse' : ''}`}
-                style={{ backgroundColor: loading ? '#facc15' : '#22c55e' }}
+              <div
+                className={`w-2 h-2 rounded-full ${loading ? 'animate-pulse' : ''}`}
+                style={{ 
+                  backgroundColor: loading 
+                    ? '#3b82f6' // Blue when analyzing
+                    : '#22c55e' // Green when complete
+                }}
               />
-              <span 
-                className="text-xs font-medium"
-                style={{ color: 'var(--framer-color-text-secondary)' }}
+              <span
+                className="font-medium"
+                style={{
+                  fontSize: typography.fontSize.xs,
+                  color: 'var(--framer-color-text-secondary)',
+                }}
               >
                 {loading ? 'Analyzing...' : `Scanned ${formatTimestamp(lastScanned)}`}
               </span>
@@ -56,23 +69,35 @@ export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
         <button
           onClick={onRefresh}
           disabled={loading}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition-all duration-200 w-fit active:scale-[0.98] shadow-sm hover:shadow-md"
-          style={loading ? {
-            backgroundColor: 'var(--framer-color-bg-tertiary)',
-            color: 'var(--framer-color-text-tertiary)',
-            cursor: 'not-allowed'
-          } : {
-            backgroundColor: 'var(--framer-color-tint)',
-            color: 'var(--framer-color-text-reversed)'
-          }}
+          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 w-fit active:scale-[0.98]"
+          style={
+            loading
+              ? {
+                  backgroundColor: 'var(--framer-color-bg-tertiary)',
+                  color: 'var(--framer-color-text-tertiary)',
+                  cursor: 'not-allowed',
+                  fontSize: typography.fontSize.sm,
+                  fontWeight: typography.fontWeight.semibold,
+                  border: '1px solid var(--framer-color-divider)',
+                }
+              : {
+                  backgroundColor: 'var(--framer-color-bg)',
+                  color: 'var(--framer-color-text)',
+                  fontSize: typography.fontSize.sm,
+                  fontWeight: typography.fontWeight.semibold,
+                  border: '1px solid var(--framer-color-divider)',
+                }
+          }
           onMouseEnter={(e) => {
             if (!loading) {
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-tint-dark)'
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+              e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
             }
           }}
           onMouseLeave={(e) => {
             if (!loading) {
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-tint)'
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
             }
           }}
           title={loading ? 'Analyzing project...' : 'Rescan project for changes'}

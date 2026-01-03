@@ -5,6 +5,8 @@ import { SidebarNavigation } from "./components/SidebarNavigation"
 import { OverviewPanel } from "./components/overview/OverviewPanel"
 import { AssetsPanel } from "./components/assets/AssetsPanel"
 import { RecommendationsPanel } from "./components/recommendations/RecommendationsPanel"
+import { BandwidthPanel } from "./components/bandwidth/BandwidthPanel"
+import { SettingsPanel } from "./components/settings/SettingsPanel"
 import { DebugPanel } from "./components/DebugPanel"
 import { LoadingSpinner } from "./components/common/LoadingSpinner"
 import { ErrorMessage } from "./components/common/ErrorMessage"
@@ -21,7 +23,7 @@ framer.showUI({
     maxHeight: 900,
 })
 
-type Tab = 'overview' | 'assets' | 'recommendations' | 'debug'
+type Tab = 'overview' | 'assets' | 'recommendations' | 'bandwidth' | 'settings' | 'debug'
 
 export function App() {
     const [activeTab, setActiveTab] = useState<Tab>('overview')
@@ -62,17 +64,15 @@ export function App() {
                     {analysis && !loading && !error && (
                         <>
                             {activeTab === 'overview' && (
-            <OverviewPanel
-              analysis={analysis}
-              onNavigateToRecommendations={() => setActiveTab('recommendations')}
-              excludedPageIds={excludedPageIds}
-              onTogglePageExclusion={togglePageExclusion}
-              onRescan={runAnalysis}
-              manualCMSEstimates={manualCMSEstimates}
-              addManualCMSEstimate={addManualCMSEstimate}
-              updateManualCMSEstimate={updateManualCMSEstimate}
-              removeManualCMSEstimate={removeManualCMSEstimate}
-            />
+                                <OverviewPanel
+                                    analysis={analysis}
+                                    onNavigateToRecommendations={() => setActiveTab('recommendations')}
+                                    manualCMSEstimates={manualCMSEstimates}
+                                    addManualCMSEstimate={addManualCMSEstimate}
+                                    updateManualCMSEstimate={updateManualCMSEstimate}
+                                    removeManualCMSEstimate={removeManualCMSEstimate}
+                                    onRescan={runAnalysis}
+                                />
                             )}
                             {activeTab === 'assets' && (
                                 <AssetsPanel
@@ -82,10 +82,16 @@ export function App() {
                                 />
                             )}
                             {activeTab === 'recommendations' && (
-                                <RecommendationsPanel 
+                                <RecommendationsPanel
                                     analysis={analysis}
                                     selectedPageId={selectedPageId}
                                 />
+                            )}
+                            {activeTab === 'bandwidth' && (
+                                <BandwidthPanel analysis={analysis} />
+                            )}
+                            {activeTab === 'settings' && (
+                                <SettingsPanel />
                             )}
                             {activeTab === 'debug' && (
                                 <DebugPanel analysis={analysis} />

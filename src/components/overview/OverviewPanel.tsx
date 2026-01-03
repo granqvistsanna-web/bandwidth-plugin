@@ -1,20 +1,18 @@
 import { framer } from 'framer-plugin'
-import { useState } from 'react'
 import type { ProjectAnalysis } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
 import { BreakdownChart } from './BreakdownChart'
-import { BandwidthCalculator } from './BandwidthCalculator'
 import { generateMarkdownReport, copyToClipboard, downloadJSON } from '../../utils/exportReport'
-import { PageExclusionSettings } from './PageExclusionSettings'
 import { CMSAssetsNotice } from './CMSAssetsNotice'
 import { debugLog } from '../../utils/debugLog'
 import type { ManualCMSEstimate } from '../../hooks/useAnalysis'
+import { CollapsibleSection } from './CollapsibleSection'
+import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { calculateLoadTime, formatLoadTime } from '../../utils/loadTime'
 
 interface OverviewPanelProps {
   analysis: ProjectAnalysis
   onNavigateToRecommendations?: () => void
-  excludedPageIds?: Set<string>
-  onTogglePageExclusion?: (pageId: string) => void
   onRescan?: () => void
   manualCMSEstimates?: ManualCMSEstimate[]
   addManualCMSEstimate?: (estimate: Omit<ManualCMSEstimate, 'id' | 'createdAt'>) => void
@@ -22,21 +20,16 @@ interface OverviewPanelProps {
   removeManualCMSEstimate?: (id: string) => void
 }
 
-export function OverviewPanel({ 
-  analysis, 
+export function OverviewPanel({
+  analysis,
   onNavigateToRecommendations,
-  excludedPageIds,
-  onTogglePageExclusion,
   onRescan,
   manualCMSEstimates = [],
   removeManualCMSEstimate,
   addManualCMSEstimate,
   updateManualCMSEstimate
 }: OverviewPanelProps) {
-  const [showPageWeightInfo, setShowPageWeightInfo] = useState(false)
-  const [showBreakdownInfo, setShowBreakdownInfo] = useState(false)
-  
-  // Always use overall data
+
   const breakpointData = analysis.overallBreakpoints.desktop
   const recommendations = analysis.allRecommendations
   const pageCount = analysis.totalPages
@@ -71,430 +64,602 @@ export function OverviewPanel({
     }
   }
 
-  return (
-    <div className="p-4 space-y-6">
-      {/* Export Buttons */}
-      <div className="flex gap-2">
-        <button
-          onClick={handleExportMarkdown}
-          className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
-          style={{
-            backgroundColor: 'var(--framer-color-tint)',
-            color: 'var(--framer-color-text-reversed)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-tint-dark)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-tint)'
-          }}
-          title="Copy Markdown report to clipboard"
-        >
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          <span className="truncate">Copy MD</span>
-        </button>
-        <button
-          onClick={handleExportJSON}
-          className="flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
-          style={{
-            backgroundColor: 'var(--framer-color-bg-tertiary)',
-            color: 'var(--framer-color-text)'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
-          }}
-          title="Download JSON report"
-        >
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          <span className="truncate">JSON</span>
-        </button>
-      </div>
+  const totalSavings = recommendations.reduce((sum, r) => sum + r.potentialSavings, 0)
+  const currentTotal = breakpointData.totalBytes
+  const optimizedTotal = Math.max(0, currentTotal - totalSavings)
+  const savingsPercent = currentTotal > 0 ? (totalSavings / currentTotal) * 100 : 0
 
-      <div 
-        className="rounded-lg p-6"
-        style={{
-          background: `linear-gradient(to bottom right, var(--framer-color-tint-dimmed), var(--framer-color-bg-secondary))`
-        }}
-      >
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <h3 className="text-xs font-medium mb-3 uppercase tracking-wide" style={{ color: 'var(--framer-color-text-tertiary)' }}>Estimated Page Weight</h3>
-            <div className="text-5xl font-bold mb-3 leading-tight" style={{ color: 'var(--framer-color-text)' }}>
-              {formatBytes(breakpointData.totalBytes)}
+  // Calculate load time estimates
+  const loadTime3G = calculateLoadTime(currentTotal, '3g')
+  const loadTime4G = calculateLoadTime(currentTotal, '4g')
+  const optimizedLoadTime3G = calculateLoadTime(optimizedTotal, '3g')
+  const optimizedLoadTime4G = calculateLoadTime(optimizedTotal, '4g')
+  
+  // Determine warning level for page weight
+  const mb = currentTotal / (1024 * 1024)
+  const showWarning = mb >= 5
+  const showCritical = mb >= 10
+
+  return (
+    <div style={{
+      padding: spacing.lg,
+      backgroundColor: 'var(--framer-color-bg)',
+      minHeight: '100%'
+    }}>
+      <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: spacing.lg }}>
+
+        {/* Hero Section - Total Page Weight */}
+        <div style={{
+          backgroundColor: colors.warmGray[50],
+          borderRadius: borders.radius.lg,
+          padding: spacing.xl,
+          border: `1px solid var(--framer-color-divider)`,
+          position: 'relative',
+        }}>
+          <div style={{ marginBottom: spacing.lg }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+              <div style={{
+                fontSize: typography.fontSize.sm,
+                fontWeight: typography.fontWeight.medium,
+                color: 'var(--framer-color-text-secondary)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em',
+              }}>
+                Total Page Weight
+              </div>
+              {showWarning && (
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: showCritical ? '#ef4444' : '#f59e0b' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              )}
             </div>
-            <p className="text-xs mt-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
-              Desktop breakpoint • {pageCount} {pageCount === 1 ? 'page' : 'pages'} analyzed
-            </p>
-            <p className="text-xs mt-0.5 opacity-75" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-              First page load estimate • Canvas data
-            </p>
-          </div>
-          <div className="ml-2 relative">
-            <button
-              onClick={() => setShowPageWeightInfo(!showPageWeightInfo)}
-              className="cursor-pointer focus:outline-none rounded-full p-1 transition-all"
-              style={{ 
-                backgroundColor: showPageWeightInfo ? 'var(--framer-color-bg-tertiary)' : 'transparent'
-              }}
-              onMouseEnter={(e) => {
-                if (!showPageWeightInfo) {
-                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!showPageWeightInfo) {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                }
-              }}
-              aria-label="Information about page weight"
-            >
-              <svg 
-                className="w-4 h-4 transition-opacity" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor" 
-                style={{ 
-                  color: 'var(--framer-color-tint)',
-                  opacity: showPageWeightInfo ? 1 : 0.6
-                }}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-            {showPageWeightInfo && (
-              <div 
-                className="absolute right-0 top-8 w-72 text-xs rounded-lg p-4 shadow-xl z-20 border"
-                style={{
-                  backgroundColor: 'var(--framer-color-text)',
-                  color: 'var(--framer-color-text-reversed)',
-                  borderColor: 'rgba(255, 255, 255, 0.1)'
-                }}
-              >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <p className="font-semibold text-sm flex-1" style={{ color: 'var(--framer-color-text-reversed)' }}>Estimated Page Weight</p>
-                  <button
-                    onClick={() => setShowPageWeightInfo(false)}
-                    className="cursor-pointer flex-shrink-0 w-5 h-5 flex items-center justify-center rounded transition-colors"
-                    style={{ 
-                      color: 'var(--framer-color-text-reversed)',
-                      opacity: 0.7
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.opacity = '1'
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.opacity = '0.7'
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                    }}
-                    aria-label="Close"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <p className="mb-2 leading-relaxed" style={{ color: 'var(--framer-color-text-reversed)', opacity: 0.9 }}>
-                  Estimated total bytes for the desktop breakpoint (1440px viewport). Includes images, SVGs, fonts, and base HTML/CSS/JS overhead. Data is aggregated across all pages in your project.
-                </p>
-                <p className="pt-2 border-t leading-relaxed" style={{ color: 'var(--framer-color-text-reversed)', opacity: 0.8, borderColor: 'rgba(255, 255, 255, 0.2)' }}>
-                  <strong>Note:</strong> Video files, external scripts, and third-party resources are not included in this estimate.
-                </p>
+            <div style={{
+              fontSize: '48px',
+              fontWeight: typography.fontWeight.bold,
+              lineHeight: 1.1,
+              marginBottom: spacing.sm,
+              color: showCritical ? '#ef4444' : showWarning ? '#f59e0b' : 'var(--framer-color-text)',
+            }}>
+              {formatBytes(currentTotal)}
+            </div>
+            {totalSavings > 0 && (
+              <div style={{
+                display: 'inline-block',
+                padding: `${spacing.xs} ${spacing.md}`,
+                backgroundColor: 'var(--framer-color-bg-secondary)',
+                borderRadius: borders.radius.full,
+                fontSize: typography.fontSize.sm,
+                fontWeight: typography.fontWeight.semibold,
+                color: 'var(--framer-color-text)',
+                border: `1px solid var(--framer-color-divider)`,
+              }}>
+                {savingsPercent.toFixed(0)}% optimization potential
               </div>
             )}
           </div>
-        </div>
-      </div>
 
-      {/* Savings Potential Card */}
-      {recommendations.length > 0 && (() => {
-        const totalSavings = recommendations.reduce((sum, r) => sum + r.potentialSavings, 0)
-        const currentTotal = breakpointData.totalBytes
-        const optimizedTotal = Math.max(0, currentTotal - totalSavings)
-        const savingsPercent = currentTotal > 0 ? ((totalSavings / currentTotal) * 100).toFixed(1) : '0'
-        
-        return (
-          <div 
-            className="rounded-lg p-5 border-2"
-            style={{
-              background: 'linear-gradient(to bottom right, #22c55e, #16a34a)',
-              borderColor: '#16a34a',
-              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-            }}
-          >
-            <div className="mb-3">
-              <div className="flex items-center gap-2 mb-2">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="white">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
-                <h3 className="text-sm font-semibold" style={{ color: 'white' }}>Potential Savings</h3>
+          {/* Load Time Estimates */}
+          <div style={{
+            display: 'flex',
+            gap: spacing.lg,
+            marginBottom: spacing.lg,
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                color: 'var(--framer-color-text-tertiary)',
+                marginBottom: '4px',
+              }}>
+                3G
               </div>
-              <div className="text-4xl font-bold mb-2" style={{ color: 'white' }}>
+              <div style={{
+                fontSize: typography.fontSize.md,
+                fontWeight: typography.fontWeight.semibold,
+                color: loadTime3G > 10 ? '#f59e0b' : 'var(--framer-color-text)',
+              }}>
+                {formatLoadTime(loadTime3G)}
+                {totalSavings > 0 && (
+                  <span style={{
+                    fontSize: typography.fontSize.xs,
+                    color: 'var(--framer-color-text-secondary)',
+                    marginLeft: spacing.xs,
+                  }}>
+                    → {formatLoadTime(optimizedLoadTime3G)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                color: 'var(--framer-color-text-tertiary)',
+                marginBottom: '4px',
+              }}>
+                4G
+              </div>
+              <div style={{
+                fontSize: typography.fontSize.md,
+                fontWeight: typography.fontWeight.semibold,
+                color: loadTime4G > 5 ? '#f59e0b' : 'var(--framer-color-text)',
+              }}>
+                {formatLoadTime(loadTime4G)}
+                {totalSavings > 0 && (
+                  <span style={{
+                    fontSize: typography.fontSize.xs,
+                    color: 'var(--framer-color-text-secondary)',
+                    marginLeft: spacing.xs,
+                  }}>
+                    → {formatLoadTime(optimizedLoadTime4G)}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                color: 'var(--framer-color-text-tertiary)',
+                marginBottom: '4px',
+              }}>
+                Pages
+              </div>
+              <div style={{
+                fontSize: typography.fontSize.md,
+                fontWeight: typography.fontWeight.semibold,
+                color: 'var(--framer-color-text)',
+              }}>
+                {pageCount}
+              </div>
+            </div>
+          </div>
+
+          {/* Potential Savings */}
+          {totalSavings > 0 && (
+            <div style={{
+              padding: spacing.md,
+              backgroundColor: 'var(--framer-color-bg-secondary)',
+              borderRadius: borders.radius.md,
+              border: `1px solid var(--framer-color-divider)`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.xs }}>
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: '#22c55e' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+                <div style={{
+                  fontSize: typography.fontSize.xs,
+                  fontWeight: typography.fontWeight.medium,
+                  color: 'var(--framer-color-text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}>
+                  Potential Savings
+                </div>
+              </div>
+              <div style={{
+                fontSize: '28px',
+                fontWeight: typography.fontWeight.bold,
+                color: '#22c55e',
+                lineHeight: 1.2,
+                marginBottom: '4px',
+              }}>
                 {formatBytes(totalSavings)}
               </div>
-              <div className="text-sm font-semibold mb-1" style={{ color: 'rgba(255, 255, 255, 0.95)' }}>
-                {savingsPercent}% reduction possible
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                color: 'var(--framer-color-text-secondary)',
+                marginBottom: spacing.sm,
+              }}>
+                ({savingsPercent.toFixed(0)}% reduction)
               </div>
-              <div className="text-xs font-medium mb-3" style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
-                {formatBytes(currentTotal)} → {formatBytes(optimizedTotal)}
+              
+              {/* Progress Bar */}
+              <div style={{
+                width: '100%',
+                height: '6px',
+                backgroundColor: 'var(--framer-color-divider)',
+                borderRadius: '3px',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  width: `${Math.min(savingsPercent, 100)}%`,
+                  height: '100%',
+                  backgroundColor: '#22c55e',
+                  borderRadius: '3px',
+                  transition: 'width 0.3s ease',
+                }} />
               </div>
+            </div>
+          )}
+        </div>
+
+        {/* Key Metrics Grid */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: spacing.md
+        }}>
+          {/* Assets Card */}
+          <div style={{
+            padding: spacing.lg,
+            backgroundColor: colors.warmGray[50],
+            borderRadius: borders.radius.lg,
+            border: `1px solid var(--framer-color-divider)`,
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: borders.radius.md,
+              backgroundColor: 'var(--framer-color-bg-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: spacing.md,
+              border: `1px solid var(--framer-color-divider)`,
+            }}>
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--framer-color-text-secondary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div style={{
+              fontSize: '32px',
+              fontWeight: typography.fontWeight.bold,
+              color: 'var(--framer-color-text)',
+              marginBottom: spacing.xs
+            }}>
+              {breakpointData.assets.length}
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.sm,
+              color: 'var(--framer-color-text-secondary)'
+            }}>
+              Total Assets
+            </div>
+          </div>
+
+          {/* Opportunities Card */}
+          <div style={{
+            padding: spacing.lg,
+            backgroundColor: colors.warmGray[50],
+            borderRadius: borders.radius.lg,
+            border: `1px solid var(--framer-color-divider)`,
+            cursor: recommendations.length > 0 ? 'pointer' : 'default',
+            transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+          }}
+          onClick={recommendations.length > 0 ? onNavigateToRecommendations : undefined}
+          onMouseEnter={(e) => {
+            if (recommendations.length > 0) {
+              e.currentTarget.style.transform = 'translateY(-2px)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.08)'
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (recommendations.length > 0) {
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = 'none'
+            }
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: borders.radius.md,
+              backgroundColor: 'var(--framer-color-bg-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: spacing.md,
+              border: `1px solid var(--framer-color-divider)`,
+            }}>
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: recommendations.length > 0 ? 'var(--framer-color-text)' : 'var(--framer-color-text-tertiary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div style={{
+              fontSize: '32px',
+              fontWeight: typography.fontWeight.bold,
+              color: 'var(--framer-color-text)',
+              marginBottom: spacing.xs
+            }}>
+              {recommendations.length}
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.sm,
+              color: 'var(--framer-color-text-secondary)'
+            }}>
+              {recommendations.length === 0 ? 'No optimizations needed' : 'Optimization opportunities'}
+            </div>
+          </div>
+
+          {/* Breakdown Card */}
+          <div style={{
+            padding: spacing.lg,
+            backgroundColor: colors.warmGray[50],
+            borderRadius: borders.radius.lg,
+            border: `1px solid var(--framer-color-divider)`,
+          }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: borders.radius.md,
+              backgroundColor: 'var(--framer-color-bg-secondary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginBottom: spacing.md,
+              border: `1px solid var(--framer-color-divider)`,
+            }}>
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ color: 'var(--framer-color-text-secondary)' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            </div>
+            <div style={{
+              fontSize: '32px',
+              fontWeight: typography.fontWeight.bold,
+              color: 'var(--framer-color-text)',
+              marginBottom: spacing.xs
+            }}>
+              {formatBytes(breakpointData.breakdown.images + breakpointData.breakdown.svgs)}
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.sm,
+              color: 'var(--framer-color-text-secondary)'
+            }}>
+              Images & SVGs
+            </div>
+          </div>
+        </div>
+
+        {/* Top Recommendations */}
+        {recommendations.length > 0 && (
+          <div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: spacing.md
+            }}>
+              <h3 style={{
+                fontSize: typography.fontSize.lg,
+                fontWeight: typography.fontWeight.semibold,
+                color: 'var(--framer-color-text)'
+              }}>
+                Top Opportunities
+              </h3>
               {onNavigateToRecommendations && (
                 <button
                   onClick={onNavigateToRecommendations}
-                  className="w-full px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm"
                   style={{
-                    backgroundColor: 'white',
-                    color: '#16a34a'
+                    fontSize: typography.fontSize.sm,
+                    fontWeight: typography.fontWeight.medium,
+                    color: 'var(--framer-color-text)',
+                    backgroundColor: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: `${spacing.xs} ${spacing.sm}`,
+                    borderRadius: borders.radius.md,
+                    transition: 'background-color 0.15s ease'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = '0.9'
-                    e.currentTarget.style.transform = 'scale(1.02)'
+                    e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.opacity = '1'
-                    e.currentTarget.style.transform = 'scale(1)'
+                    e.currentTarget.style.backgroundColor = 'transparent'
                   }}
                 >
-                  Optimize Now
+                  View all →
                 </button>
               )}
             </div>
-            <div className="pt-3 border-t border-white/20">
-              <div className="flex items-center justify-between text-xs" style={{ color: 'rgba(255, 255, 255, 0.85)' }}>
-                <span>Current: <span className="font-semibold">{formatBytes(currentTotal)}</span></span>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-                <span>Optimized: <span className="font-semibold">{formatBytes(optimizedTotal)}</span></span>
-              </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+              {[...recommendations]
+                .sort((a, b) => b.potentialSavings - a.potentialSavings)
+                .slice(0, 3)
+                .map((rec, index) => (
+                <div
+                  key={index}
+                  style={{
+                    padding: spacing.md,
+                    backgroundColor: 'var(--framer-color-bg-secondary)',
+                    borderRadius: borders.radius.md,
+                    border: `1px solid var(--framer-color-divider)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: spacing.md,
+                    cursor: 'pointer',
+                    transition: 'transform 0.15s ease, box-shadow 0.15s ease'
+                  }}
+                  onClick={onNavigateToRecommendations}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = 'translateX(4px)'
+                    e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.06)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = 'translateX(0)'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                >
+                  <div style={{
+                    width: '32px',
+                    height: '32px',
+                    borderRadius: borders.radius.md,
+                    backgroundColor: 'var(--framer-color-bg-secondary)',
+                    border: `1px solid var(--framer-color-divider)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <span style={{
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: typography.fontWeight.bold,
+                      color: 'var(--framer-color-text)'
+                    }}>
+                      {index + 1}
+                    </span>
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: typography.fontWeight.medium,
+                      color: 'var(--framer-color-text)',
+                      marginBottom: '4px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {rec.nodeName}
+                    </div>
+                    <div style={{
+                      fontSize: typography.fontSize.xs,
+                      color: 'var(--framer-color-text-secondary)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {rec.actionable || rec.description}
+                    </div>
+                  </div>
+                  <div style={{
+                    textAlign: 'right',
+                    flexShrink: 0
+                  }}>
+                    <div style={{
+                      fontSize: typography.fontSize.md,
+                      fontWeight: typography.fontWeight.bold,
+                      color: '#22c55e'
+                    }}>
+                      -{formatBytes(rec.potentialSavings)}
+                    </div>
+                    <div style={{
+                      fontSize: typography.fontSize.xs,
+                      color: 'var(--framer-color-text-secondary)'
+                    }}>
+                      savings
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
-        )
-      })()}
+        )}
 
-      {/* CMS Assets Notice */}
-      <CMSAssetsNotice 
-        analysis={analysis}
-        onCMSEstimateAdded={onRescan}
-        manualCMSEstimates={manualCMSEstimates}
-        onEditEstimate={(estimate) => {
-          // Edit is handled by the modal in CMSAssetsNotice
-        }}
-        onRemoveEstimate={(id) => {
-          debugLog.info('OverviewPanel: onRemoveEstimate called with id:', id)
-          
-          if (!id || typeof id !== 'string') {
-            debugLog.error('OverviewPanel: Invalid estimate ID provided:', id)
-            framer.notify('Invalid estimate ID', { variant: 'error' })
-            return
-          }
-
-          if (!removeManualCMSEstimate) {
-            debugLog.error('OverviewPanel: removeManualCMSEstimate is not defined')
-            framer.notify('Cannot remove estimate: function not available', { variant: 'error' })
-            return
-          }
-
-          if (typeof removeManualCMSEstimate !== 'function') {
-            debugLog.error('OverviewPanel: removeManualCMSEstimate is not a function:', typeof removeManualCMSEstimate)
-            framer.notify('Cannot remove estimate: invalid function', { variant: 'error' })
-            return
-          }
-
-          try {
-            debugLog.info('OverviewPanel: Calling removeManualCMSEstimate with id:', id)
-            
-            // Remove the estimate from state (this will update localStorage automatically via useEffect)
-            removeManualCMSEstimate(id)
-            
-            debugLog.success('OverviewPanel: removeManualCMSEstimate completed successfully')
-            
-            // Trigger a rescan to update the analysis with the removed estimate
-            // Use a delay to ensure state has updated before rescanning
-            if (onRescan) {
-              setTimeout(() => {
-                debugLog.info('OverviewPanel: Triggering rescan after estimate removal')
-                onRescan()
-              }, 500)
-            } else {
-              debugLog.warn('OverviewPanel: onRescan not provided, analysis may not update')
-            }
-          } catch (error) {
-            debugLog.error('OverviewPanel: Error in removeManualCMSEstimate:', error)
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-            framer.notify(`Failed to remove estimate: ${errorMessage}`, { variant: 'error', durationMs: 3000 })
-          }
-        }}
-        onAddEstimate={addManualCMSEstimate}
-        onUpdateEstimate={updateManualCMSEstimate}
-      />
-
-      {/* Page Exclusion Settings */}
-      {excludedPageIds !== undefined && onTogglePageExclusion && onRescan && (
-        <PageExclusionSettings
-          analysis={analysis}
-          excludedPageIds={excludedPageIds}
-          onTogglePageExclusion={onTogglePageExclusion}
-          onRescan={onRescan}
-        />
-      )}
-
-      {/* Bandwidth Calculator */}
-            <BandwidthCalculator analysis={analysis} />
-
-      <div>
-        <div className="flex items-center gap-2 mb-3">
-          <h3 className="text-sm font-medium" style={{ color: 'var(--framer-color-text)' }}>Breakdown</h3>
-          <div className="relative">
-            <button
-              onClick={() => setShowBreakdownInfo(!showBreakdownInfo)}
-              className="cursor-pointer focus:outline-none rounded-full p-1 transition-all"
-              style={{ 
-                backgroundColor: showBreakdownInfo ? 'var(--framer-color-bg-tertiary)' : 'transparent'
-              }}
-              onMouseEnter={(e) => {
-                if (!showBreakdownInfo) {
-                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!showBreakdownInfo) {
-                  e.currentTarget.style.backgroundColor = 'transparent'
-                }
-              }}
-              aria-label="Information about breakdown"
-            >
-              <svg 
-                className="w-4 h-4 transition-opacity" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-                style={{ 
-                  color: 'var(--framer-color-text-tertiary)',
-                  opacity: showBreakdownInfo ? 1 : 0.6
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = 'var(--framer-color-text-secondary)'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = 'var(--framer-color-text-tertiary)'
-                }}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-            {showBreakdownInfo && (
-              <div 
-                className="absolute left-0 top-8 w-72 text-xs rounded-lg p-4 shadow-xl z-20 border"
-                style={{
-                  backgroundColor: 'var(--framer-color-text)',
-                  color: 'var(--framer-color-text-reversed)',
-                  borderColor: 'rgba(255, 255, 255, 0.1)'
-                }}
-              >
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <p className="font-semibold text-sm flex-1" style={{ color: 'var(--framer-color-text-reversed)' }}>Breakdown by Category</p>
-                  <button
-                    onClick={() => setShowBreakdownInfo(false)}
-                    className="cursor-pointer flex-shrink-0 w-5 h-5 flex items-center justify-center rounded transition-colors"
-                    style={{ 
-                      color: 'var(--framer-color-text-reversed)',
-                      opacity: 0.7
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.opacity = '1'
-                      e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.15)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.opacity = '0.7'
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                    }}
-                    aria-label="Close"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
-                <p className="leading-relaxed" style={{ color: 'var(--framer-color-text-reversed)', opacity: 0.9 }}>
-                  Breakdown of estimated bytes by category: Images, SVGs, Fonts, and base HTML/CSS/JS runtime.
-                </p>
-              </div>
-            )}
+        {/* Asset Breakdown Chart */}
+        <div>
+          <h3 style={{
+            fontSize: typography.fontSize.lg,
+            fontWeight: typography.fontWeight.semibold,
+            color: 'var(--framer-color-text)',
+            marginBottom: spacing.md
+          }}>
+            Asset Breakdown
+          </h3>
+          <div style={{
+            padding: spacing.lg,
+            backgroundColor: 'var(--framer-color-bg-secondary)',
+            borderRadius: borders.radius.lg,
+            border: `1px solid var(--framer-color-divider)`
+          }}>
+            <BreakdownChart breakdown={breakpointData.breakdown} totalBytes={breakpointData.totalBytes} />
           </div>
         </div>
-        <BreakdownChart breakdown={breakpointData.breakdown} totalBytes={breakpointData.totalBytes} />
-      </div>
 
-      {/* Custom Code Assets Section */}
-      {customCode && customCode.hasCustomCode && (
-        <div 
-          className="border rounded-lg p-4"
-          style={{
-            backgroundColor: 'var(--framer-color-bg-secondary)',
-            borderColor: 'var(--framer-color-divider)'
+        {/* CMS Assets Notice */}
+        <CMSAssetsNotice
+          analysis={analysis}
+          onCMSEstimateAdded={onRescan}
+          manualCMSEstimates={manualCMSEstimates}
+          onEditEstimate={(estimate) => {}}
+          onRemoveEstimate={(id) => {
+            if (!id || !removeManualCMSEstimate) return
+            try {
+              removeManualCMSEstimate(id)
+              if (onRescan) {
+                setTimeout(() => onRescan(), 500)
+              }
+            } catch (error) {
+              debugLog.error('Failed to remove estimate:', error)
+              framer.notify('Failed to remove estimate', { variant: 'error' })
+            }
           }}
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--framer-color-text)' }}>
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
-                </svg>
-                Custom Code Assets
-              </h3>
-              <p className="text-xs mt-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                Assets loaded dynamically by custom code (code overrides/components)
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-lg font-bold" style={{ color: 'var(--framer-color-text)' }}>
-                {formatBytes(customCode.totalEstimatedBytes)}
+          onAddEstimate={addManualCMSEstimate}
+          onUpdateEstimate={updateManualCMSEstimate}
+        />
+
+        {/* Custom Code Assets */}
+        {customCode && customCode.hasCustomCode && (
+          <CollapsibleSection
+            title={`Custom Code Assets (${customCode.assets.length})`}
+            defaultCollapsed={false}
+          >
+            <div style={{
+              padding: spacing.lg,
+              backgroundColor: 'var(--framer-color-bg-secondary)',
+              borderRadius: borders.radius.lg,
+              border: `1px solid var(--framer-color-divider)`
+            }}>
+              <div style={{ marginBottom: spacing.md }}>
+                <p style={{
+                  fontSize: typography.fontSize.xs,
+                  color: 'var(--framer-color-text-secondary)',
+                  marginBottom: spacing.sm
+                }}>
+                  Assets loaded dynamically by custom code (code overrides/components)
+                </p>
+                <div style={{
+                  fontSize: typography.fontSize.xl,
+                  fontWeight: typography.fontWeight.bold,
+                  color: 'var(--framer-color-text)'
+                }}>
+                  {formatBytes(customCode.totalEstimatedBytes)}
+                </div>
               </div>
-              <div className="text-xs" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                {customCode.assets.length} asset{customCode.assets.length !== 1 ? 's' : ''}
-              </div>
-            </div>
-          </div>
-          
-          {customCode.assets.length > 0 && (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {customCode.assets.slice(0, 5).map((asset, i) => (
-                <div 
-                  key={i} 
-                  className="rounded p-2 text-xs"
-                  style={{ backgroundColor: 'var(--framer-color-bg)' }}
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate" style={{ color: 'var(--framer-color-text)' }} title={asset.url}>
-                        {asset.url.length > 50 ? asset.url.substring(0, 50) + '...' : asset.url}
+
+              {customCode.assets.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
+                  {customCode.assets.slice(0, 5).map((asset, i) => (
+                    <div
+                      key={i}
+                      style={{
+                        padding: spacing.sm,
+                        backgroundColor: 'var(--framer-color-bg)',
+                        borderRadius: borders.radius.md,
+                        fontSize: typography.fontSize.xs
+                      }}
+                    >
+                      <div style={{
+                        fontWeight: typography.fontWeight.medium,
+                        color: 'var(--framer-color-text)',
+                        marginBottom: spacing.xs,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                      }}>
+                        {asset.url}
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span 
-                          className="px-1.5 py-0.5 rounded text-[10px] font-medium"
-                          style={{
-                            backgroundColor: 'var(--framer-color-tint-dimmed)',
-                            color: 'var(--framer-color-tint)'
-                          }}
-                        >
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: spacing.sm,
+                        flexWrap: 'wrap'
+                      }}>
+                        <span style={{
+                          padding: `2px ${spacing.xs}`,
+                          borderRadius: borders.radius.sm,
+                          fontSize: '10px',
+                          fontWeight: typography.fontWeight.medium,
+                          backgroundColor: '#e0e7ff',
+                          color: '#6366f1'
+                        }}>
                           {asset.type}
                         </span>
                         {asset.isLazyLoaded && (
-                          <span 
-                            className="px-1.5 py-0.5 rounded text-[10px] font-medium"
-                            style={{
-                              backgroundColor: 'var(--framer-color-bg-secondary)',
-                              color: 'var(--framer-color-text-secondary)'
-                            }}
-                          >
+                          <span style={{
+                            padding: `2px ${spacing.xs}`,
+                            borderRadius: borders.radius.sm,
+                            fontSize: '10px',
+                            fontWeight: typography.fontWeight.medium,
+                            backgroundColor: 'var(--framer-color-bg-secondary)',
+                            color: 'var(--framer-color-text-secondary)'
+                          }}>
                             Lazy
                           </span>
                         )}
@@ -504,116 +669,105 @@ export function OverviewPanel({
                           </span>
                         )}
                       </div>
-                      <div className="text-[10px] mt-1 truncate" style={{ color: 'var(--framer-color-text-tertiary)' }} title={asset.source}>
-                        Source: {asset.source.length > 60 ? asset.source.substring(0, 60) + '...' : asset.source}
-                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
-              {customCode.assets.length > 5 && (
-                <div className="text-xs text-center pt-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                  + {customCode.assets.length - 5} more asset{customCode.assets.length - 5 !== 1 ? 's' : ''}
+                  ))}
+                  {customCode.assets.length > 5 && (
+                    <div style={{
+                      fontSize: typography.fontSize.xs,
+                      color: 'var(--framer-color-text-secondary)',
+                      textAlign: 'center',
+                      paddingTop: spacing.xs
+                    }}>
+                      + {customCode.assets.length - 5} more
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-          
-          {customCode.warnings.length > 0 && (
-            <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--framer-color-divider)' }}>
-              <div className="text-xs space-y-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                {customCode.warnings.map((warning, i) => (
-                  <div key={i} className="flex items-start gap-2">
-                    <svg className="w-3 h-3 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>{warning}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+          </CollapsibleSection>
+        )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div 
-          className="rounded-lg p-4"
-          style={{ backgroundColor: 'var(--framer-color-bg-secondary)' }}
-        >
-          <div className="text-sm" style={{ color: 'var(--framer-color-text-secondary)' }}>Total Assets</div>
-          <div className="text-2xl font-semibold mt-1" style={{ color: 'var(--framer-color-text)' }}>
-            {breakpointData.assets.length}
-          </div>
-        </div>
-        <div 
-          className={`rounded-lg p-4 transition-colors ${onNavigateToRecommendations && recommendations.length > 0 ? 'cursor-pointer' : ''}`}
-          style={{ backgroundColor: 'var(--framer-color-bg-secondary)' }}
-          onMouseEnter={(e) => {
-            if (onNavigateToRecommendations && recommendations.length > 0) {
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (onNavigateToRecommendations && recommendations.length > 0) {
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-            }
-          }}
-          onClick={onNavigateToRecommendations && recommendations.length > 0 ? onNavigateToRecommendations : undefined}
-          title={onNavigateToRecommendations && recommendations.length > 0 ? 'Click to view recommendations' : undefined}
-        >
-          <div className="text-sm flex items-center gap-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
-            Recommendations
-            {onNavigateToRecommendations && recommendations.length > 0 && (
-              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-tint)' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        {/* Export Actions */}
+        <div>
+          <h3 style={{
+            fontSize: typography.fontSize.lg,
+            fontWeight: typography.fontWeight.semibold,
+            color: 'var(--framer-color-text)',
+            marginBottom: spacing.md
+          }}>
+            Export Report
+          </h3>
+          <div style={{
+            padding: spacing.lg,
+            backgroundColor: 'var(--framer-color-bg-secondary)',
+            borderRadius: borders.radius.lg,
+            border: `1px solid var(--framer-color-divider)`,
+            display: 'flex',
+            gap: spacing.md
+          }}>
+            <button
+              onClick={handleExportMarkdown}
+              style={{
+                flex: 1,
+                padding: spacing.md,
+                fontSize: typography.fontSize.sm,
+                fontWeight: typography.fontWeight.medium,
+                color: colors.white,
+                backgroundColor: colors.black,
+                border: 'none',
+                borderRadius: borders.radius.md,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: spacing.sm,
+                transition: 'opacity 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '0.85'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '1'
+              }}
+            >
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-            )}
-          </div>
-          <div className="text-2xl font-semibold mt-1" style={{ color: 'var(--framer-color-text)' }}>
-            {recommendations.length}
+              Copy Markdown
+            </button>
+            <button
+              onClick={handleExportJSON}
+              style={{
+                flex: 1,
+                padding: spacing.md,
+                fontSize: typography.fontSize.sm,
+                fontWeight: typography.fontWeight.medium,
+                color: 'var(--framer-color-text)',
+                backgroundColor: 'var(--framer-color-bg)',
+                border: `1px solid var(--framer-color-divider)`,
+                borderRadius: borders.radius.md,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: spacing.sm,
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+              }}
+            >
+              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Download JSON
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Debug Info */}
-      <div 
-        className="border rounded-lg p-4"
-        style={{
-          backgroundColor: 'var(--framer-color-bg-secondary)',
-          borderColor: 'var(--framer-color-divider)'
-        }}
-      >
-        <h3 className="text-sm font-semibold mb-3" style={{ color: 'var(--framer-color-text)' }}>🔍 Debug Info</h3>
-        <div className="space-y-2 text-xs">
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--framer-color-text-secondary)' }}>Assets found:</span>
-            <span className="font-mono font-semibold" style={{ color: 'var(--framer-color-text)' }}>{breakpointData.assets.length}</span>
-          </div>
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--framer-color-text-secondary)' }}>Images:</span>
-            <span className="font-mono font-semibold" style={{ color: 'var(--framer-color-text)' }}>
-              {breakpointData.assets.filter(a => a.type === 'image' || a.type === 'svg').length}
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span style={{ color: 'var(--framer-color-text-secondary)' }}>SVGs:</span>
-            <span className="font-mono font-semibold" style={{ color: 'var(--framer-color-text)' }}>
-              {breakpointData.assets.filter(a => a.type === 'svg').length}
-            </span>
-          </div>
-          <div className="pt-2 border-t" style={{ borderColor: 'var(--framer-color-divider)' }}>
-            <p className="font-semibold mb-1" style={{ color: 'var(--framer-color-text)' }}>Sample assets:</p>
-            {breakpointData.assets.slice(0, 3).map((asset, i) => (
-              <div key={i} className="font-mono text-[10px] mb-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                {asset.nodeName}: {asset.dimensions.width}×{asset.dimensions.height}px = {asset.estimatedBytes.toLocaleString()}b
-              </div>
-            ))}
-            {breakpointData.assets.length === 0 && (
-              <p className="text-red-600 font-semibold">⚠️ NO ASSETS FOUND - Image detection is broken!</p>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   )

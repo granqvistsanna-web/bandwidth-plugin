@@ -55,12 +55,13 @@ export function ReplaceImageModal({
   const hasMultipleUsages = usageCount !== null && usageCount > 1
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
       <div 
-        className="rounded-2xl shadow-2xl max-w-lg w-full border overflow-hidden flex flex-col max-h-[90vh]"
+        className="rounded-lg max-w-lg w-full border overflow-hidden flex flex-col max-h-[90vh]"
         style={{
-          backgroundColor: 'var(--framer-color-bg)',
-          borderColor: 'var(--framer-color-divider)'
+          backgroundColor: '#FAF9F8',
+          borderColor: 'var(--framer-color-divider)',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
         }}
       >
         {/* Header with close button */}
@@ -68,12 +69,12 @@ export function ReplaceImageModal({
           className="relative px-6 pt-6 pb-4 border-b flex-shrink-0"
           style={{ borderColor: 'var(--framer-color-divider)' }}
         >
-          <h3 className="text-xl font-bold pr-10" style={{ color: 'var(--framer-color-text)' }}>
+          <h3 className="text-lg font-semibold pr-10" style={{ color: 'var(--framer-color-text)' }}>
             Replace Image
           </h3>
           <button
             onClick={onClose}
-            className="absolute top-5 right-5 w-10 h-10 flex items-center justify-center rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+            className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded transition-colors"
             style={{
               color: 'var(--framer-color-text-secondary)'
             }}
@@ -85,7 +86,7 @@ export function ReplaceImageModal({
             }}
             aria-label="Close"
           >
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -95,7 +96,7 @@ export function ReplaceImageModal({
         <div className="px-6 py-6 flex-1 overflow-y-auto">
           {loading ? (
             <div className="py-12 text-center">
-              <svg className="w-8 h-8 animate-spin mx-auto mb-3" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--framer-color-tint)' }}>
+              <svg className="w-8 h-8 animate-spin mx-auto mb-3" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--framer-color-text-secondary)' }}>
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
@@ -108,9 +109,9 @@ export function ReplaceImageModal({
                 onClick={() => setSelectedOption('single')}
                 className="w-full px-6 py-5 text-left border-2 rounded-xl transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-offset-2"
                 style={selectedOption === 'single' ? {
-                  borderColor: 'var(--framer-color-tint)',
-                  backgroundColor: 'var(--framer-color-tint-dimmed)',
-                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  borderColor: 'var(--framer-color-text)',
+                  backgroundColor: 'var(--framer-color-bg-secondary)',
+                  boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
                 } : {
                   borderColor: 'var(--framer-color-divider)',
                   backgroundColor: 'var(--framer-color-bg)'
@@ -133,15 +134,15 @@ export function ReplaceImageModal({
                     <div 
                       className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
                       style={selectedOption === 'single' ? {
-                        borderColor: 'var(--framer-color-tint)',
-                        backgroundColor: 'var(--framer-color-tint)'
+                        borderColor: 'var(--framer-color-text)',
+                        backgroundColor: 'var(--framer-color-text)'
                       } : {
                         borderColor: 'var(--framer-color-text-tertiary)',
                         backgroundColor: 'var(--framer-color-bg)'
                       }}
                     >
                       {selectedOption === 'single' && (
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style={{ color: 'var(--framer-color-bg)' }}>
                           <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                         </svg>
                       )}
@@ -159,11 +160,11 @@ export function ReplaceImageModal({
               {hasMultipleUsages ? (
                 <button
                   onClick={() => setSelectedOption('all')}
-                  className="w-full px-6 py-5 text-left border-2 rounded-xl transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-offset-2"
+                  className="w-full px-5 py-4 text-left border rounded-lg transition-all duration-200 group"
                   style={selectedOption === 'all' ? {
-                    borderColor: 'var(--framer-color-tint)',
-                    backgroundColor: 'var(--framer-color-tint-dimmed)',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                    borderColor: 'var(--framer-color-text)',
+                    backgroundColor: 'var(--framer-color-bg-secondary)',
+                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
                   } : {
                     borderColor: 'var(--framer-color-divider)',
                     backgroundColor: 'var(--framer-color-bg)'
@@ -186,30 +187,30 @@ export function ReplaceImageModal({
                       <div 
                         className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
                         style={selectedOption === 'all' ? {
-                          borderColor: 'var(--framer-color-tint)',
-                          backgroundColor: 'var(--framer-color-tint)'
+                          borderColor: 'var(--framer-color-text)',
+                          backgroundColor: 'var(--framer-color-text)'
                         } : {
                           borderColor: 'var(--framer-color-text-tertiary)',
                           backgroundColor: 'var(--framer-color-bg)'
                         }}
                       >
                         {selectedOption === 'all' && (
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" style={{ color: 'var(--framer-color-bg)' }}>
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                           </svg>
                         )}
                       </div>
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <div className="font-semibold text-base break-words" style={{ color: 'var(--framer-color-text)' }}>
-                        Replace everywhere ({usageCount} places)
-                      </div>
+                    <div className="font-medium text-sm break-words" style={{ color: 'var(--framer-color-text)' }}>
+                      Replace everywhere ({usageCount} places)
+                    </div>
                     </div>
                   </div>
                 </button>
               ) : (
                 <div 
-                  className="w-full px-6 py-5 border-2 rounded-xl cursor-not-allowed"
+                  className="w-full px-5 py-4 border rounded-lg cursor-not-allowed"
                   style={{
                     borderColor: 'var(--framer-color-divider)',
                     backgroundColor: 'var(--framer-color-bg-tertiary)'
@@ -226,7 +227,7 @@ export function ReplaceImageModal({
                       ></div>
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <div className="font-semibold text-base break-words" style={{ color: 'var(--framer-color-text-tertiary)' }}>Replace everywhere (not available)</div>
+                      <div className="font-medium text-sm break-words" style={{ color: 'var(--framer-color-text-tertiary)' }}>Replace everywhere (not available)</div>
                     </div>
                   </div>
                 </div>
@@ -245,7 +246,7 @@ export function ReplaceImageModal({
         >
           <button
             onClick={onClose}
-            className="px-6 py-3 text-sm font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+            className="px-5 py-2.5 text-sm font-medium rounded-md transition-all"
             style={{
               color: 'var(--framer-color-text)',
               backgroundColor: 'var(--framer-color-bg-secondary)',
@@ -263,24 +264,28 @@ export function ReplaceImageModal({
           <button
             onClick={handleConfirm}
             disabled={!selectedOption}
-            className="px-6 py-3 text-sm font-semibold rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm"
+            className="px-5 py-2.5 text-sm font-semibold rounded-md transition-all"
             style={selectedOption ? {
-              backgroundColor: 'var(--framer-color-tint)',
-              color: 'var(--framer-color-text-reversed)',
+              backgroundColor: 'var(--framer-color-bg)',
+              color: 'var(--framer-color-text)',
+              border: '1px solid var(--framer-color-divider)',
               cursor: 'pointer'
             } : {
               backgroundColor: 'var(--framer-color-bg-tertiary)',
               color: 'var(--framer-color-text-tertiary)',
+              border: '1px solid var(--framer-color-divider)',
               cursor: 'not-allowed'
             }}
             onMouseEnter={(e) => {
               if (selectedOption) {
-                e.currentTarget.style.backgroundColor = 'var(--framer-color-tint-dark)'
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
               }
             }}
             onMouseLeave={(e) => {
               if (selectedOption) {
-                e.currentTarget.style.backgroundColor = 'var(--framer-color-tint)'
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+                e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
               }
             }}
           >
