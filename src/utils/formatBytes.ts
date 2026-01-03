@@ -1,4 +1,9 @@
 export function formatBytes(bytes: number, decimals: number = 1): string {
+  // Handle invalid values
+  if (!bytes || !isFinite(bytes) || isNaN(bytes) || bytes < 0) {
+    return '0 B'
+  }
+
   if (bytes === 0) return '0 B'
 
   const k = 1024

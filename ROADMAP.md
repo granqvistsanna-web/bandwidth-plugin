@@ -13,13 +13,13 @@ Give creators immediate visibility into page weight and actionable recommendatio
 ### Core User Stories
 1. ✅ As a creator, I can select a page and see estimated page weight
 2. ✅ I can see the top 10 heaviest assets and where they are used
-3. ⏳ I can get specific recommendations I can act on immediately
+3. ✅ I can get specific recommendations I can act on immediately
 
 ### MVP Features
 
 #### 1. Page and Breakpoint Selector
 - [x] Breakpoints: Desktop, Tablet, Mobile
-- [ ] Page selector: Current page + dropdown for all pages
+- [x] Page selector: Current page + dropdown for all pages ✅
 - [x] Visual breakpoint tabs (375px, 768px, 1440px)
 
 #### 2. Page Weight Estimate
@@ -34,34 +34,44 @@ Give creators immediate visibility into page weight and actionable recommendatio
 
 #### 3. Asset Table
 **Columns:**
-- [ ] Asset preview (thumbnail)
+- [x] Asset preview (thumbnail) ✅
 - [x] Estimated bytes
-- [ ] Intrinsic dimensions (actual image size)
+- [x] Intrinsic dimensions (actual image size) ✅
 - [x] Rendered dimensions (canvas size)
-- [ ] Count of usages (how many nodes use this asset)
+- [x] Count of usages (how many nodes use this asset) ✅
 - [x] Recommendation badge
+- [x] Color-coded file size badges (red/orange/yellow/green) ✅
+- [x] SVG preview with node name and dimensions ✅
 
 **Current Status:**
 - ✅ Basic list with node names and sizes
 - ✅ Sortable by size and name
 - ✅ Click to select in canvas
-- ❌ Missing: preview thumbnails, intrinsic dimensions, usage count
+- ✅ Preview thumbnails for images
+- ✅ Intrinsic dimensions detection
+- ✅ Usage count tracking
+- ✅ Improved UI with better spacing and alignment
 
 #### 4. Recommendations Panel
 - [x] Prioritized list (High/Medium/Low)
 - [x] Filter by priority
 - [x] Total potential savings
-- [ ] **"Top 3 Quick Wins"** section at the top
-- [x] Action-oriented phrasing
+- [x] **"Top 3 Quick Wins"** section at the top ✅
+- [x] Action-oriented phrasing with specific dimensions ✅
   - ✅ "Reduce image size to XXXpx and compress"
   - ✅ "Convert to JPEG or WebP format"
-  - ⏳ "Replace with AVIF/W1600px max"
-  - ⏳ "Avoid placing this above the fold"
-  - ⏳ "Convert GIF to MP4"
+  - ✅ Cross-page navigation support ✅
+  - ✅ Image preview thumbnails in recommendations ✅
+  - ✅ Node name display for identification ✅
+  - ⏳ "Replace with AVIF/W1600px max" (future enhancement)
+  - ⏳ "Avoid placing this above the fold" (needs ATF detection)
+  - ⏳ "Convert GIF to MP4" (needs video detection)
 
 #### 5. Export
-- [ ] Copy report to clipboard as Markdown
-- [ ] Optional: JSON export
+- [x] Copy report to clipboard as Markdown ✅
+- [x] JSON export ✅
+- [x] Bandwidth calculator with pageview estimator ✅
+- [x] Framer plan limit mapping with risk indicators ✅
 
 ### MVP Non-Goals
 - ❌ Predicting monthly bandwidth automatically (Phase 2)
@@ -71,12 +81,18 @@ Give creators immediate visibility into page weight and actionable recommendatio
 - ❌ Historical tracking
 
 ### Acceptance Criteria
-- [ ] On a typical Framer marketing site, top 5 assets flagged match Chrome DevTools Network tab
+- [ ] On a typical Framer marketing site, top 5 assets flagged match Chrome DevTools Network tab (needs validation)
 - [x] Plugin runs in <3 seconds on mid-sized project (10 pages, 20+ images)
 - [x] Recommendations are unambiguous and actionable
-- [ ] Byte estimates within 30% of actual build output
+- [ ] Byte estimates within 30% of actual build output (needs validation)
+- [x] Recommendations generate without failure for projects with 25+ assets and 5+ pages
+- [x] Each recommendation includes precise action with specific dimensions
+- [x] Every recommendation contains valid `estimatedBytesSaved` (positive integer)
+- [x] Priorities assigned correctly (high/medium/low)
+- [x] "Select in canvas" works with cross-page navigation
+- [x] "Top 3 Quick Wins" displays when 3+ high priority recommendations exist
 
-### Current MVP Status: ~70% Complete
+### Current MVP Status: ~95% Complete
 
 **What Works:**
 - ✅ Node traversal and asset discovery
@@ -87,14 +103,16 @@ Give creators immediate visibility into page weight and actionable recommendatio
 - ✅ Click to select assets in canvas
 
 **What's Missing for MVP:**
-- [ ] Asset preview thumbnails
-- [ ] Intrinsic dimensions detection
-- [ ] Usage count per asset
-- [ ] "Top 3 Quick Wins" highlight
-- [ ] Page selector dropdown
-- [ ] Export to Markdown/JSON
-- [ ] Better recommendation phrasing
-- [ ] Accuracy validation against real builds
+- [x] Asset preview thumbnails ✅
+- [x] Intrinsic dimensions detection ✅
+- [x] Usage count per asset ✅
+- [x] "Top 3 Quick Wins" highlight ✅
+- [x] Page selector dropdown ✅
+- [x] Export to Markdown/JSON ✅
+- [x] Better recommendation phrasing ✅
+- [x] Cross-page navigation for recommendations ✅
+- [x] Improved assets list UI ✅
+- [ ] Accuracy validation against real builds (final testing needed)
 
 ---
 
@@ -122,14 +140,15 @@ Provide professional-grade accuracy and time-saving automation worth paying for.
 - Third-party script impact
 
 #### 2. Monthly Bandwidth Estimator
-- User inputs expected pageviews
-- Calculate: `total bytes × pageviews = GB/month`
-- Map to Framer plan limits:
+- ✅ User inputs expected pageviews
+- ✅ Calculate: `total bytes × pageviews = GB/month`
+- ✅ Map to Framer plan limits:
   - Mini: 10 GB/month
   - Basic: 100 GB/month
   - Pro: 1 TB/month
-- Show "risk of overage" warnings
-- Suggest optimizations to stay within limits
+- ✅ Show "risk of overage" warnings
+- ✅ Suggest optimizations to stay within limits
+- ✅ Per 1,000 pageviews estimator
 
 #### 3. One-Click Fixes
 **Like Framer Compr Plugin**
@@ -156,15 +175,17 @@ Per-asset actions:
 
 ### Monetization Strategy
 **Free Tier:**
-- Basic estimates (Phase 1 MVP)
-- Top 10 assets only
-- Manual export
+- Basic estimates (Phase 1 MVP) ✅
+- Unlimited assets ✅
+- Manual export (Markdown & JSON) ✅
+- Monthly bandwidth calculator ✅ (MVP feature, keeping free)
 
 **Pro Tier ($10-20/month):**
 - Published URL audit (accurate measurements)
-- Unlimited assets
-- Monthly bandwidth calculator
 - One-click compression
+- Above-the-fold detection
+- LCP candidate detection
+- Performance budgets
 - Priority support
 
 ---
@@ -228,8 +249,8 @@ Become the essential performance tool for professional Framer developers.
 #### Scanner (`services/traversal.ts`)
 - ✅ Traverses node tree
 - ✅ Collects asset references
-- [ ] Detects asset usage count
-- [ ] Extracts intrinsic dimensions
+- ✅ Detects asset usage count
+- ✅ Extracts intrinsic dimensions
 
 #### Sizer (`services/bandwidth.ts`)
 - ✅ Estimates bytes per asset
@@ -240,21 +261,24 @@ Become the essential performance tool for professional Framer developers.
 #### Aggregator (`services/analyzer.ts`)
 - ✅ Computes totals by page
 - ✅ Aggregates across breakpoints
-- [ ] Groups by asset (deduplication)
-- [ ] Tracks usage locations
+- ✅ Groups by asset (deduplication)
+- ✅ Tracks usage locations
 
 #### Rules Engine (`services/recommendations.ts`)
 - ✅ Produces recommendations
 - ✅ Assigns severity (high/medium/low)
-- [ ] Prioritizes "Top 3 Quick Wins"
-- [ ] Context-aware rules (ATF detection)
+- ✅ Prioritizes "Top 3 Quick Wins"
+- [ ] Context-aware rules (ATF detection - Phase 3)
 
 #### UI Components
 - ✅ Overview panel
 - ✅ Assets panel
 - ✅ Recommendations panel
-- [ ] Export panel
-- [ ] Page selector dropdown
+- ✅ Export functionality (Markdown & JSON)
+- ✅ Page selector dropdown
+- ✅ Sidebar navigation (collapsible)
+- ✅ Bandwidth calculator
+- ✅ Cross-page navigation for recommendations
 
 ### Data Model
 
@@ -312,20 +336,24 @@ interface Report {
 4. ✅ Add recommendation rules
 5. ✅ Add breakpoint selection
 
-### 🚧 In Progress (Complete MVP)
-6. [ ] Add intrinsic dimension detection
-7. [ ] Add asset usage count
-8. [ ] Add "Top 3 Quick Wins" section
-9. [ ] Add page selector dropdown
-10. [ ] Add export to Markdown
-11. [ ] Improve recommendation phrasing
-12. [ ] Add asset preview thumbnails
+### ✅ Completed (MVP Features)
+6. [x] Add intrinsic dimension detection ✅
+7. [x] Add asset usage count ✅
+8. [x] Add "Top 3 Quick Wins" section ✅
+9. [x] Add page selector dropdown ✅
+10. [x] Add export to Markdown ✅
+11. [x] Improve recommendation phrasing ✅
+12. [x] Add asset preview thumbnails ✅
+13. [x] Cross-page navigation for recommendations ✅
+14. [x] Improved assets list UI with color-coded sizes ✅
+15. [x] SVG preview and identification ✅
+16. [x] Monthly bandwidth calculator ✅
 
 ### ⏳ Next (Improve Accuracy)
-13. [ ] Validate against real Framer builds
-14. [ ] Tune compression ratios
-15. [ ] Add edge case handling
-16. [ ] Performance optimization
+17. [ ] Validate against real Framer builds
+18. [ ] Tune compression ratios
+19. [ ] Add edge case handling
+20. [ ] Performance optimization
 
 ### 📦 Phase 2 Prep
 17. [ ] Published URL fetching
@@ -337,38 +365,48 @@ interface Report {
 
 ## Immediate Next Steps (This Week)
 
-### Priority 1: Complete Core MVP Features
-- [ ] **Asset preview thumbnails**
+### ✅ Priority 1: Complete Core MVP Features (DONE)
+- [x] **Asset preview thumbnails** ✅
   - Use Framer image API to get preview URLs
   - Display in Assets table
   - Fallback to placeholder for SVG
 
-- [ ] **Intrinsic dimensions**
+- [x] **Intrinsic dimensions** ✅
   - Use `ImageAsset.measure()` to get actual image size
   - Compare to rendered dimensions
   - Flag oversized assets more accurately
 
-- [ ] **Usage count and locations**
+- [x] **Usage count and locations** ✅
   - Track all nodes using same asset URL
   - Show "Used in X places" badge
   - List specific pages/nodes
 
-- [ ] **"Top 3 Quick Wins" section**
+- [x] **"Top 3 Quick Wins" section** ✅
   - Take top 3 recommendations by savings
   - Highlight at top of Recommendations panel
   - Add special styling
 
-### Priority 2: Export Functionality
-- [ ] **Markdown export**
+### ✅ Priority 2: Export Functionality (DONE)
+- [x] **Markdown export** ✅
   - Format report with headings and tables
   - Include breakdown, top assets, recommendations
   - Copy to clipboard button
 
-### Priority 3: Page Selector
-- [ ] **Page dropdown**
+- [x] **JSON export** ✅
+  - Full data export
+  - Download as file
+
+- [x] **Bandwidth calculator** ✅
+  - Pageview estimator
+  - Framer plan limit mapping
+  - Risk indicators
+
+### ✅ Priority 3: Page Selector (DONE)
+- [x] **Page dropdown** ✅
   - List all pages in project
   - Allow selecting individual page to analyze
   - Default to "All Pages"
+  - Per-page analysis working
 
 ### Priority 4: Validation & Polish
 - [ ] Test on 3-5 real Framer projects
@@ -403,28 +441,33 @@ interface Report {
 
 ## Current Status Summary
 
-**Phase 1 MVP: ~70% Complete**
+**Phase 1 MVP: ~95% Complete**
 
 **Working:**
 - Core analysis engine
-- UI with 3 tabs
-- Recommendations generation
+- UI with 3 tabs (collapsible sidebar navigation)
+- Recommendations generation with cross-page navigation
 - Breakpoint analysis
-
-**Missing:**
-- Asset previews and intrinsic dimensions
+- Asset preview thumbnails
+- Intrinsic dimensions detection
 - Usage count tracking
 - "Top 3 Quick Wins" highlighting
-- Page selector
-- Export functionality
+- Page selector (per-page analysis)
+- Export functionality (Markdown & JSON)
+- Improved assets list with color-coded file sizes
+- Better recommendation phrasing with specific dimensions
 
-**Next Milestone:** Ship MVP in 1 week
-- Complete remaining MVP features
-- Test with real projects
-- Fix bugs and tune accuracy
+**Missing:**
+- Accuracy validation against real builds
+- Performance testing on very large projects (100+ pages)
+
+**Next Milestone:** Finalize MVP
+- Test accuracy against real Framer builds
+- Performance optimization if needed
+- Final UI polish
 - Prepare for launch
 
 ---
 
 **Last Updated:** 2026-01-03
-**Status:** Phase 1 MVP - 70% complete, targeting launch in 1 week
+**Status:** Phase 1 MVP - 95% complete, ready for final testing and launch

@@ -16,6 +16,9 @@ export interface AssetInfo {
   format?: string
   visible: boolean
   url?: string
+  usageCount?: number
+  usedInPages?: string[]
+  svgContent?: string // For SVG nodes, store the SVG markup to analyze features
 }
 
 export interface BreakdownData {
@@ -53,6 +56,10 @@ export interface Recommendation {
   potentialSavings: number
   description: string
   actionable: string
+  url?: string
+  usedInPages?: { pageId: string; pageName: string }[]
+  pageId?: string
+  pageName?: string
 }
 
 export interface CostEstimation {

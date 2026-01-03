@@ -1,4 +1,7 @@
+import { useState, useEffect } from 'react'
+import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../types/analysis'
+import { debugLog, type DebugLogEntry } from '../utils/debugLog'
 
 interface DebugPanelProps {
   analysis: ProjectAnalysis
@@ -6,6 +9,84 @@ interface DebugPanelProps {
 
 export function DebugPanel({ analysis }: DebugPanelProps) {
   const assets = analysis.overallBreakpoints.desktop.assets
+  const [logs, setLogs] = useState<DebugLogEntry[]>([])
+  const [autoScroll, setAutoScroll] = useState(true)
+
+  useEffect(() => {
+    // Update logs periodically
+    const interval = setInterval(() => {
+      setLogs(debugLog.getRecentLogs(200))
+    }, 500)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const getLogColor = (level: DebugLogEntry['level']) => {
+    switch (level) {
+      case 'error': return 'text-red-600'
+      case 'warn': return 'text-yellow-600'
+      case 'success': return 'text-green-600'
+      case 'info': return 'text-blue-600'
+      default: return 'text-gray-600'
+    }
+  }
+
+  const formatTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleTimeString()
+  }
+
+  const inspectSelectedNode = async () => {
+    try {
+      const selection = await framer.getSelection()
+      if (selection.length === 0) {
+        debugLog.warn('No node selected. Please select a node in the canvas first.')
+        framer.notify('Please select a node in the canvas', { variant: 'error' })
+        return
+      }
+
+      const node = selection[0]
+      debugLog.info('=== INSPECTING SELECTED NODE ===', {
+        id: node.id,
+        name: node.name,
+        type: node.type
+      })
+
+      // Get full node details
+      const fullNode = await framer.getNode(node.id)
+      
+      // Log full structure
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fullStructure: any = {}
+      for (const key of Object.keys(fullNode)) {
+        if (key.startsWith('__')) continue
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const value = (fullNode as any)[key]
+        if (typeof value === 'string' && value.length > 200) {
+          fullStructure[key] = value.substring(0, 200) + '...'
+        } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+          fullStructure[key] = {
+            type: 'object',
+            keys: Object.keys(value).slice(0, 30),
+            sample: JSON.stringify(value).substring(0, 500)
+          }
+        } else if (Array.isArray(value)) {
+          fullStructure[key] = {
+            type: 'array',
+            length: value.length,
+            firstItem: value[0] ? (typeof value[0] === 'object' ? Object.keys(value[0]) : String(value[0]).substring(0, 100)) : null
+          }
+        } else {
+          fullStructure[key] = value
+        }
+      }
+      
+      debugLog.info('Full selected node structure:', fullStructure)
+      framer.notify('Node structure logged to debug panel', { variant: 'success' })
+    } catch (error) {
+      debugLog.error('Error inspecting selected node', error)
+      framer.notify('Error inspecting node', { variant: 'error' })
+    }
+  }
 
   return (
     <div className="p-4 space-y-4 bg-gray-50">
@@ -27,6 +108,71 @@ export function DebugPanel({ analysis }: DebugPanelProps) {
               {analysis.overallBreakpoints.desktop.totalBytes.toLocaleString()} bytes
             </span>
           </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg p-4 border border-gray-200">
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="font-semibold text-gray-900">Debug Logs</h3>
+          <div className="flex gap-2 items-center">
+            <button
+              onClick={inspectSelectedNode}
+              className="text-xs px-2 py-1 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded"
+              title="Inspect the currently selected node in Framer"
+            >
+              Inspect Selected
+            </button>
+            <label className="text-xs text-gray-600 flex items-center gap-1">
+              <input
+                type="checkbox"
+                checked={autoScroll}
+                onChange={(e) => setAutoScroll(e.target.checked)}
+                className="w-3 h-3"
+              />
+              Auto-scroll
+            </label>
+            <button
+              onClick={() => {
+                debugLog.clear()
+                setLogs([])
+              }}
+              className="text-xs px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        <div
+          className="bg-gray-900 text-gray-100 rounded p-3 font-mono text-xs max-h-96 overflow-y-auto"
+          style={{ fontSize: '10px' }}
+          ref={(el: HTMLDivElement | null) => {
+            if (el && autoScroll) {
+              el.scrollTop = el.scrollHeight
+            }
+          }}
+        >
+          {logs.length === 0 ? (
+            <div className="text-gray-500 italic">No logs yet. Run analysis to see debug information.</div>
+          ) : (
+            logs.map((log, index) => (
+              <div key={index} className="mb-1">
+                <span className="text-gray-500">[{formatTime(log.timestamp)}]</span>{' '}
+                <span className={getLogColor(log.level)}>[{log.level.toUpperCase()}]</span>{' '}
+                <span>{log.message}</span>
+                {log.data && (
+                  <details className="ml-4 mt-1">
+                    <summary className="cursor-pointer text-gray-400 hover:text-gray-300">
+                      Details
+                    </summary>
+                    <pre className="mt-1 text-gray-400 whitespace-pre-wrap break-all">
+                      {JSON.stringify(log.data, null, 2)}
+                    </pre>
+                  </details>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
 

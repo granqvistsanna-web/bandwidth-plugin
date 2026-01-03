@@ -1,44 +1,146 @@
-import type { ProjectAnalysis, PageAnalysis, AnalysisMode } from '../types/analysis'
-import { getAllPages, traverseNodeTree } from './traversal'
+import type { ProjectAnalysis, PageAnalysis, AnalysisMode, AssetInfo, Recommendation } from '../types/analysis'
+import { getAllPages, collectAllAssetsEfficient, collectPageAssets } from './traversal'
 import { calculateBreakpointData, aggregateBreakpointData } from './bandwidth'
 import { generateRecommendations } from './recommendations'
 import { getPublishedUrl, analyzePublishedSite } from './publishedAnalysis'
+import { debugLog } from '../utils/debugLog'
 
 export async function analyzeProject(mode: AnalysisMode = 'canvas'): Promise<ProjectAnalysis> {
   try {
-    const pages = await getAllPages()
-    console.log('Pages to analyze:', pages)
+    debugLog.info('🚀 Starting project analysis...')
+    const pages = await getAllPages(true) // Exclude design pages by default
+    debugLog.success(`Found ${pages.length} pages`, pages.map(p => p.name || p.id))
 
     if (!pages || !Array.isArray(pages)) {
-      console.error('Pages is not an array:', pages)
+      debugLog.error('Pages is not an array:', pages)
       throw new Error('Could not load pages from Framer project')
     }
 
     if (pages.length === 0) {
+      debugLog.error('No pages found in project')
       throw new Error('No pages found in project. Try creating a page first.')
     }
 
-    const pageAnalyses: PageAnalysis[] = []
+    // Use efficient collection for overall project analysis
+    debugLog.info('📡 Collecting assets using efficient API (getNodesWithAttributeSet)...')
+    const desktopAssets = await collectAllAssetsEfficient('desktop', true) // Exclude design pages
 
-    // Analyze each page
-    for (const page of pages) {
-      const pageAnalysis = await analyzePage(page)
-      pageAnalyses.push(pageAnalysis)
+    debugLog.success(`✅ Collected ${desktopAssets.length} assets total`)
+
+    if (desktopAssets.length > 0) {
+      debugLog.info('Sample assets:', desktopAssets.slice(0, 3).map(a => ({
+        name: a.nodeName,
+        type: a.type,
+        format: a.format,
+        dimensions: `${a.dimensions.width}x${a.dimensions.height}`,
+        url: a.url?.substring(0, 50)
+      })))
+    } else {
+      debugLog.warn('⚠️ No assets found! This might indicate an issue with image detection.')
     }
 
-    // Calculate overall statistics across all pages
-    const overallMobile = aggregateBreakpointData(
-      pageAnalyses.map(p => p.breakpoints.mobile)
-    )
-    const overallTablet = aggregateBreakpointData(
-      pageAnalyses.map(p => p.breakpoints.tablet)
-    )
-    const overallDesktop = aggregateBreakpointData(
-      pageAnalyses.map(p => p.breakpoints.desktop)
+    // Calculate bandwidth for desktop (simplified for MVP)
+    debugLog.info('💰 Calculating bandwidth estimates...')
+    const overallDesktop = calculateBreakpointData(desktopAssets, 'desktop')
+    const overallMobile = calculateBreakpointData(desktopAssets, 'mobile')
+    const overallTablet = calculateBreakpointData(desktopAssets, 'tablet')
+
+    debugLog.success(`Total bandwidth: ${(overallDesktop.totalBytes / 1024 / 1024).toFixed(2)} MB`)
+
+    // Generate recommendations based on desktop (typically largest)
+    // Note: Overall recommendations don't have page context since they aggregate all pages
+    // We'll merge page-specific recommendations later to get page info
+    debugLog.info('🎯 Generating optimization recommendations...')
+    const overallRecommendations = generateRecommendations(overallDesktop)
+    debugLog.success(`Generated ${overallRecommendations.length} overall recommendations`)
+
+    // Analyze each page individually
+    debugLog.info('📄 Analyzing individual pages...')
+    const pageAnalyses: PageAnalysis[] = await Promise.all(
+      pages.map(async (page) => {
+        try {
+          debugLog.info(`Analyzing page: ${page.name || page.id}`)
+          
+          // Collect assets for this specific page
+          const pageDesktopAssets = await collectPageAssets(page.id, 'desktop')
+          
+          // Calculate bandwidth for this page
+          const pageDesktop = calculateBreakpointData(pageDesktopAssets, 'desktop')
+          const pageMobile = calculateBreakpointData(pageDesktopAssets, 'mobile')
+          const pageTablet = calculateBreakpointData(pageDesktopAssets, 'tablet')
+          
+          // Generate recommendations for this page with page context
+          const pageRecommendations = generateRecommendations(pageDesktop, page.id, page.name || 'Unnamed Page')
+          
+          debugLog.success(`Page ${page.name || page.id}: ${pageDesktopAssets.length} assets, ${pageRecommendations.length} recommendations`)
+          
+          return {
+            pageId: page.id,
+            pageName: page.name || 'Unnamed Page',
+            breakpoints: {
+              mobile: pageMobile,
+              tablet: pageTablet,
+              desktop: pageDesktop
+            },
+            totalAssets: pageDesktopAssets.length,
+            recommendations: pageRecommendations
+          }
+        } catch (error) {
+          debugLog.error(`Error analyzing page ${page.name || page.id}`, error)
+          // Fall back to overall data if page analysis fails
+          return {
+            pageId: page.id,
+            pageName: page.name || 'Unnamed Page',
+            breakpoints: {
+              mobile: overallMobile,
+              tablet: overallTablet,
+              desktop: overallDesktop
+            },
+            totalAssets: desktopAssets.length,
+            recommendations: []
+          }
+        }
+      })
     )
 
-    // Collect all recommendations
-    const allRecommendations = pageAnalyses.flatMap(p => p.recommendations)
+    // Merge all page-specific recommendations into overall list
+    // This ensures we have page info for recommendations and they're ranked globally
+    const pageRecommendations = pageAnalyses.flatMap(page => page.recommendations)
+    
+    // Create a map of recommendations by nodeId to deduplicate
+    // Prefer page-specific recommendations (with page info) over overall ones
+    const recommendationMap = new Map<string, Recommendation>()
+    
+    // First, add all page-specific recommendations (they have page info)
+    for (const rec of pageRecommendations) {
+      if (rec.nodeId) {
+        recommendationMap.set(rec.nodeId, rec)
+      } else {
+        // For recommendations without nodeId (like grouped SVGs), use the ID
+        recommendationMap.set(rec.id, rec)
+      }
+    }
+    
+    // Then, add overall recommendations only if they don't already exist
+    // This ensures we don't lose recommendations that weren't found in page-specific analysis
+    for (const rec of overallRecommendations) {
+      const key = rec.nodeId || rec.id
+      if (!recommendationMap.has(key)) {
+        recommendationMap.set(key, rec)
+      }
+    }
+    
+    // Convert back to array and sort globally by impact
+    const allRecommendations = Array.from(recommendationMap.values())
+      .sort((a, b) => {
+        // Primary sort: by potential savings (descending)
+        if (b.potentialSavings !== a.potentialSavings) {
+          return b.potentialSavings - a.potentialSavings
+        }
+        // Secondary sort: by priority
+        const priorityOrder = { high: 0, medium: 1, low: 2 }
+        return priorityOrder[a.priority] - priorityOrder[b.priority]
+      })
 
     const result: ProjectAnalysis = {
       mode,
@@ -81,58 +183,3 @@ export async function analyzeProject(mode: AnalysisMode = 'canvas'): Promise<Pro
   }
 }
 
-async function analyzePage(
-  page: { id: string; name?: string }
-): Promise<PageAnalysis> {
-  const pageId = page.id
-  const pageName = page.name || 'Unnamed Page'
-
-  // Collect assets for each breakpoint
-  const mobileAssets = await traverseNodeTree(pageId, 'mobile')
-  const tabletAssets = await traverseNodeTree(pageId, 'tablet')
-  const desktopAssets = await traverseNodeTree(pageId, 'desktop')
-
-  // Calculate bandwidth for each breakpoint
-  const mobileData = calculateBreakpointData(mobileAssets, 'mobile')
-  const tabletData = calculateBreakpointData(tabletAssets, 'tablet')
-  const desktopData = calculateBreakpointData(desktopAssets, 'desktop')
-
-  // Generate recommendations based on desktop (typically largest)
-  const recommendations = generateRecommendations(desktopData)
-
-  // Count total unique assets
-  const allAssetIds = new Set([
-    ...mobileAssets.map(a => a.nodeId),
-    ...tabletAssets.map(a => a.nodeId),
-    ...desktopAssets.map(a => a.nodeId)
-  ])
-
-  return {
-    pageId,
-    pageName,
-    breakpoints: {
-      mobile: mobileData,
-      tablet: tabletData,
-      desktop: desktopData
-    },
-    totalAssets: allAssetIds.size,
-    recommendations
-  }
-}
-
-export async function analyzeCurrentPage(): Promise<PageAnalysis> {
-  try {
-    // Get current selection or active page
-    const pages = await getAllPages()
-    if (!pages || pages.length === 0) {
-      throw new Error('No pages found')
-    }
-
-    // For now, analyze the first page
-    // TODO: Add logic to detect currently active page
-    return await analyzePage(pages[0])
-  } catch (error) {
-    console.error('Error analyzing current page:', error)
-    throw error
-  }
-}

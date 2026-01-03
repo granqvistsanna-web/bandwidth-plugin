@@ -1,7 +1,7 @@
 import { framer } from "framer-plugin"
 import { useState, useEffect } from "react"
 import { Header } from "./components/Header"
-import { TabNavigation } from "./components/TabNavigation"
+import { SidebarNavigation } from "./components/SidebarNavigation"
 import { OverviewPanel } from "./components/overview/OverviewPanel"
 import { AssetsPanel } from "./components/assets/AssetsPanel"
 import { RecommendationsPanel } from "./components/recommendations/RecommendationsPanel"
@@ -12,12 +12,12 @@ import { useAnalysis } from "./hooks/useAnalysis"
 
 framer.showUI({
     position: "top right",
-    width: 400,
+    width: 500,
     height: 600,
     resizable: true,
-    minWidth: 350,
+    minWidth: 400,
     minHeight: 500,
-    maxWidth: 800,
+    maxWidth: 900,
     maxHeight: 900,
 })
 
@@ -25,7 +25,7 @@ type Tab = 'overview' | 'assets' | 'recommendations' | 'debug'
 
 export function App() {
     const [activeTab, setActiveTab] = useState<Tab>('overview')
-    const { analysis, loading, error, runAnalysis } = useAnalysis()
+    const { analysis, loading, error, runAnalysis, selectedPageId, setSelectedPageId, lastScanned } = useAnalysis()
 
     // Auto-run analysis on mount
     useEffect(() => {
@@ -33,34 +33,45 @@ export function App() {
     }, [runAnalysis])
 
     return (
-        <div className="flex flex-col h-full bg-white">
-            <Header onRefresh={runAnalysis} loading={loading} />
-
-            {!loading && !error && analysis && (
-                <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <div className="relative h-full bg-white w-full">
+            {!loading && !error && (
+                <SidebarNavigation activeTab={activeTab} onTabChange={setActiveTab} />
             )}
 
-            <div className="flex-1 overflow-y-auto">
-                {loading && <LoadingSpinner />}
+            <div className="w-full h-full flex flex-col pl-16">
+                <Header onRefresh={runAnalysis} loading={loading} lastScanned={lastScanned} />
 
-                {error && <ErrorMessage error={error} onRetry={runAnalysis} />}
+                <div className="flex-1 overflow-y-auto">
+                    {loading && <LoadingSpinner />}
 
-                {analysis && !loading && !error && (
-                    <>
-                        {activeTab === 'overview' && (
-                            <OverviewPanel analysis={analysis} />
-                        )}
-                        {activeTab === 'assets' && (
-                            <AssetsPanel analysis={analysis} />
-                        )}
-                        {activeTab === 'recommendations' && (
-                            <RecommendationsPanel analysis={analysis} />
-                        )}
-                        {activeTab === 'debug' && (
-                            <DebugPanel analysis={analysis} />
-                        )}
-                    </>
-                )}
+                    {error && <ErrorMessage error={error} onRetry={runAnalysis} />}
+
+                    {analysis && !loading && !error && (
+                        <>
+                            {activeTab === 'overview' && (
+                                <OverviewPanel 
+                                    analysis={analysis} 
+                                    onNavigateToRecommendations={() => setActiveTab('recommendations')}
+                                />
+                            )}
+                            {activeTab === 'assets' && (
+                                <AssetsPanel 
+                                    analysis={analysis}
+                                    selectedPageId={selectedPageId}
+                                />
+                            )}
+                            {activeTab === 'recommendations' && (
+                                <RecommendationsPanel 
+                                    analysis={analysis}
+                                    selectedPageId={selectedPageId}
+                                />
+                            )}
+                            {activeTab === 'debug' && (
+                                <DebugPanel analysis={analysis} />
+                            )}
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     )

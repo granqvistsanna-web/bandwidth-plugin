@@ -5,30 +5,61 @@ export function estimateImageBytes(
   asset: AssetInfo,
   breakpoint: Breakpoint
 ): number {
+  // SVGs are vector-based, not pixel-based - use simple estimation
+  if (asset.type === 'svg') {
+    // Most Framer SVG icons/elements are very small (1-5 KB)
+    // Larger SVGs might be 10-20 KB
+    const { width, height } = asset.dimensions
+
+    // Estimate based on complexity (larger display size = more complex usually)
+    if (width > 0 && height > 0) {
+      const area = width * height
+      // Simple heuristic: ~1 byte per 100 square pixels of display area
+      // This is very rough but better than pixel-based calculation
+      const estimatedBytes = Math.max(1 * 1024, Math.min(area / 100, 30 * 1024))
+      return estimatedBytes
+    }
+
+    // Default for unknown size SVGs
+    return 3 * 1024 // 3 KB default for SVG
+  }
+
   const { width, height } = asset.dimensions
 
-  console.log('Estimating bytes for asset:', asset.nodeName, 'dimensions:', width, 'x', height)
+  // Prefer actual dimensions if available (more accurate)
+  let effectiveWidth = width
+  let effectiveHeight = height
 
-  // If dimensions are 0, return a default estimate
-  if (width === 0 || height === 0) {
-    console.warn('Asset has 0 dimensions, using default estimate:', asset.nodeName)
+  if (asset.actualDimensions && asset.actualDimensions.width > 0 && asset.actualDimensions.height > 0) {
+    effectiveWidth = asset.actualDimensions.width
+    effectiveHeight = asset.actualDimensions.height
+  }
+
+  // Validate dimensions are valid numbers
+  if (!effectiveWidth || !effectiveHeight || !isFinite(effectiveWidth) || !isFinite(effectiveHeight) ||
+      isNaN(effectiveWidth) || isNaN(effectiveHeight) || effectiveWidth <= 0 || effectiveHeight <= 0) {
+    // Default estimate for unknown size raster images
     return 100 * 1024 // Default 100KB for unknown size
   }
 
-  // Apply pixel density multiplier
+  // Apply pixel density multiplier (for raster images)
   const pixelDensity = getPixelDensity(breakpoint)
-  const effectiveWidth = width * pixelDensity
-  const effectiveHeight = height * pixelDensity
+  const scaledWidth = effectiveWidth * pixelDensity
+  const scaledHeight = effectiveHeight * pixelDensity
 
   // Calculate raw pixel data (RGBA = 4 bytes per pixel)
-  const totalPixels = effectiveWidth * effectiveHeight
+  const totalPixels = scaledWidth * scaledHeight
   const rawBytes = totalPixels * 4
 
   // Apply compression ratio based on format
   const compressionRatio = getCompressionRatio(asset.format || 'unknown', asset.type)
 
   const estimatedBytes = rawBytes * compressionRatio
-  console.log('Estimated bytes:', estimatedBytes, 'format:', asset.format, 'type:', asset.type)
+
+  // Validate result
+  if (!isFinite(estimatedBytes) || isNaN(estimatedBytes) || estimatedBytes < 0) {
+    return 100 * 1024 // Fallback to default
+  }
 
   return estimatedBytes
 }
@@ -40,7 +71,8 @@ function getCompressionRatio(format: string, type: string): number {
     'jpeg': 0.15,  // ~85% compression (quality 80)
     'jpg': 0.15,
     'png': 0.40,   // ~60% compression
-    'webp': 0.10,  // ~90% compression
+    'webp': 0.10,  // ~90% compression (WebP is very efficient)
+    'avif': 0.08,  // ~92% compression (AVIF is even more efficient)
     'svg': 0.05,   // Very efficient for vectors
     'gif': 0.30,
     'unknown': 0.30 // Conservative estimate

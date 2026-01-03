@@ -39,58 +39,58 @@
 ### Priority 1: Essential MVP Features
 
 #### Asset Metadata Improvements
-- [ ] **Get intrinsic dimensions**
-  - [ ] Use `ImageAsset.measure()` API
-  - [ ] Store actualWidth and actualHeight
-  - [ ] Display in Assets table
-  - [ ] Use for better oversized detection
+- [x] **Get intrinsic dimensions**
+  - [x] Use `ImageAsset.measure()` API
+  - [x] Store actualWidth and actualHeight
+  - [x] Display in Assets table
+  - [x] Use for better oversized detection
 
-- [ ] **Track asset usage count**
-  - [ ] Deduplicate assets by URL
-  - [ ] Count nodes using each asset
-  - [ ] Track which pages use each asset
-  - [ ] Display "Used in X places" badge
+- [x] **Track asset usage count**
+  - [x] Deduplicate assets by URL
+  - [x] Count nodes using each asset
+  - [x] Track which pages use each asset
+  - [x] Display "Used in X places" badge
 
-- [ ] **Add asset preview thumbnails**
-  - [ ] Get image URLs from Framer API
-  - [ ] Display small preview in Assets table
-  - [ ] Fallback icon for SVG
-  - [ ] Handle missing/broken images
+- [x] **Add asset preview thumbnails**
+  - [x] Get image URLs from Framer API
+  - [x] Display small preview in Assets table
+  - [x] Fallback icon for SVG
+  - [x] Handle missing/broken images
 
 #### Recommendations Improvements
-- [ ] **"Top 3 Quick Wins" section**
-  - [ ] Extract top 3 by potential savings
-  - [ ] Add highlighted section at top of panel
-  - [ ] Special styling (border, icon, emphasis)
-  - [ ] Show combined savings total
+- [x] **"Top 3 Quick Wins" section**
+  - [x] Extract top 3 by potential savings
+  - [x] Add highlighted section at top of panel
+  - [x] Special styling (border, icon, emphasis)
+  - [x] Show combined savings total
 
-- [ ] **Better recommendation phrasing**
-  - [ ] "Replace with AVIF/W1600px max"
+- [x] **Better recommendation phrasing**
+  - [x] Include specific pixel dimensions in actions
+  - [ ] "Replace with AVIF/W1600px max" (future enhancement)
   - [ ] "Avoid placing this above the fold" (needs ATF detection)
   - [ ] "Convert GIF to MP4" (needs video detection)
-  - [ ] Include specific pixel dimensions in actions
 
 #### Page Selection
-- [ ] **Page selector dropdown**
-  - [ ] List all pages from project
-  - [ ] Allow selecting individual page
-  - [ ] "All Pages" option (current behavior)
-  - [ ] Update analysis when page changes
-  - [ ] Show current page name in UI
+- [x] **Page selector dropdown**
+  - [x] List all pages from project
+  - [x] Allow selecting individual page
+  - [x] "All Pages" option (current behavior)
+  - [x] Update analysis when page changes
+  - [x] Show current page name in UI
 
 #### Export Feature
-- [ ] **Markdown export**
-  - [ ] Format report with headings
-  - [ ] Include summary stats
-  - [ ] List top 10 assets in table
-  - [ ] List all recommendations
-  - [ ] Copy to clipboard button
-  - [ ] Success notification
+- [x] **Markdown export**
+  - [x] Format report with headings
+  - [x] Include summary stats
+  - [x] List top 10 assets in table
+  - [x] List all recommendations
+  - [x] Copy to clipboard button
+  - [x] Success notification
 
-- [ ] **JSON export (optional)**
-  - [ ] Full data export
-  - [ ] Download as file
-  - [ ] Useful for automation
+- [x] **JSON export (optional)**
+  - [x] Full data export
+  - [x] Download as file
+  - [x] Useful for automation
 
 ### Priority 2: Accuracy & Validation
 
@@ -109,30 +109,33 @@
   - [ ] Tune compression ratios if needed
 
 #### Bug Fixes
-- [ ] Fix any console errors
-- [ ] Handle edge cases (no images, huge projects)
-- [ ] Improve performance if needed
-- [ ] Add more descriptive error messages
+- [x] Fix any console errors
+- [x] Handle edge cases (no images, huge projects)
+- [x] Fix NaN/undefined values in reports
+- [x] Fix CSS dimension parsing
+- [x] Fix SVG recommendation over-reporting
+- [ ] Improve performance if needed (test on large projects)
+- [x] Add more descriptive error messages
 
 ### Priority 3: Polish & UX
 
 #### UI Improvements
 - [x] Better breakpoint tab spacing
 - [x] Balanced header layout
-- [ ] Improve empty states
-- [ ] Add tooltips for unclear terms
-- [ ] Better loading indicators
-- [ ] Improve responsive layout
+- [x] Improve empty states
+- [x] Add tooltips for unclear terms
+- [x] Better loading indicators
+- [ ] Improve responsive layout (optional)
 
 #### Documentation
-- [ ] Update README with:
-  - [ ] What the plugin does
-  - [ ] How to install
-  - [ ] How to use
-  - [ ] Screenshots
-  - [ ] Known limitations
-- [ ] Add inline help/tooltips in UI
-- [ ] Create demo video
+- [x] Update README with:
+  - [x] What the plugin does
+  - [x] How to install
+  - [x] How to use
+  - [ ] Screenshots (needs actual screenshots)
+  - [x] Known limitations
+- [x] Add inline help/tooltips in UI
+- [ ] Create demo video (optional)
 
 ---
 
@@ -313,16 +316,16 @@
 
 ## 📊 Progress Tracking
 
-**Overall MVP Progress: 70%**
+**Overall MVP Progress: 90%**
 
 - Core Engine: 95% ✅
-- UI Components: 80% ✅
-- Asset Metadata: 40% 🚧
-- Recommendations: 70% 🚧
-- Export: 0% ⏳
-- Page Selection: 0% ⏳
+- UI Components: 90% ✅
+- Asset Metadata: 95% ✅
+- Recommendations: 85% ✅
+- Export: 100% ✅
+- Page Selection: 100% ✅
 - Testing: 20% ⏳
-- Documentation: 60% 🚧
+- Documentation: 80% ✅
 
 ---
 
@@ -330,10 +333,12 @@
 
 1. ~~Plugin crashes with "pages not iterable"~~ ✅ Fixed
 2. ~~UI styling looks wonky~~ ✅ Fixed
-3. Asset list doesn't show intrinsic dimensions
-4. No way to select individual pages
-5. Can't export report
-6. Recommendations could be more specific
+3. ~~Asset list doesn't show intrinsic dimensions~~ ✅ Fixed
+4. ~~No way to select individual pages~~ ✅ Fixed
+5. ~~Can't export report~~ ✅ Fixed
+6. ~~Recommendations could be more specific~~ ✅ Improved
+7. Need to test accuracy against real builds
+8. Performance on very large projects (100+ pages) untested
 
 ---
 
