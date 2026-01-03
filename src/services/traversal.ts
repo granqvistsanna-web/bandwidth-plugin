@@ -228,7 +228,8 @@ async function extractAssetInfo(
           actualDimensions,
           format: detectImageFormat(imageUrl),
         visible: true,
-          url: imageUrl
+          url: imageUrl,
+          imageAssetId: image.id
         }
       }
     }
@@ -439,7 +440,8 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
           dimensions,
           format: detectImageFormat(image.url),
           visible: node.visible !== false,
-          url: image.url
+          url: image.url,
+          imageAssetId: image.id
         }
         
         assets.push(asset)

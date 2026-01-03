@@ -19,6 +19,7 @@ export function OverviewPanel({ analysis, onNavigateToRecommendations }: Overvie
   const breakpointData = analysis.overallBreakpoints.desktop
   const recommendations = analysis.allRecommendations
   const pageCount = analysis.totalPages
+  const customCode = analysis.publishedData?.customCode
 
   const handleExportMarkdown = async () => {
     try {
@@ -151,6 +152,87 @@ export function OverviewPanel({ analysis, onNavigateToRecommendations }: Overvie
         </div>
         <BreakdownChart breakdown={breakpointData.breakdown} totalBytes={breakpointData.totalBytes} />
       </div>
+
+      {/* Custom Code Assets Section */}
+      {customCode && customCode.hasCustomCode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <h3 className="text-sm font-semibold text-amber-900 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+                Custom Code Assets
+              </h3>
+              <p className="text-xs text-amber-700 mt-1">
+                Assets loaded dynamically by custom code (code overrides/components)
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-lg font-bold text-amber-900">
+                {formatBytes(customCode.totalEstimatedBytes)}
+              </div>
+              <div className="text-xs text-amber-700">
+                {customCode.assets.length} asset{customCode.assets.length !== 1 ? 's' : ''}
+              </div>
+            </div>
+          </div>
+          
+          {customCode.assets.length > 0 && (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {customCode.assets.slice(0, 5).map((asset, i) => (
+                <div key={i} className="bg-white rounded p-2 text-xs">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate" title={asset.url}>
+                        {asset.url.length > 50 ? asset.url.substring(0, 50) + '...' : asset.url}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-medium">
+                          {asset.type}
+                        </span>
+                        {asset.isLazyLoaded && (
+                          <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded text-[10px] font-medium">
+                            Lazy
+                          </span>
+                        )}
+                        {asset.estimatedBytes && (
+                          <span className="text-gray-600">
+                            {formatBytes(asset.estimatedBytes)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-gray-500 mt-1 truncate" title={asset.source}>
+                        Source: {asset.source.length > 60 ? asset.source.substring(0, 60) + '...' : asset.source}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {customCode.assets.length > 5 && (
+                <div className="text-xs text-amber-700 text-center pt-1">
+                  + {customCode.assets.length - 5} more asset{customCode.assets.length - 5 !== 1 ? 's' : ''}
+                </div>
+              )}
+            </div>
+          )}
+          
+          {customCode.warnings.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-amber-300">
+              <div className="text-xs text-amber-800 space-y-1">
+                {customCode.warnings.map((warning, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <svg className="w-3 h-3 text-amber-600 mt-0.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>{warning}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-gray-50 rounded-lg p-4">

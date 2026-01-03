@@ -1,4 +1,5 @@
 import { framer } from 'framer-plugin'
+import { analyzeAllJavaScriptBundles, type CodeAnalysisResult } from './codeAnalyzer'
 
 export interface PublishedResource {
   url: string
@@ -18,6 +19,7 @@ export interface PublishedAnalysisResult {
     fonts: number
     other: number
   }
+  customCode?: CodeAnalysisResult
 }
 
 /**
@@ -129,6 +131,8 @@ export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAn
 
     // Find JS files
     const scripts = doc.querySelectorAll('script[src]')
+    const jsUrls: string[] = []
+    
     for (const script of Array.from(scripts)) {
       const src = script.getAttribute('src')
       if (!src) continue
@@ -143,6 +147,30 @@ export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAn
           actualBytes: size
         })
         totalBytes += size
+        jsUrls.push(absoluteUrl)
+      }
+    }
+
+    // Analyze JavaScript bundles for custom code assets
+    let customCodeAnalysis: CodeAnalysisResult | undefined
+    if (jsUrls.length > 0) {
+      try {
+        customCodeAnalysis = await analyzeAllJavaScriptBundles(siteUrl, jsUrls)
+        
+        // Add custom code assets to resources
+        for (const asset of customCodeAnalysis.assets) {
+          if (asset.estimatedBytes) {
+            resources.push({
+              url: asset.url,
+              type: asset.type === 'image' ? 'image' : 
+                    asset.type === 'font' ? 'font' : 'other',
+              actualBytes: asset.estimatedBytes
+            })
+            totalBytes += asset.estimatedBytes
+          }
+        }
+      } catch (error) {
+        console.warn('Error analyzing custom code:', error)
       }
     }
 
@@ -160,7 +188,8 @@ export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAn
       isPublished: true,
       resources,
       totalBytes,
-      breakdown
+      breakdown,
+      customCode: customCodeAnalysis
     }
   } catch (error) {
     console.error('Error analyzing published site:', error)

@@ -117,16 +117,93 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
   const actualWidth = Math.round(asset.actualDimensions?.width || dimensions.width)
   const actualHeight = Math.round(asset.actualDimensions?.height || dimensions.height)
 
+  // Calculate optimal dimensions
+  // Use actual dimensions if available (more accurate), otherwise use rendered dimensions
+  const baseWidth = actualWidth > 0 ? actualWidth : dimensions.width
+  const baseHeight = actualHeight > 0 ? actualHeight : dimensions.height
+  
+  // For optimization: use 2x for retina displays, but ensure minimum quality
+  // Cap at 1920px (common max width for modern displays) instead of 1600px
+  // Ensure we never make images smaller than their rendered size
+  const minWidth = Math.max(baseWidth, dimensions.width) // Don't go smaller than rendered
+  const optimalWidth = Math.min(Math.ceil(minWidth * 2), 1920)
+  const optimalHeight = Math.max(1, Math.ceil((optimalWidth / baseWidth) * baseHeight))
+
+  // Check if image is already at or close to optimal dimensions
+  // Allow 10% tolerance for rounding differences
+  const widthTolerance = optimalWidth * 0.1
+  const heightTolerance = optimalHeight * 0.1
+  const isAtOptimalDimensions = 
+    Math.abs(actualWidth - optimalWidth) <= widthTolerance &&
+    Math.abs(actualHeight - optimalHeight) <= heightTolerance
+
+  // Also check if width is already at or below the max recommended (1600px)
+  // This handles cases where the image was optimized to the recommended size
+  const isAtRecommendedMaxWidth = actualWidth <= 1600 && actualWidth >= optimalWidth * 0.9
+
+  // If image is already optimized format AND at optimal/recommended dimensions, be more lenient
+  if (isOptimizedFormat && (isAtOptimalDimensions || isAtRecommendedMaxWidth)) {
+    // For already-optimized images at good dimensions, use much higher threshold
+    // Only flag if still extremely large (> 1.5MB) - might need quality reduction
+    if (estimatedBytes > 1.5 * 1024 * 1024) {
+      // Still very large even after optimization - might be quality issue
+      const targetBytes = 800 * 1024 // Target 800KB for already-optimized images
+      let potentialSavings = estimatedBytes - targetBytes
+      potentialSavings = Math.max(1, Math.round(potentialSavings))
+      
+      return {
+        id: `oversized-${asset.nodeId}`,
+        type: 'oversized',
+        priority: 'low',
+        nodeId: asset.nodeId,
+        nodeName: asset.nodeName,
+        currentBytes: estimatedBytes,
+        potentialSavings,
+        description: `Image is still large (${Math.round(estimatedBytes / 1024)}KB, ${actualWidth}x${actualHeight}px, already WebP/AVIF at recommended size)`,
+        actionable: 'Consider reducing quality or using more aggressive compression. Image is already at recommended dimensions.',
+        url: asset.url,
+        pageId,
+        pageName,
+        imageAssetId: asset.imageAssetId,
+        optimalWidth,
+        optimalHeight
+      }
+    }
+    // Image is optimized, at good dimensions, and reasonable size - no recommendation needed
+    return null
+  }
+
   // Flag very large images (> 500KB)
-  if (estimatedBytes > 500 * 1024) {
-    const targetBytes = 300 * 1024 // Target 300KB
+  // But use higher threshold (800KB) for images that are already optimized format AND at optimal dimensions
+  const oversizedThreshold = (isOptimizedFormat && isAtOptimalDimensions) ? 800 * 1024 : 500 * 1024
+  
+  if (estimatedBytes > oversizedThreshold) {
+    // For already-optimized images at optimal size, use higher target
+    const targetBytes = (isOptimizedFormat && isAtOptimalDimensions) ? 500 * 1024 : 300 * 1024
     let potentialSavings = estimatedBytes - targetBytes
     // Ensure positive integer
     potentialSavings = Math.max(1, Math.round(potentialSavings))
 
-    // Calculate optimal dimensions (2x for retina, max 1600px width for web)
-    const optimalWidth = Math.min(Math.ceil(dimensions.width * 2), 1600)
-    const optimalHeight = Math.max(1, Math.ceil((optimalWidth / dimensions.width) * dimensions.height))
+    // If already WebP/AVIF and at optimal dimensions, suggest quality reduction instead
+    if (isOptimizedFormat && isAtOptimalDimensions) {
+      return {
+        id: `oversized-${asset.nodeId}`,
+        type: 'oversized',
+        priority: 'low',
+        nodeId: asset.nodeId,
+        nodeName: asset.nodeName,
+        currentBytes: estimatedBytes,
+        potentialSavings,
+        description: `Image is large (${Math.round(estimatedBytes / 1024)}KB, ${actualWidth}x${actualHeight}px, already WebP/AVIF at optimal size)`,
+        actionable: 'Consider reducing quality or using a more aggressive compression. Image is already at recommended dimensions.',
+        url: asset.url,
+        pageId,
+        pageName,
+        imageAssetId: asset.imageAssetId,
+        optimalWidth,
+        optimalHeight
+      }
+    }
 
     // If already WebP/AVIF, only suggest resizing (not format conversion)
     const actionable = isOptimizedFormat
@@ -145,22 +222,41 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
       actionable,
       url: asset.url,
       pageId,
-      pageName
+      pageName,
+      imageAssetId: asset.imageAssetId,
+      optimalWidth,
+      optimalHeight
     }
   }
 
   // Flag medium-large images (200-500KB)
   if (estimatedBytes > 200 * 1024) {
+    // Check if already at optimal dimensions (recalculate for this threshold)
+    const mediumBaseWidth = actualWidth > 0 ? actualWidth : dimensions.width
+    const mediumBaseHeight = actualHeight > 0 ? actualHeight : dimensions.height
+    const mediumMinWidth = Math.max(mediumBaseWidth, dimensions.width)
+    const mediumOptimalWidth = Math.min(Math.ceil(mediumMinWidth * 2), 1920)
+    const mediumOptimalHeight = Math.max(1, Math.ceil((mediumOptimalWidth / mediumBaseWidth) * mediumBaseHeight))
+    const mediumWidthTolerance = mediumOptimalWidth * 0.1
+    const mediumHeightTolerance = mediumOptimalHeight * 0.1
+    const isAtMediumOptimalDimensions = 
+      Math.abs(actualWidth - mediumOptimalWidth) <= mediumWidthTolerance &&
+      Math.abs(actualHeight - mediumOptimalHeight) <= mediumHeightTolerance
+
+    // If already optimized format AND at optimal dimensions, skip
+    if (isOptimizedFormat && isAtMediumOptimalDimensions) {
+      return null
+    }
+
     const targetBytes = 150 * 1024
     let potentialSavings = estimatedBytes - targetBytes
     // Ensure positive integer
     potentialSavings = Math.max(1, Math.round(potentialSavings))
-    const optimalWidth = Math.min(Math.ceil(dimensions.width * 2), 1600)
 
     // If already WebP/AVIF, only suggest resizing
     const actionable = isOptimizedFormat
-      ? `Resize to max ${optimalWidth}px width to reduce file size`
-      : `Resize to max ${optimalWidth}px width and compress to WebP format`
+      ? `Resize to max ${mediumOptimalWidth}px width to reduce file size`
+      : `Resize to max ${mediumOptimalWidth}px width and compress to WebP format`
 
     return {
       id: `oversized-${asset.nodeId}`,
@@ -174,7 +270,10 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
       actionable,
       url: asset.url,
       pageId,
-      pageName
+      pageName,
+      imageAssetId: asset.imageAssetId,
+      optimalWidth,
+      optimalHeight
     }
   }
 
@@ -202,6 +301,10 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
     potentialSavings = Math.max(1, Math.round(potentialSavings))
     const actualWidth = Math.round(asset.actualDimensions?.width || asset.dimensions.width)
     const actualHeight = Math.round(asset.actualDimensions?.height || asset.dimensions.height)
+    // Don't reduce below rendered size, cap at 1920px for modern displays
+    const minWidth = Math.max(actualWidth, asset.dimensions.width)
+    const optimalWidth = Math.min(minWidth, 1920)
+    const optimalHeight = Math.max(1, Math.round((optimalWidth / actualWidth) * actualHeight))
 
     return {
       id: `format-${asset.nodeId}`,
@@ -212,10 +315,13 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
       currentBytes: estimatedBytes,
       potentialSavings,
       description: `PNG format used for photo (${actualWidth}x${actualHeight}px)`,
-      actionable: 'Replace with AVIF/WebP format (max 1600px width) for 60% smaller file',
+        actionable: 'Replace with AVIF/WebP format (max 1920px width) for 60% smaller file',
       url: asset.url,
       pageId,
-      pageName
+      pageName,
+      imageAssetId: asset.imageAssetId,
+      optimalWidth,
+      optimalHeight
     }
   }
 
@@ -226,7 +332,10 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
     potentialSavings = Math.max(1, Math.round(potentialSavings))
     const actualWidth = Math.round(asset.actualDimensions?.width || asset.dimensions.width)
     const actualHeight = Math.round(asset.actualDimensions?.height || asset.dimensions.height)
-    const optimalWidth = Math.min(actualWidth, 1600)
+    // Don't reduce below rendered size, cap at 1920px for modern displays
+    const minWidth = Math.max(actualWidth, asset.dimensions.width)
+    const optimalWidth = Math.min(minWidth, 1920)
+    const optimalHeight = Math.max(1, Math.round((optimalWidth / actualWidth) * actualHeight))
 
     return {
       id: `format-webp-${asset.nodeId}`,
@@ -240,7 +349,10 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
       actionable: `Replace with AVIF/WebP format (max ${optimalWidth}px width) for 30% smaller file`,
       url: asset.url,
       pageId,
-      pageName
+      pageName,
+      imageAssetId: asset.imageAssetId,
+      optimalWidth,
+      optimalHeight
     }
   }
 

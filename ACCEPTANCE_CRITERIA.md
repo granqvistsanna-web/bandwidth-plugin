@@ -220,3 +220,4 @@ const top3QuickWins = highPriorityRecs.length >= 3
 6. ⏳ Add lazy loading recommendations (future)
 7. ⏳ Add "above the fold" detection (future)
 
+

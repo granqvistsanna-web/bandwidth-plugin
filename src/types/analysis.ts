@@ -19,6 +19,7 @@ export interface AssetInfo {
   usageCount?: number
   usedInPages?: string[]
   svgContent?: string // For SVG nodes, store the SVG markup to analyze features
+  imageAssetId?: string // ImageAsset.id for tracking and replacement
 }
 
 export interface BreakdownData {
@@ -60,6 +61,9 @@ export interface Recommendation {
   usedInPages?: { pageId: string; pageName: string }[]
   pageId?: string
   pageName?: string
+  imageAssetId?: string // ImageAsset.id for tracking and replacement
+  optimalWidth?: number // Target width for optimization
+  optimalHeight?: number // Target height for optimization
 }
 
 export interface CostEstimation {
@@ -90,6 +94,18 @@ export interface ProjectAnalysis {
       js: number
       fonts: number
       other: number
+    }
+    customCode?: {
+      assets: Array<{
+        url: string
+        type: 'image' | 'font' | 'video' | 'audio' | 'other'
+        source: string
+        estimatedBytes?: number
+        isLazyLoaded?: boolean
+      }>
+      totalEstimatedBytes: number
+      hasCustomCode: boolean
+      warnings: string[]
     }
   }
 }

@@ -165,7 +165,13 @@ export async function analyzeProject(mode: AnalysisMode = 'canvas'): Promise<Pro
           result.publishedUrl = publishedUrl
           result.publishedData = {
             totalBytes: publishedData.totalBytes,
-            breakdown: publishedData.breakdown
+            breakdown: publishedData.breakdown,
+            customCode: publishedData.customCode ? {
+              assets: publishedData.customCode.assets,
+              totalEstimatedBytes: publishedData.customCode.totalEstimatedBytes,
+              hasCustomCode: publishedData.customCode.hasCustomCode,
+              warnings: publishedData.customCode.warnings
+            } : undefined
           }
         } catch (error) {
           console.error('Failed to analyze published site:', error)
