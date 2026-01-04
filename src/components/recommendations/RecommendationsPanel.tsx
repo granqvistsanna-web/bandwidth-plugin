@@ -87,121 +87,138 @@ export function RecommendationsPanel({
     }
 
     return (
-    <div style={{ padding: spacing.lg, backgroundColor: 'var(--framer-color-bg)' }}>
-      {/* Page Header */}
+    <div style={{ padding: spacing.lg, backgroundColor: 'var(--framer-color-bg)', minHeight: '100vh' }}>
+      {/* Compact Header */}
       <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: spacing.lg
+        marginBottom: spacing.xl
       }}>
         <h1 style={{
-          fontSize: typography.fontSize.xl,
+          fontSize: typography.fontSize.lg,
           fontWeight: typography.fontWeight.bold,
-          color: 'var(--framer-color-text)',
+          color: colors.almostBlack,
           margin: 0,
-          lineHeight: typography.lineHeight.tight
+          marginBottom: spacing.xs,
+          lineHeight: typography.lineHeight.tight,
+          letterSpacing: '-0.02em'
         }}>
           Recommendations
         </h1>
         {lastScanned && (
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: spacing.xs,
-            padding: `${spacing.xs} ${spacing.sm}`,
-            backgroundColor: colors.warmGray[100],
-            borderRadius: borders.radius.md,
             fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-secondary)'
+            color: colors.warmGray[500]
           }}>
-            <div
-              style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: loading ? '#3b82f6' : '#22c55e',
-                opacity: loading ? 0.8 : 1,
-                flexShrink: 0
-              }}
-            />
-            <span>{loading ? 'analyzing' : formatTimestamp(lastScanned)}</span>
+            {loading ? 'Analyzing...' : `Scanned ${formatTimestamp(lastScanned)}`}
           </div>
         )}
       </div>
 
+      {/* Enhanced Savings Card */}
       {sortedRecommendations.length > 0 && (
         <div
           style={{
-            padding: spacing.md,
+            padding: spacing.lg,
             marginBottom: spacing.lg,
-            backgroundColor: colors.warmGray[100],
+            backgroundColor: colors.white,
             borderRadius: borders.radius.lg,
+            border: `1px solid ${colors.warmGray[200]}`,
+            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.06)'
           }}
         >
           <div style={{
-            fontSize: typography.fontSize.lg,
-            fontWeight: typography.fontWeight.bold,
-            color: 'var(--framer-color-text)',
-            marginBottom: '2px',
-            lineHeight: typography.lineHeight.tight,
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: spacing.sm,
+            marginBottom: spacing.xs
           }}>
-            {formatBytes(totalSavings)}
+            <div style={{
+              fontSize: '28px',
+              fontWeight: typography.fontWeight.bold,
+              color: colors.almostBlack,
+              lineHeight: 1,
+              letterSpacing: '-0.02em'
+            }}>
+              {formatBytes(totalSavings)}
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              color: colors.warmGray[500],
+              fontWeight: typography.fontWeight.medium
+            }}>
+              can be saved
+            </div>
           </div>
+
+          {/* Compact Priority Breakdown */}
           <div style={{
+            display: 'flex',
+            gap: spacing.md,
             fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-secondary)',
-            fontFamily: typography.fontFamily.sans,
+            color: colors.warmGray[600]
           }}>
-            could be saved • {priorityCounts.high} high, {priorityCounts.medium} medium, {priorityCounts.low} low
+            <span style={{ fontWeight: typography.fontWeight.medium }}>
+              {priorityCounts.high} high
+            </span>
+            <span style={{ color: colors.warmGray[400] }}>·</span>
+            <span style={{ fontWeight: typography.fontWeight.medium }}>
+              {priorityCounts.medium} medium
+            </span>
+            <span style={{ color: colors.warmGray[400] }}>·</span>
+            <span style={{ fontWeight: typography.fontWeight.medium }}>
+              {priorityCounts.low} low
+            </span>
           </div>
         </div>
       )}
 
-      {/* Priority Filter - Compact Dropdown */}
-      <div style={{ marginBottom: spacing.lg }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: spacing.sm
+      {/* Compact Filter Dropdown */}
+      <div style={{
+        marginBottom: spacing.lg,
+        display: 'flex',
+        alignItems: 'center',
+        gap: spacing.sm
+      }}>
+        <label style={{
+          fontSize: typography.fontSize.xs,
+          fontWeight: typography.fontWeight.medium,
+          color: colors.warmGray[600]
         }}>
-          <label style={{
+          Show:
+        </label>
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value as 'all' | 'high' | 'medium' | 'low')}
+          style={{
+            padding: `${spacing.xs} ${spacing.sm}`,
+            paddingRight: spacing.lg,
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
-            color: 'var(--framer-color-text-secondary)',
-          }}>
-            Priority:
-          </label>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value as 'all' | 'high' | 'medium' | 'low')}
-            style={{
-              padding: `${spacing.xs} ${spacing.sm}`,
-              fontSize: typography.fontSize.xs,
-              fontWeight: typography.fontWeight.medium,
-              color: 'var(--framer-color-text)',
-              backgroundColor: 'var(--framer-color-bg)',
-              border: `1px solid var(--framer-color-divider)`,
-              borderRadius: borders.radius.sm,
-              cursor: 'pointer',
-              minWidth: '140px',
-              transition: 'all 0.15s ease'
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
-            }}
-          >
-            <option value="all">All ({activeRecommendations.length})</option>
-            <option value="high">High priority ({priorityCounts.high})</option>
-            <option value="medium">Medium priority ({priorityCounts.medium})</option>
-            <option value="low">Low priority ({priorityCounts.low})</option>
-          </select>
-        </div>
+            color: colors.almostBlack,
+            backgroundColor: colors.white,
+            border: `1px solid ${colors.warmGray[200]}`,
+            borderRadius: borders.radius.md,
+            cursor: 'pointer',
+            transition: 'all 0.15s ease',
+            appearance: 'none',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 8px center',
+            minWidth: '140px'
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = colors.warmGray[400]
+            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.05)'
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = colors.warmGray[200]
+            e.currentTarget.style.boxShadow = 'none'
+          }}
+        >
+          <option value="all">All ({activeRecommendations.length})</option>
+          <option value="high">High priority ({priorityCounts.high})</option>
+          <option value="medium">Medium priority ({priorityCounts.medium})</option>
+          <option value="low">Low priority ({priorityCounts.low})</option>
+        </select>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>

@@ -317,38 +317,33 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
         imageAssetId={recommendation.imageAssetId}
         nodeName={recommendation.nodeName}
       />
-    <div 
+    <div
       style={{
-        backgroundColor: colors.warmGray[100],
+        backgroundColor: colors.white,
+        border: `1px solid ${colors.warmGray[200]}`,
         borderRadius: borders.radius.lg,
-        padding: spacing.md,
-        transition: 'all 0.15s ease',
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.04)'
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.boxShadow = 'none'
+        padding: spacing.lg,
+        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
       }}
     >
-      {/* Compact Header Row */}
-      <div style={{ 
+      {/* Content Row with Thumbnail */}
+      <div style={{
         display: 'flex',
-        alignItems: 'flex-start',
-        gap: spacing.sm,
-        marginBottom: spacing.sm
+        gap: spacing.md,
+        marginBottom: spacing.lg
       }}>
-        {/* Thumbnail - smaller on mobile */}
+        {/* Thumbnail - Left Side */}
         {hasPreview && (
-          <div 
+          <div
             style={{
               flexShrink: 0,
-              width: '48px',
-              height: '48px',
+              width: '64px',
+              height: '64px',
               borderRadius: borders.radius.md,
-              border: `1px solid var(--framer-color-divider)`,
-              backgroundColor: 'var(--framer-color-bg-secondary)',
-              overflow: 'hidden'
+              border: `1.5px solid ${colors.warmGray[200]}`,
+              backgroundColor: colors.warmGray[50],
+              overflow: 'hidden',
+              boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
             }}
           >
             <img
@@ -365,83 +360,69 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
             />
           </div>
         )}
-        
-        {/* Main Content */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {/* Title and Savings Row */}
-          <div style={{ 
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: spacing.sm,
-            marginBottom: spacing.xs
+
+        {/* Content - Right Side */}
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {/* Savings Badge - Refined */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: `3px ${spacing.sm}`,
+            backgroundColor: colors.almostBlack,
+            color: colors.white,
+            fontSize: '11px',
+            fontWeight: typography.fontWeight.bold,
+            borderRadius: borders.radius.full,
+            alignSelf: 'flex-start',
+            letterSpacing: '0.01em'
           }}>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h4 style={{ 
-                fontWeight: typography.fontWeight.semibold,
-                fontSize: typography.fontSize.sm,
-                wordBreak: 'break-word',
-                marginBottom: spacing.xs,
-                color: 'var(--framer-color-text)',
-                lineHeight: typography.lineHeight.tight
-              }}>
-                {recommendation.nodeName || 'Unnamed'}
-              </h4>
-              <div style={{ 
-                display: 'flex',
-                alignItems: 'center',
-                gap: spacing.xs,
-                flexWrap: 'wrap'
-              }}>
-          <Badge variant={recommendation.priority}>
-            {recommendation.priority.toUpperCase()}
-          </Badge>
-                {recommendation.currentBytes > 0 && (
-                  <span style={{ 
-                    fontSize: typography.fontSize.xs,
-                    color: 'var(--framer-color-text-tertiary)'
-                  }}>
-                    {Math.round((recommendation.potentialSavings / recommendation.currentBytes) * 100)}% smaller
-                  </span>
-                )}
-              </div>
-            </div>
-            <div style={{ flexShrink: 0, textAlign: 'right' }}>
-              <div style={{ 
-                fontSize: typography.fontSize.md,
-                fontWeight: typography.fontWeight.bold,
-                color: 'var(--framer-color-text)',
-                lineHeight: typography.lineHeight.tight
-              }}>
-                {formatBytes(recommendation.potentialSavings)}
-              </div>
-            </div>
+            −{formatBytes(recommendation.potentialSavings)}
           </div>
 
-          {/* Compact Metadata Row */}
-          <div style={{ 
-            fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-secondary)',
-            marginBottom: spacing.xs,
-            display: 'flex',
-            alignItems: 'center',
-            gap: spacing.sm,
-            flexWrap: 'wrap'
+          {/* Asset Name - Better Typography */}
+          <div style={{
+            fontSize: typography.fontSize.md,
+            fontWeight: typography.fontWeight.semibold,
+            color: colors.almostBlack,
+            lineHeight: typography.lineHeight.tight,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            letterSpacing: '-0.01em'
           }}>
-            {recommendation.pageSlug || recommendation.pageName ? (
-              <span>
+            {recommendation.nodeName || 'Unnamed'}
+          </div>
+
+          {/* Recommendation Details - Improved Readability */}
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: colors.warmGray[600],
+            lineHeight: '1.5'
+          }}>
+            {recommendation.actionable || recommendation.description}
+            {(recommendation.pageSlug || recommendation.pageName) && (
+              <>
+                {' · '}
                 {recommendation.pageUrl ? (
                   <a
                     href={recommendation.pageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{
-                      textDecoration: 'underline',
-                      color: 'var(--framer-color-text)',
-                      transition: 'opacity 0.15s ease'
+                      color: colors.warmGray[600],
+                      textDecoration: 'none',
+                      borderBottom: `1px solid ${colors.warmGray[300]}`,
+                      transition: 'all 0.15s ease',
+                      paddingBottom: '1px'
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
-                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = colors.almostBlack
+                      e.currentTarget.style.borderBottomColor = colors.almostBlack
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = colors.warmGray[600]
+                      e.currentTarget.style.borderBottomColor = colors.warmGray[300]
+                    }}
                     onClick={(e) => e.stopPropagation()}
                   >
                     {recommendation.pageSlug || recommendation.pageName}
@@ -449,226 +430,167 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
                 ) : (
                   <span>{recommendation.pageSlug || recommendation.pageName}</span>
                 )}
-              </span>
-            ) : null}
-            {!canSelect && (
-              <span style={{ color: 'var(--framer-color-text-tertiary)' }}>
-                • CMS
-              </span>
+              </>
             )}
-        </div>
+            {isCMS && <span style={{ color: colors.warmGray[400] }}> · CMS</span>}
+          </div>
         </div>
       </div>
 
-      {/* Collapsible Details */}
-      {isExpanded && (
-        <div style={{ 
-          marginTop: spacing.sm,
-          paddingTop: spacing.sm,
-          borderTop: `1px solid var(--framer-color-divider)`
-        }}>
-          <div style={{ 
-            fontSize: typography.fontSize.xs,
-            lineHeight: typography.lineHeight.relaxed,
-            color: 'var(--framer-color-text-secondary)',
-            marginBottom: spacing.xs
-          }}>
-            {recommendation.description}
-          </div>
-          <div style={{ 
-            fontSize: typography.fontSize.xs,
-            fontWeight: typography.fontWeight.medium,
-            color: 'var(--framer-color-text)'
-          }}>
-            {recommendation.actionable}
-          </div>
-      </div>
-      )}
-
-      {/* Expand/Collapse Button */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        style={{
-          marginTop: spacing.xs,
-          padding: `${spacing.xs} 0`,
-          fontSize: typography.fontSize.xs,
-          color: 'var(--framer-color-text-tertiary)',
-          backgroundColor: 'transparent',
-          border: 'none',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: spacing.xs,
-          transition: 'color 0.15s ease'
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.color = 'var(--framer-color-text)'
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.color = 'var(--framer-color-text-tertiary)'
-        }}
-      >
-        <svg 
-          style={{ 
-            width: '12px', 
-            height: '12px',
-            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 0.15s ease'
-          }} 
-          fill="none" 
-          viewBox="0 0 24 24" 
-          stroke="currentColor" 
-          strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-        </svg>
-        <span>{isExpanded ? 'Less' : 'Details'}</span>
-      </button>
-
-      {/* Action Buttons - Responsive Layout */}
-      <div style={{ 
-        display: 'flex',
-        gap: spacing.sm,
-        marginTop: spacing.sm,
-        flexWrap: 'wrap'
-      }}>
-        {canOptimize && (
-          <button
-            onClick={handleOptimize}
-            disabled={isOptimizing}
-            style={{
-              flex: 1,
-              minWidth: '120px',
-              padding: `${spacing.sm} ${spacing.md}`,
-              borderRadius: borders.radius.md,
-              fontSize: typography.fontSize.xs,
-              fontWeight: typography.fontWeight.medium,
-              transition: 'all 0.15s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: spacing.xs,
-              ...(isOptimizing ? {
-                backgroundColor: 'var(--framer-color-bg-tertiary)',
-                color: 'var(--framer-color-text-tertiary)',
-                cursor: 'not-allowed',
-                border: '1px solid var(--framer-color-divider)'
-              } : {
-                backgroundColor: 'var(--framer-color-bg)',
-                color: 'var(--framer-color-text)',
-                border: '1px solid var(--framer-color-divider)'
-              })
-            }}
-            onMouseEnter={(e) => {
-              if (!isOptimizing) {
-                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isOptimizing) {
-                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
-                e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-              }
-            }}
-            title={isCMS 
-              ? 'CMS assets cannot be optimized automatically. Edit them in the CMS collection instead.'
-              : isOptimizing ? optimizationProgress : 'Resize and compress this image automatically'}
-          >
-            {isOptimizing ? (
-              <>
-                <svg style={{ 
-                  width: '14px',
-                  height: '14px',
-                  animation: 'spin 1s linear infinite',
-                  flexShrink: 0
-                }} fill="none" viewBox="0 0 24 24">
-                  <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span style={{ 
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  minWidth: 0
-                }}>{optimizationProgress || 'Optimizing...'}</span>
-              </>
-            ) : (
-              <>
-                <svg style={{ width: '14px', height: '14px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                <span style={{ 
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap'
-                }}>Optimize</span>
-              </>
-            )}
-          </button>
-        )}
+      {/* Primary Action Button - Only Interactive Elements Have Hover */}
+      {canOptimize ? (
         <button
-          onClick={handleNavigate}
-          disabled={!canSelect || isOptimizing}
+          onClick={handleOptimize}
+          disabled={isOptimizing}
           style={{
-            flex: 1,
-            minWidth: '120px',
-            padding: `${spacing.sm} ${spacing.md}`,
+            width: '100%',
+            padding: '10px 16px',
             borderRadius: borders.radius.md,
-            fontSize: typography.fontSize.xs,
-            fontWeight: typography.fontWeight.medium,
-            transition: 'all 0.15s ease',
+            fontSize: typography.fontSize.sm,
+            fontWeight: typography.fontWeight.semibold,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: spacing.xs,
-            ...(!canSelect || isOptimizing ? {
-              backgroundColor: 'var(--framer-color-bg-tertiary)',
-              color: 'var(--framer-color-text-tertiary)',
+            letterSpacing: '-0.01em',
+            ...(isOptimizing ? {
+              backgroundColor: colors.warmGray[100],
+              color: colors.warmGray[500],
               cursor: 'not-allowed',
-              border: '1px solid var(--framer-color-divider)'
+              border: `1px solid ${colors.warmGray[200]}`,
+              transition: 'none'
             } : {
-              backgroundColor: 'var(--framer-color-bg)',
-              color: 'var(--framer-color-text)',
-              border: '1px solid var(--framer-color-divider)'
+              backgroundColor: colors.almostBlack,
+              color: colors.white,
+              border: 'none',
+              cursor: 'pointer',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
+              transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)'
             })
           }}
           onMouseEnter={(e) => {
-            if (canSelect && !isOptimizing) {
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-              e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+            if (!isOptimizing) {
+              e.currentTarget.style.backgroundColor = '#000000'
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)'
+              e.currentTarget.style.transform = 'translateY(-1px)'
             }
           }}
           onMouseLeave={(e) => {
-            if (canSelect && !isOptimizing) {
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
-              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+            if (!isOptimizing) {
+              e.currentTarget.style.backgroundColor = colors.almostBlack
+              e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.1)'
+              e.currentTarget.style.transform = 'translateY(0)'
             }
           }}
-          title={isCMS 
-            ? 'CMS assets cannot be selected in canvas. Edit them in the CMS collection instead.'
-            : !canSelect 
-              ? 'This recommendation applies to multiple items' 
-              : `Select "${recommendation.nodeName}" in canvas`
-          }
         >
-          {canSelect ? (
+          {isOptimizing ? (
             <>
-              <svg style={{ width: '14px', height: '14px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              <svg style={{
+                width: '14px',
+                height: '14px',
+                animation: 'spin 1s linear infinite',
+                flexShrink: 0
+              }} fill="none" viewBox="0 0 24 24">
+                <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <span style={{ 
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
-              }}>
-                Select
-              </span>
+              <span>{optimizationProgress || 'Optimizing...'}</span>
             </>
           ) : (
-            <span>Multiple Items</span>
+            'Optimize'
           )}
-      </button>
+        </button>
+      ) : canSelect ? (
+        <button
+          onClick={handleNavigate}
+          style={{
+            width: '100%',
+            padding: '10px 16px',
+            borderRadius: borders.radius.md,
+            fontSize: typography.fontSize.sm,
+            fontWeight: typography.fontWeight.semibold,
+            transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+            backgroundColor: colors.almostBlack,
+            color: colors.white,
+            border: 'none',
+            cursor: 'pointer',
+            letterSpacing: '-0.01em',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#000000'
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.15)'
+            e.currentTarget.style.transform = 'translateY(-1px)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = colors.almostBlack
+            e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.1)'
+            e.currentTarget.style.transform = 'translateY(0)'
+          }}
+        >
+          Select in Canvas
+        </button>
+      ) : (
+        <div style={{
+          padding: '10px 16px',
+          fontSize: typography.fontSize.xs,
+          color: colors.warmGray[500],
+          textAlign: 'center',
+          backgroundColor: colors.warmGray[50],
+          borderRadius: borders.radius.md,
+          border: `1px solid ${colors.warmGray[200]}`,
+          cursor: 'default'
+        }}>
+          {isCMS ? 'Edit in CMS collection' : 'Multiple items'}
+        </div>
+      )}
+
+      {/* Secondary Actions - Smart Layout */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginTop: spacing.md,
+        paddingTop: spacing.md,
+        borderTop: `1px solid ${colors.warmGray[100]}`
+      }}>
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          style={{
+            padding: `${spacing.xs} 0`,
+            fontSize: '11px',
+            color: colors.warmGray[500],
+            backgroundColor: 'transparent',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: typography.fontWeight.medium,
+            transition: 'color 0.15s ease',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = colors.almostBlack
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = colors.warmGray[500]
+          }}
+        >
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            style={{
+              transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+              transition: 'transform 0.15s ease'
+            }}
+          >
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span>{isExpanded ? 'Hide details' : 'Show details'}</span>
+        </button>
+
         {onIgnore && (
           <button
             onClick={(e) => {
@@ -677,49 +599,43 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
               onIgnore()
             }}
             style={{
-              padding: `${spacing.sm} ${spacing.md}`,
-              borderRadius: borders.radius.md,
-              fontSize: typography.fontSize.xs,
+              padding: `${spacing.xs} 0`,
+              fontSize: '11px',
+              color: colors.warmGray[500],
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
               fontWeight: typography.fontWeight.medium,
-              transition: 'all 0.15s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: spacing.xs,
-              backgroundColor: 'var(--framer-color-bg)',
-              color: 'var(--framer-color-text-secondary)',
-              border: '1px solid var(--framer-color-divider)',
-              minWidth: 'auto'
+              transition: 'color 0.15s ease'
             }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-            e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-            e.currentTarget.style.color = 'var(--framer-color-text)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
-            e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-            e.currentTarget.style.color = 'var(--framer-color-text-secondary)'
-          }}
-          title={isIgnored ? 'Restore this recommendation' : 'Hide this recommendation'}
-        >
-          <svg style={{ width: '14px', height: '14px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            {isIgnored ? (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            )}
-          </svg>
-            <svg style={{ width: '14px', height: '14px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              {isIgnored ? (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-              )}
-            </svg>
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = colors.almostBlack
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = colors.warmGray[500]
+            }}
+          >
+            {isIgnored ? 'Restore' : 'Ignore'}
           </button>
         )}
       </div>
+
+      {/* Expandable Details - Below Actions */}
+      {isExpanded && (
+        <div style={{
+          marginTop: spacing.md,
+          padding: spacing.md,
+          backgroundColor: colors.warmGray[50],
+          borderRadius: borders.radius.md,
+          fontSize: typography.fontSize.xs,
+          lineHeight: typography.lineHeight.relaxed,
+          color: colors.warmGray[600],
+          border: `1px solid ${colors.warmGray[100]}`,
+          wordBreak: 'break-word'
+        }}>
+          {recommendation.description}
+        </div>
+      )}
     </div>
     </>
   )

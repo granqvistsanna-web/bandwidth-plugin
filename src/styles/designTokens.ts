@@ -1,11 +1,11 @@
 /**
  * Premium Minimal Design System
- * Grayscale foundation with warm gray surfaces and light neon yellow accent
+ * Grayscale foundation with neutral surfaces and blue accent
  * Built for focus, clarity, and speed
  */
 
 // ============================================================================
-// COLOR PALETTE - Grayscale + Warm Gray + Neon Yellow Accent
+// COLOR PALETTE - Grayscale + Neutral Gray + Blue Accent
 // ============================================================================
 
 export const colors = {
@@ -27,28 +27,29 @@ export const colors = {
     900: '#171717',  // Darkest - borders in dark mode
   },
   
-  // Warm gray for card backgrounds - simplified
+  // Neutral gray for card backgrounds
   warmGray: {
-    50: '#F4F2F0',   // Lightest - filter buttons, subtle backgrounds
-    100: '#F4F2F0',  // Card backgrounds
-    200: '#F4F2F0',  // Menu background
-    300: '#E5E3E1',  // Borders, dividers
-    400: '#A8A5A2',  // Secondary text
-    500: '#787572',  // Tertiary text
+    50: '#F1F1EF',   // Lightest - card backgrounds, subtle backgrounds
+    100: '#F1F1EF',  // Card backgrounds
+    200: '#F1F1EF',  // Menu background
+    300: '#E0E0DE',  // Borders, dividers
+    400: '#A8A8A6',  // Secondary text
+    500: '#787876',  // Tertiary text
   },
 
   // Almost black - for primary text and buttons
   almostBlack: '#1A1919',
 
-  // Yellow accent - for primary actions
+  // Blue accent - for primary actions
   accent: {
-    light: '#E4F222',   // Yellow accent
+    primary: '#0099FF',   // Primary blue accent
+    light: '#0099FF',    // Same as primary for consistency
   }
 } as const
 
 // Light mode color semantics
 export const lightMode = {
-  // Surfaces - warm gray for cards
+  // Surfaces - neutral gray for cards
   surface: {
     primary: colors.white,
     secondary: colors.warmGray[50],      // Card backgrounds
@@ -61,7 +62,7 @@ export const lightMode = {
     secondary: colors.gray[600],
     tertiary: colors.gray[400],
     inverse: colors.white,
-    accent: colors.accent.light,         // Neon yellow for callouts
+    accent: colors.accent.primary,      // Blue accent for callouts
   },
 
   // Borders & Dividers - thin and minimal
@@ -101,7 +102,7 @@ export const darkMode = {
     secondary: colors.gray[400],
     tertiary: colors.gray[500],
     inverse: colors.black,
-    accent: colors.accent.medium,        // Brighter yellow for dark mode
+    accent: colors.accent.primary,       // Blue accent for dark mode
   },
 
   // Borders & Dividers

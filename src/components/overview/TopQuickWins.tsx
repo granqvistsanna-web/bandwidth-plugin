@@ -18,7 +18,7 @@ export function TopQuickWins({ recommendations, onItemClick }: TopQuickWinsProps
   }
 
   const getNumberColor = (index: number) => {
-    const colors = ['#eab308', '#22c55e', '#3b82f6'] // Yellow, Green, Blue
+    const colors = ['#0099FF', '#22c55e', '#3b82f6'] // Blue, Green, Blue
     return colors[index] || colors[0]
   }
 

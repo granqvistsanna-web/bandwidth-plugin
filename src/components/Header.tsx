@@ -68,7 +68,7 @@ export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
             fontSize: typography.fontSize.sm,
             fontWeight: typography.fontWeight.medium,
             color: loading ? 'var(--framer-color-text-tertiary)' : colors.almostBlack,
-            backgroundColor: loading ? colors.warmGray[50] : '#E4F222',
+            backgroundColor: loading ? colors.warmGray[50] : colors.accent.primary,
             border: 'none',
             cursor: loading ? 'not-allowed' : 'pointer',
             borderRadius: borders.radius.sm,
@@ -78,13 +78,13 @@ export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
           }}
           onMouseEnter={(e) => {
             if (!loading) {
-              e.currentTarget.style.backgroundColor = '#D9E01F'
+              e.currentTarget.style.backgroundColor = '#0088E6' // Darker blue on hover
               e.currentTarget.style.transform = 'translateY(-1px)'
             }
           }}
           onMouseLeave={(e) => {
             if (!loading) {
-              e.currentTarget.style.backgroundColor = '#E4F222'
+              e.currentTarget.style.backgroundColor = colors.accent.primary
               e.currentTarget.style.transform = 'translateY(0)'
             }
           }}
