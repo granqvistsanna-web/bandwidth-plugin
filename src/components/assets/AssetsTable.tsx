@@ -10,13 +10,13 @@ export function AssetsTable({ assets, sortConfig, onSort, onAssetClick }: Assets
   const rowVirtualizer = useVirtualizer({
     count: assets.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 72, // 48px thumbnail + 8px padding top/bottom + 8px marginBottom
+    estimateSize: () => 65, // 40px thumbnail + 12px padding top + 12px padding bottom + 1px border
     overscan: 5,
   })
 
   return (
     <div ref={parentRef} className="h-full overflow-auto" style={{ scrollbarGutter: 'stable' }}>
-      <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px`, padding: `0 ${spacing.xs}` }}>
+      <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px`, paddingLeft: spacing.lg, paddingRight: spacing.lg }}>
         {rowVirtualizer.getVirtualItems().map(virtualRow => (
           <AssetsTableRow
             key={assets[virtualRow.index].nodeId}
@@ -25,8 +25,8 @@ export function AssetsTable({ assets, sortConfig, onSort, onAssetClick }: Assets
             style={{
               position: 'absolute',
               top: 0,
-              left: spacing.xs,
-              right: spacing.xs,
+              left: spacing.lg,
+              right: spacing.lg,
               transform: `translateY(${virtualRow.start}px)`,
             }}
           />

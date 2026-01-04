@@ -195,24 +195,24 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
         )}
       </div>
 
-      {/* Filters */}
-      <AssetFilters
-        filters={filters}
-        onFiltersChange={setFilters}
-        searchQuery={searchQuery}
-        onSearchChange={setSearchQuery}
-        assetCounts={assetCounts}
-      />
+      {/* Search and Filters - single integrated row */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: spacing.sm,
+        marginBottom: spacing.lg,
+        paddingBottom: spacing.md,
+        borderBottom: `1px solid ${colors.warmGray[100]}`
+      }}>
+        <AssetFilters
+          filters={filters}
+          onFiltersChange={setFilters}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          assetCounts={assetCounts}
+        />
 
-      {/* Compact Sort Control */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
-        <label style={{
-          fontSize: typography.fontSize.xs,
-          fontWeight: typography.fontWeight.medium,
-          color: colors.warmGray[600],
-        }}>
-          Sort by:
-        </label>
+        {/* Sort - compact inline */}
         <select
           value={`${sortConfig.column}-${sortConfig.direction}`}
           onChange={(e) => {
@@ -220,7 +220,7 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
             setSortConfig({ column, direction })
           }}
           style={{
-            padding: `${spacing.xs} ${spacing.sm}`,
+            padding: `6px ${spacing.sm}`,
             paddingRight: spacing.lg,
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
@@ -234,7 +234,7 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'right 8px center',
-            minWidth: '180px'
+            minWidth: '160px'
           }}
           onFocus={(e) => {
             e.currentTarget.style.borderColor = colors.warmGray[400]
@@ -245,13 +245,12 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
             e.currentTarget.style.boxShadow = 'none'
           }}
         >
-          <option value="size-desc">Size (largest first)</option>
-          <option value="size-asc">Size (smallest first)</option>
-          <option value="name-asc">Name (A-Z)</option>
-          <option value="name-desc">Name (Z-A)</option>
-          <option value="dimensions-desc">Dimensions (largest first)</option>
-          <option value="dimensions-asc">Dimensions (smallest first)</option>
-          <option value="format-asc">Format (A-Z)</option>
+          <option value="size-desc">Size ↓</option>
+          <option value="size-asc">Size ↑</option>
+          <option value="name-asc">Name A→Z</option>
+          <option value="name-desc">Name Z→A</option>
+          <option value="dimensions-desc">Dimensions ↓</option>
+          <option value="dimensions-asc">Dimensions ↑</option>
         </select>
       </div>
 
