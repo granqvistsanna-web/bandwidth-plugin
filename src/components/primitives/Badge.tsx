@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import { spacing, typography, borders, colors } from '../../styles/designTokens'
 
-type BadgeVariant = 'default' | 'subtle' | 'outline' | 'image' | 'svg'
+type BadgeVariant = 'default' | 'subtle' | 'outline' | 'image' | 'svg' | 'high' | 'medium' | 'low'
 
 interface BadgeProps {
   children: ReactNode
@@ -34,6 +34,21 @@ export function Badge({ children, variant = 'default' }: BadgeProps) {
       backgroundColor: '#f3e8ff',
       border: 'none',
       color: '#7c3aed',
+    },
+    high: {
+      backgroundColor: '#fee2e2',
+      border: 'none',
+      color: '#991b1b',
+    },
+    medium: {
+      backgroundColor: '#fef3c7',
+      border: 'none',
+      color: '#92400e',
+    },
+    low: {
+      backgroundColor: '#dcfce7',
+      border: 'none',
+      color: '#166534',
     }
   }
 

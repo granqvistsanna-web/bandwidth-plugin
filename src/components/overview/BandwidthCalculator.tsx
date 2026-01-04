@@ -200,6 +200,66 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
           }}>
             Monthly pageviews
           </label>
+          
+          {/* Quick Preset Buttons */}
+          <div style={{
+            display: 'flex',
+            gap: spacing.xs,
+            marginBottom: spacing.sm,
+            flexWrap: 'wrap'
+          }}>
+            {[
+              { label: '1K', value: 1000 },
+              { label: '10K', value: 10000 },
+              { label: '50K', value: 50000 },
+              { label: '100K', value: 100000 },
+              { label: '500K', value: 500000 },
+              { label: '1M', value: 1000000 }
+            ].map(preset => {
+              const isSelected = Math.abs(monthlyPageviews - preset.value) < 500
+              return (
+                <button
+                  key={preset.value}
+                  onClick={() => setMonthlyPageviews(preset.value)}
+                  style={{
+                    padding: `${spacing.xs} ${spacing.sm}`,
+                    fontSize: typography.fontSize.xs,
+                    fontWeight: typography.fontWeight.medium,
+                    borderRadius: borders.radius.sm,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    whiteSpace: 'nowrap',
+                    minWidth: '44px',
+                    textAlign: 'center',
+                    ...(isSelected ? {
+                      backgroundColor: 'var(--framer-color-text)',
+                      color: 'var(--framer-color-bg)',
+                    } : {
+                      backgroundColor: colors.white,
+                      color: 'var(--framer-color-text)',
+                      border: `1px solid var(--framer-color-divider)`
+                    })
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = colors.warmGray[50]
+                      e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = colors.white
+                      e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+                    }
+                  }}
+                >
+                  {preset.label}
+                </button>
+              )
+            })}
+          </div>
+
           <input
             type="number"
             value={monthlyPageviews}
@@ -225,13 +285,6 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             min="1"
             step="1000"
           />
-          <div style={{
-            fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-tertiary)',
-            marginTop: spacing.xs
-          }}>
-            Common: 1K, 10K, 50K, 100K, 500K, 1M+
-          </div>
         </div>
 
         {/* Pages per Visit */}
@@ -296,10 +349,10 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             flexWrap: 'wrap'
           }}>
             {[
-              { label: 'Landing only', value: 1.0 },
-              { label: 'Light', value: 1.5 },
-              { label: 'Typical', value: 2.0 },
-              { label: 'Deep', value: 3.0 }
+              { label: 'Landing only', value: 1.0, subtitle: '1.0' },
+              { label: 'Light', value: 1.5, subtitle: '1.5' },
+              { label: 'Typical', value: 2.0, subtitle: '2.0' },
+              { label: 'Deep', value: 3.0, subtitle: '3.0+' }
             ].map(preset => {
               const isSelected = Math.abs(averagePagesPerVisit - preset.value) < 0.1
               return (
@@ -307,7 +360,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
                   key={preset.value}
                   onClick={() => setAveragePagesPerVisit(preset.value)}
                   style={{
-                    padding: `${spacing.xs} ${spacing.sm}`,
+                    padding: `${spacing.sm} ${spacing.md}`,
                     fontSize: typography.fontSize.xs,
                     fontWeight: typography.fontWeight.medium,
                     borderRadius: borders.radius.sm,
@@ -315,27 +368,41 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
                     cursor: 'pointer',
                     transition: 'all 0.15s ease',
                     whiteSpace: 'nowrap',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '2px',
+                    minWidth: '70px',
                     ...(isSelected ? {
                       backgroundColor: 'var(--framer-color-text)',
                       color: 'var(--framer-color-bg)',
                     } : {
-                      backgroundColor: colors.warmGray[50],
+                      backgroundColor: colors.white,
                       color: 'var(--framer-color-text)',
                       border: `1px solid var(--framer-color-divider)`
                     })
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = colors.warmGray[200]
+                      e.currentTarget.style.backgroundColor = colors.warmGray[50]
+                      e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = colors.warmGray[50]
+                      e.currentTarget.style.backgroundColor = colors.white
+                      e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
                     }
                   }}
                 >
-                  {preset.label}
+                  <span>{preset.label}</span>
+                  <span style={{
+                    fontSize: '10px',
+                    opacity: isSelected ? 0.8 : 0.6,
+                    fontWeight: typography.fontWeight.regular
+                  }}>
+                    {preset.subtitle}
+                  </span>
                 </button>
               )
             })}
@@ -410,43 +477,62 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
           </div>
           <div style={{
             display: 'flex',
-            gap: spacing.xs
+            gap: spacing.xs,
+            flexWrap: 'wrap'
           }}>
-            {(Object.keys(FRAMER_PLANS) as PlanKey[]).map((plan) => (
-              <button
-                key={plan}
-                onClick={() => setSelectedPlan(plan)}
-                style={{
-                  padding: `${spacing.xs} ${spacing.sm}`,
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.medium,
-                  borderRadius: borders.radius.sm,
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  ...(selectedPlan === plan ? {
-                    backgroundColor: 'var(--framer-color-text)',
-                    color: 'var(--framer-color-bg)',
-                  } : {
-                    backgroundColor: colors.warmGray[50],
-                    color: 'var(--framer-color-text)',
-                    border: `1px solid var(--framer-color-divider)`
-                  })
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedPlan !== plan) {
-                    e.currentTarget.style.backgroundColor = colors.warmGray[200]
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedPlan !== plan) {
-                    e.currentTarget.style.backgroundColor = colors.warmGray[50]
-                  }
-                }}
-              >
-                {FRAMER_PLANS[plan].name}
-              </button>
-            ))}
+            {(Object.keys(FRAMER_PLANS) as PlanKey[]).map((plan) => {
+              const isSelected = selectedPlan === plan
+              return (
+                <button
+                  key={plan}
+                  onClick={() => setSelectedPlan(plan)}
+                  style={{
+                    padding: `${spacing.sm} ${spacing.md}`,
+                    fontSize: typography.fontSize.xs,
+                    fontWeight: typography.fontWeight.medium,
+                    borderRadius: borders.radius.sm,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: '2px',
+                    minWidth: '60px',
+                    ...(isSelected ? {
+                      backgroundColor: 'var(--framer-color-text)',
+                      color: 'var(--framer-color-bg)',
+                    } : {
+                      backgroundColor: colors.white,
+                      color: 'var(--framer-color-text)',
+                      border: `1px solid var(--framer-color-divider)`
+                    })
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = colors.warmGray[50]
+                      e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = colors.white
+                      e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+                    }
+                  }}
+                  title={`${FRAMER_PLANS[plan].bandwidthGB} GB/month limit`}
+                >
+                  <span>{FRAMER_PLANS[plan].name}</span>
+                  <span style={{
+                    fontSize: '10px',
+                    opacity: isSelected ? 0.8 : 0.6,
+                    fontWeight: typography.fontWeight.regular
+                  }}>
+                    {FRAMER_PLANS[plan].bandwidthGB}GB
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
 

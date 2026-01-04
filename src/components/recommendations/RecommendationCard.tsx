@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { framer } from 'framer-plugin'
 import type { Recommendation } from '../../types/analysis'
-import { Badge } from '../common/Badge'
+import { Badge } from '../primitives/Badge'
 import { formatBytes } from '../../utils/formatBytes'
 import { optimizeImage } from '../../services/imageOptimizer'
 import { replaceImageOnNode, replaceImageEverywhere, canReplaceImage } from '../../services/assetReplacer'
