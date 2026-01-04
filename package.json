@@ -13,6 +13,7 @@
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.14",
     "framer-plugin": "^3",
+    "lucide-react": "^0.562.0",
     "react": "^18",
     "react-dom": "^18",
     "vite-plugin-mkcert": "^1"

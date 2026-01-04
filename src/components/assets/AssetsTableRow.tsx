@@ -56,10 +56,10 @@ export const AssetsTableRow = memo(function AssetsTableRow({
       style={{
         ...style,
         display: 'grid',
-        gridTemplateColumns: '40px 1fr auto',
-        alignItems: 'center',
-        gap: spacing.md,
-        padding: `${spacing.md} 0`,
+        gridTemplateColumns: '48px 1fr auto',
+        alignItems: 'flex-start',
+        gap: spacing.lg,
+        padding: `${spacing.lg} 0`,
         backgroundColor: 'transparent',
         borderBottom: `1px solid ${colors.warmGray[100]}`,
         cursor: canClick ? 'pointer' : 'default',
@@ -77,31 +77,31 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         }
       }}
     >
-      {/* Thumbnail - 40px compact */}
+      {/* Thumbnail - 48px */}
       <div style={{ flexShrink: 0 }}>
         {asset.type === 'svg' ? (
           asset.svgContent ? (
             <div
               style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: borders.radius.sm,
+                width: '48px',
+                height: '48px',
+                borderRadius: borders.radius.md,
                 border: `1px solid ${colors.warmGray[200]}`,
                 backgroundColor: colors.warmGray[50],
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 overflow: 'hidden' as const,
-                padding: '4px',
+                padding: '6px',
               }}
               dangerouslySetInnerHTML={{ __html: asset.svgContent }}
             />
           ) : (
             <div
               style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: borders.radius.sm,
+                width: '48px',
+                height: '48px',
+                borderRadius: borders.radius.md,
                 border: `1px solid ${colors.warmGray[200]}`,
                 backgroundColor: colors.warmGray[50],
                 display: 'flex',
@@ -109,7 +109,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
                 justifyContent: 'center',
               }}
             >
-              <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke={colors.warmGray[400]} strokeWidth="2">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={colors.warmGray[400]} strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
               </svg>
             </div>
@@ -119,9 +119,9 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             src={asset.url}
             alt={asset.nodeName}
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: borders.radius.sm,
+              width: '48px',
+              height: '48px',
+              borderRadius: borders.radius.md,
               border: `1px solid ${colors.warmGray[200]}`,
               objectFit: 'cover' as const,
               display: 'block',
@@ -134,9 +134,9 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         ) : (
           <div
             style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: borders.radius.sm,
+              width: '48px',
+              height: '48px',
+              borderRadius: borders.radius.md,
               border: `1px solid ${colors.warmGray[200]}`,
               backgroundColor: colors.warmGray[50],
               display: 'flex',
@@ -144,7 +144,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
               justifyContent: 'center',
             }}
           >
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke={colors.warmGray[400]} strokeWidth="2">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={colors.warmGray[400]} strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
@@ -152,11 +152,11 @@ export const AssetsTableRow = memo(function AssetsTableRow({
       </div>
 
       {/* Content - flexible wrapping layout */}
-      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: spacing.xs }}>
         {/* Name */}
         <div
           style={{
-            fontSize: typography.fontSize.sm,
+            fontSize: typography.fontSize.md,
             fontWeight: typography.fontWeight.medium,
             color: colors.almostBlack,
             overflow: 'hidden',
@@ -164,7 +164,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
-            lineHeight: '1.4',
+            lineHeight: '1.5',
           }}
           title={asset.nodeName}
         >
@@ -176,13 +176,14 @@ export const AssetsTableRow = memo(function AssetsTableRow({
           display: 'flex',
           alignItems: 'center',
           gap: spacing.xs,
-          fontSize: '10px',
+          fontSize: typography.fontSize.xs,
           color: colors.warmGray[500],
           flexWrap: 'wrap',
           lineHeight: '1.6'
         }}>
           <span style={{
             textTransform: 'uppercase',
+            fontSize: '10px',
             fontWeight: typography.fontWeight.semibold,
             letterSpacing: '0.05em',
             color: colors.warmGray[400]
@@ -198,6 +199,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
               <span style={{ color: colors.warmGray[300] }}>·</span>
               <span style={{
                 textTransform: 'uppercase',
+                fontSize: '10px',
                 fontWeight: typography.fontWeight.semibold,
                 letterSpacing: '0.05em',
                 color: colors.warmGray[400]
@@ -214,18 +216,18 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',
-        gap: spacing.xs,
-        minWidth: '80px'
+        gap: spacing.sm,
+        minWidth: '90px'
       }}>
         {/* Savings badge - if has potential */}
         {potentialSavings > 0 && (
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
-            padding: `2px ${spacing.xs}`,
+            padding: `3px ${spacing.sm}`,
             backgroundColor: colors.almostBlack,
             color: colors.white,
-            fontSize: '10px',
+            fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.bold,
             borderRadius: borders.radius.full,
             letterSpacing: '0.01em',
@@ -238,7 +240,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         {/* Current size */}
         <span
           style={{
-            fontSize: typography.fontSize.sm,
+            fontSize: typography.fontSize.md,
             fontWeight: typography.fontWeight.semibold,
             color: colors.almostBlack,
             whiteSpace: 'nowrap'

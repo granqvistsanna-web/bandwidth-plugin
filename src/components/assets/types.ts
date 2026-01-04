@@ -31,6 +31,8 @@ export interface AssetFiltersProps {
   searchQuery: string
   onSearchChange: (query: string) => void
   assetCounts: AssetCounts
+  sortConfig?: SortConfig
+  onSortChange?: (config: SortConfig) => void
 }
 
 export interface AssetsTableProps {

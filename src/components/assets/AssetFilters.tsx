@@ -7,7 +7,9 @@ export function AssetFilters({
   onFiltersChange,
   searchQuery,
   onSearchChange,
-  assetCounts
+  assetCounts,
+  sortConfig,
+  onSortChange
 }: AssetFiltersProps) {
   const [showFiltersPopover, setShowFiltersPopover] = useState(false)
 
@@ -47,9 +49,9 @@ export function AssetFilters({
   }
 
   return (
-    <div style={{ display: 'flex', gap: spacing.sm, alignItems: 'center', flex: 1 }}>
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' }}>
       {/* Search Input */}
-      <div className="relative" style={{ flex: 1, minWidth: '200px', maxWidth: '300px' }}>
+      <div className="relative" style={{ flex: '1 1 180px', minWidth: '180px' }}>
         <input
           type="text"
           value={searchQuery}
@@ -100,7 +102,7 @@ export function AssetFilters({
         )}
       </div>
 
-      {/* Type Dropdown */}
+      {/* Type + Sort combined */}
       <select
         value={filters.type}
         onChange={handleTypeChange}
@@ -114,7 +116,7 @@ export function AssetFilters({
           border: `1px solid ${colors.warmGray[200]}`,
           borderRadius: borders.radius.md,
           cursor: 'pointer',
-          minWidth: '110px',
+          flex: '0 0 auto',
           transition: 'all 0.15s ease',
           appearance: 'none',
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
@@ -135,6 +137,47 @@ export function AssetFilters({
         <option value="svg">SVGs ({assetCounts.svgs})</option>
         <option value="cms">CMS ({assetCounts.cms})</option>
       </select>
+
+      {/* Sort dropdown */}
+      {sortConfig && onSortChange && (
+        <select
+          value={`${sortConfig.column}-${sortConfig.direction}`}
+          onChange={(e) => {
+            const [column, direction] = e.target.value.split('-') as [typeof sortConfig.column, 'asc' | 'desc']
+            onSortChange({ column, direction })
+          }}
+          style={{
+            padding: `6px ${spacing.sm}`,
+            paddingRight: spacing.lg,
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            color: colors.almostBlack,
+            backgroundColor: colors.white,
+            border: `1px solid ${colors.warmGray[200]}`,
+            borderRadius: borders.radius.md,
+            cursor: 'pointer',
+            flex: '0 0 auto',
+            transition: 'all 0.15s ease',
+            appearance: 'none',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 8px center',
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = colors.warmGray[400]
+            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.05)'
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = colors.warmGray[200]
+            e.currentTarget.style.boxShadow = 'none'
+          }}
+        >
+          <option value="size-desc">Size ↓</option>
+          <option value="size-asc">Size ↑</option>
+          <option value="name-asc">Name A→Z</option>
+          <option value="name-desc">Name Z→A</option>
+        </select>
+      )}
 
       {/* Filters Button with Popover */}
       <div style={{ position: 'relative' }}>

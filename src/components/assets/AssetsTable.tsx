@@ -10,7 +10,7 @@ export function AssetsTable({ assets, sortConfig, onSort, onAssetClick }: Assets
   const rowVirtualizer = useVirtualizer({
     count: assets.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 65, // 40px thumbnail + 12px padding top + 12px padding bottom + 1px border
+    estimateSize: () => 96, // 48px thumbnail + 16px padding top + 16px padding bottom + extra for text wrap
     overscan: 5,
   })
 
