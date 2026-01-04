@@ -106,9 +106,16 @@ export async function analyzeProject(
     cmsAssets.push(...heuristicAssets)
     
     const cmsAssetInfos = convertCMSAssetsToAssetInfo(cmsAssets)
-    
-    // Add manual CMS estimates
-    const manualCMSEstimatesInfos: AssetInfo[] = manualCMSEstimates.map((estimate, index) => ({
+
+    // Build set of auto-detected CMS collection names to prevent double-counting
+    const autoDetectedCollections = new Set<string>(
+      cmsAssetInfos
+        .map(asset => asset.cmsCollectionName)
+        .filter((name): name is string => !!name)
+    )
+
+    // Add manual CMS estimates (filter out collections already auto-detected)
+    const allManualEstimates: AssetInfo[] = manualCMSEstimates.map((estimate, index) => ({
       nodeId: `manual-cms-${estimate.id}-${index}`,
       nodeName: `CMS (Manual): ${estimate.collectionName}`,
       type: 'image' as const, // Changed from 'background' to 'image' for consistency
@@ -121,7 +128,20 @@ export async function analyzeProject(
       manualEstimateNote: `${estimate.imageCount} images estimated`,
       cmsCollectionName: estimate.collectionName
     }))
-    
+
+    // Filter out manual estimates for collections that were auto-detected
+    const manualCMSEstimatesInfos = allManualEstimates.filter(estimate => {
+      const isDuplicate = estimate.cmsCollectionName && autoDetectedCollections.has(estimate.cmsCollectionName)
+      if (isDuplicate) {
+        debugLog.info(`⚠️ Skipping manual estimate for "${estimate.cmsCollectionName}" - already auto-detected`)
+      }
+      return !isDuplicate
+    })
+
+    if (manualCMSEstimatesInfos.length < allManualEstimates.length) {
+      debugLog.success(`✅ Prevented ${allManualEstimates.length - manualCMSEstimatesInfos.length} duplicate manual CMS estimates`)
+    }
+
     // Combine canvas, detected CMS, and manual CMS assets
     let desktopAssets = [...canvasAssets, ...cmsAssetInfos, ...manualCMSEstimatesInfos]
     let publishedCMSCount = 0 // Initialize for debug summary
@@ -172,7 +192,26 @@ export async function analyzeProject(
               uniqueCMSAssets.set(key, asset)
             }
           }
-          desktopAssets = [...canvasAssets, ...Array.from(uniqueCMSAssets.values()), ...manualCMSEstimatesInfos]
+
+          // Update auto-detected collections to include published site CMS assets
+          const updatedAutoDetectedCollections = new Set<string>([
+            ...autoDetectedCollections,
+            ...Array.from(uniqueCMSAssets.values())
+              .map(asset => asset.cmsCollectionName)
+              .filter((name): name is string => !!name)
+          ])
+
+          // Re-filter manual estimates against updated auto-detected collections
+          const filteredManualEstimates = allManualEstimates.filter(estimate => {
+            const isDuplicate = estimate.cmsCollectionName && updatedAutoDetectedCollections.has(estimate.cmsCollectionName)
+            if (isDuplicate && !autoDetectedCollections.has(estimate.cmsCollectionName)) {
+              // Only log if newly detected from published site
+              debugLog.info(`⚠️ Skipping manual estimate for "${estimate.cmsCollectionName}" - found in published site`)
+            }
+            return !isDuplicate
+          })
+
+          desktopAssets = [...canvasAssets, ...Array.from(uniqueCMSAssets.values()), ...filteredManualEstimates]
           debugLog.success(`✅ Extracted ${cmsAssetsFromPublished.length} CMS assets from published site`)
           debugLog.info('📦 CMS Assets from published site:', cmsAssetInfosFromPublished.map(a => ({
             name: a.nodeName,

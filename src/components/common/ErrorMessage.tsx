@@ -1,3 +1,5 @@
+import { framerColors } from '../../styles/designTokens'
+
 interface ErrorMessageProps {
   error: Error
   onRetry: () => void
@@ -5,17 +7,45 @@ interface ErrorMessageProps {
 
 export function ErrorMessage({ error, onRetry }: ErrorMessageProps) {
   return (
-    <div className="flex items-center justify-center h-64">
-      <div className="flex flex-col items-center gap-3 max-w-sm text-center">
-        <div className="text-4xl" style={{ color: 'var(--status-error-solid)' }}>⚠</div>
-        <h3 className="font-semibold" style={{ color: framerColors.text }}>Analysis Failed</h3>
-        <p className="text-sm" style={{ color: framerColors.textSecondary }}>{error.message}</p>
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '256px'
+    }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '12px',
+        maxWidth: '384px',
+        textAlign: 'center'
+      }}>
+        <div style={{ 
+          fontSize: '32px',
+          color: 'var(--status-error-solid)' 
+        }}>⚠</div>
+        <h3 style={{ 
+          fontWeight: 600,
+          color: framerColors.text 
+        }}>Analysis Failed</h3>
+        <p style={{ 
+          fontSize: '13px',
+          color: framerColors.textSecondary 
+        }}>{error.message}</p>
         <button
           onClick={onRetry}
-          className="mt-2 px-4 py-2 rounded transition-colors"
           style={{
+            marginTop: '8px',
+            padding: '8px 16px',
+            borderRadius: '8px',
             backgroundColor: 'var(--framer-color-tint)',
-            color: framerColors.textReversed
+            color: framerColors.textReversed,
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '13px',
+            fontWeight: 500,
+            transition: 'background-color 0.15s ease'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.backgroundColor = 'var(--framer-color-tint-dark)'

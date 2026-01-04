@@ -76,12 +76,12 @@ body {
   /* Backgrounds */
   --color-bg-subtle: #FAF9F8;
   --bg-primary: #FFFFFF;
-  --bg-page: #FAFAFA;
+  --bg-page: #F5F5F5; /* Darker gray page for better card contrast */
 
-  /* Surfaces */
+  /* Surfaces - Cards use white on gray page for contrast without borders */
   --surface-primary: #FFFFFF;
-  --surface-secondary: #FAFAFA;
-  --surface-tertiary: #F5F5F5;
+  --surface-secondary: #FFFFFF;
+  --surface-tertiary: #FAFAFA;
 
   /* Text Colors */
   --text-primary: #171717;

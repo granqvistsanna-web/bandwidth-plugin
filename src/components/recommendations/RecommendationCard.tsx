@@ -8,7 +8,7 @@ import { optimizeImage } from '../../services/imageOptimizer'
 import { replaceImageOnNode, replaceImageEverywhere, canReplaceImage } from '../../services/assetReplacer'
 import { ReplaceImageModal } from './ReplaceImageModal'
 import { debugLog } from '../../utils/debugLog'
-import { colors, spacing, typography, borders, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, themeBorders, themeElevation, framerColors, iconSize } from '../../styles/designTokens'
 
 interface RecommendationCardProps {
   recommendation: Recommendation
@@ -22,6 +22,7 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
   const [showReplaceModal, setShowReplaceModal] = useState(false)
   const [optimizationProgress, setOptimizationProgress] = useState<string>('')
   const [isExpanded, setIsExpanded] = useState(false)
+  const [showOptimizationInstructions, setShowOptimizationInstructions] = useState(false)
 
   const handleOptimize = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -321,7 +322,6 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
     <div
       style={{
         backgroundColor: surfaces.secondary,
-        border: `1px solid ${themeBorders.subtle}`,
         borderRadius: borders.radius.lg,
         padding: spacing.lg,
         boxShadow: themeElevation.subtle,
@@ -363,19 +363,19 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
         )}
 
         {/* Content - Right Side */}
-        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
           {/* Savings Badge - Refined */}
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
-            padding: `3px ${spacing.sm}`,
+            padding: `${spacing.xxs} ${spacing.sm}`,
             backgroundColor: surfaces.tertiary,
             color: framerColors.text,
-            fontSize: '11px',
+            fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.bold,
             borderRadius: borders.radius.full,
             alignSelf: 'flex-start',
-            letterSpacing: '0.01em'
+            letterSpacing: typography.letterSpacing.normal
           }}>
             −{formatBytes(recommendation.potentialSavings)}
           </div>
@@ -389,7 +389,7 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
-            letterSpacing: '-0.01em'
+            letterSpacing: typography.letterSpacing.tight
           }}>
             {recommendation.nodeName || 'Unnamed'}
           </div>
@@ -438,41 +438,93 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
         </div>
       </div>
 
-      {/* Optimization Instructions */}
+      {/* Optimization Instructions - Collapsible */}
       {canOptimize && !isOptimizing && (
         <div style={{
-          padding: spacing.md,
-          backgroundColor: surfaces.secondary,
-          borderRadius: borders.radius.md,
-          border: `1px solid ${themeBorders.subtle}`,
           marginBottom: spacing.sm
         }}>
-          <div style={{
-            fontSize: typography.fontSize.xs,
-            color: framerColors.textSecondary,
-            lineHeight: typography.lineHeight.normal
-          }}>
-            <div style={{
-              fontWeight: typography.fontWeight.medium,
-              color: framerColors.text,
-              marginBottom: spacing.xs
-            }}>
-              What happens when you optimize:
-            </div>
-            <ul style={{
-              margin: 0,
-              paddingLeft: spacing.md,
-              listStyle: 'disc',
+          <button
+            onClick={() => setShowOptimizationInstructions(!showOptimizationInstructions)}
+            style={{
+              width: '100%',
               display: 'flex',
-              flexDirection: 'column',
-              gap: spacing.xs
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: spacing.sm,
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              borderRadius: borders.radius.md,
+              transition: 'background-color 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = surfaces.tertiary
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent'
+            }}
+          >
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              color: framerColors.text
             }}>
-              <li>The image will be resized to optimal dimensions and compressed</li>
-              <li>You'll choose to replace this element only or all usages</li>
-              <li>The optimized image will replace the original in your Framer project</li>
-              <li>Bandwidth totals will update automatically after replacement</li>
-            </ul>
-          </div>
+              What happens when you optimize?
+            </div>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              style={{
+                transform: showOptimizationInstructions ? 'rotate(180deg)' : 'rotate(0deg)',
+                transition: 'transform 0.15s ease',
+                color: framerColors.textSecondary
+              }}
+            >
+              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+          
+          {showOptimizationInstructions && (
+            <div style={{
+              padding: spacing.md,
+              backgroundColor: surfaces.tertiary,
+              borderRadius: borders.radius.md,
+              marginTop: spacing.xs
+            }}>
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                color: framerColors.textSecondary,
+                lineHeight: typography.lineHeight.relaxed
+              }}>
+                <ul style={{
+                  margin: 0,
+                  paddingLeft: spacing.md,
+                  listStyle: 'disc',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: spacing.xs,
+                  marginBottom: spacing.xs
+                }}>
+                  <li><strong style={{ color: framerColors.text }}>Image processing:</strong> The image will be resized to {recommendation.optimalWidth} × {recommendation.optimalHeight}px and compressed to reduce file size</li>
+                  <li><strong style={{ color: framerColors.text }}>Format conversion:</strong> The image will be converted to WebP format for better compression (if applicable)</li>
+                  <li><strong style={{ color: framerColors.text }}>Replacement scope:</strong> You'll choose to replace only this instance or all usages of this image across your project</li>
+                  <li><strong style={{ color: framerColors.text }}>Project update:</strong> The optimized image will replace the original in your Framer project</li>
+                  <li><strong style={{ color: framerColors.text }}>Automatic totals:</strong> Bandwidth estimates and totals will update automatically after replacement</li>
+                </ul>
+                <div style={{
+                  marginTop: spacing.xs,
+                  paddingTop: spacing.xs,
+                  fontSize: typography.fontSize.xs,
+                  color: framerColors.textTertiary,
+                  fontStyle: 'italic'
+                }}>
+                  Estimated savings: {formatBytes(recommendation.potentialSavings)}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -492,8 +544,8 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
               fullWidth
               icon={isOptimizing ? (
                 <svg style={{
-                  width: '14px',
-                  height: '14px',
+                  width: iconSize.sm,
+                  height: iconSize.sm,
                   animation: 'spin 1s linear infinite',
                   flexShrink: 0
                 }} fill="none" viewBox="0 0 24 24">
@@ -507,17 +559,9 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
           ) : canSelect ? (
             <Button
               onClick={handleNavigate}
-              variant="primary"
+              variant="secondary"
+              size="sm"
               fullWidth
-              style={{
-                backgroundColor: colors.almostBlack,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#000000'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = colors.almostBlack
-              }}
             >
               Select in Canvas
             </Button>
@@ -550,11 +594,7 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
               onIgnore()
             }}
             variant="secondary"
-            size="md"
-            style={{
-              minWidth: 'auto',
-              padding: `8px ${spacing.md}`,
-            }}
+            size="sm"
             title={isIgnored ? 'Restore this recommendation' : 'Ignore this recommendation'}
           >
             {isIgnored ? 'Restore' : 'Ignore'}

@@ -1,12 +1,33 @@
+import { framerColors } from '../../styles/designTokens'
+
 export function LoadingSpinner() {
   return (
-    <div className="flex items-center justify-center h-64">
-      <div className="flex flex-col items-center gap-3">
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      height: '256px'
+    }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '12px'
+      }}>
         <div 
-          className="animate-spin rounded-full h-10 w-10 border-b-2"
-          style={{ borderColor: 'var(--framer-color-tint)' }}
+          style={{
+            width: '40px',
+            height: '40px',
+            border: '2px solid transparent',
+            borderBottomColor: 'var(--framer-color-tint)',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }}
         ></div>
-        <p className="text-sm" style={{ color: framerColors.textSecondary }}>Analyzing bandwidth...</p>
+        <p style={{ 
+          fontSize: '13px',
+          color: framerColors.textSecondary 
+        }}>Analyzing bandwidth...</p>
       </div>
     </div>
   )

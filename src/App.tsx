@@ -11,8 +11,7 @@ import { LoadingSpinner } from "./components/common/LoadingSpinner"
 import { ErrorMessage } from "./components/common/ErrorMessage"
 import { useAnalysis } from "./hooks/useAnalysis"
 import { useTheme } from "./hooks/useTheme"
-import { spacing, typography } from "./styles/designTokens"
-import { formatTimestamp } from "./utils/formatTimestamp"
+import { spacing } from "./styles/designTokens"
 
 framer.showUI({
     position: "top right",
@@ -30,14 +29,16 @@ type Tab = 'overview' | 'assets' | 'recommendations' | 'bandwidth' | 'settings' 
 export function App() {
     const [activeTab, setActiveTab] = useState<Tab>('overview')
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null)
-    const { 
-      analysis, 
-      loading, 
-      error, 
-      runAnalysis, 
-      lastScanned, 
-      excludedPageIds, 
-      togglePageExclusion,
+    
+    // Initialize theme first
+    useTheme()
+    
+    const {
+      analysis,
+      loading,
+      error,
+      runAnalysis,
+      lastScanned,
       manualCMSEstimates,
       addManualCMSEstimate,
       updateManualCMSEstimate,
@@ -47,16 +48,18 @@ export function App() {
       unignoreRecommendation
     } = useAnalysis()
 
-    // Initialize theme
-    useTheme()
-
     // Auto-run analysis on mount
     useEffect(() => {
         runAnalysis()
     }, [runAnalysis])
 
     return (
-        <div className="relative h-full w-full" style={{ backgroundColor: 'var(--framer-color-bg)' }}>
+        <div style={{ 
+            position: 'relative',
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'var(--framer-color-bg)'
+        }}>
             {!loading && !error && (
                 <SidebarNavigation 
                   activeTab={activeTab} 
@@ -67,8 +70,17 @@ export function App() {
                 />
             )}
 
-            <div className="w-full h-full flex flex-col pl-16">
-                <div className="flex-1 overflow-y-auto">
+            <div style={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+                paddingLeft: '64px' // pl-16 equivalent
+            }}>
+                <div style={{
+                    flex: 1,
+                    overflowY: 'auto'
+                }}>
                     {loading && <LoadingSpinner />}
 
                     {error && <ErrorMessage error={error} onRetry={runAnalysis} />}
@@ -110,10 +122,11 @@ export function App() {
                                 />
                             )}
                             {activeTab === 'bandwidth' && (
-                                <BandwidthPanel 
+                                <BandwidthPanel
                                     analysis={analysis}
                                     lastScanned={lastScanned}
                                     loading={loading}
+                                    onNavigateToRecommendations={() => setActiveTab('recommendations')}
                                 />
                             )}
                             {activeTab === 'settings' && (
@@ -130,6 +143,16 @@ export function App() {
                                 />
                             )}
                         </>
+                    )}
+                    
+                    {!loading && !error && !analysis && (
+                        <div style={{
+                            padding: spacing.lg,
+                            color: 'var(--framer-color-text)',
+                            textAlign: 'center'
+                        }}>
+                            <p>No analysis data available. Click rescan to analyze your project.</p>
+                        </div>
                     )}
                 </div>
             </div>

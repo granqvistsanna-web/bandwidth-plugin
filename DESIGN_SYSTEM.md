@@ -19,11 +19,17 @@ Location: `src/styles/designTokens.ts`
 
 ### Colors
 
-**Surfaces:**
-- White: `#FFFFFF` - Primary backgrounds, cards
-- Warm Gray 50: `#FAFAF9` - Subtle backgrounds
-- Warm Gray 100: `#F4F2F0` - Card backgrounds
-- Warm Gray 200: `#E5E3E1` - Borders, dividers
+**Surfaces (Light Mode):**
+- Page Background: `#F5F5F5` - Light gray page for contrast with cards
+- Cards/Surfaces: `#FFFFFF` - Pure white for borderless cards with clear contrast
+- Nested Surfaces: `#FAFAFA` - Very light gray for elements within cards
+- Borders (rare): `#E5E5E5` - Subtle borders only when necessary
+
+**Surfaces (Dark Mode):**
+- Page Background: `#0F0F0E` - Very dark background
+- Cards Primary: `#1A1A18` - Dark card surfaces
+- Cards Secondary: `#2A2A28` - Slightly lighter cards for hierarchy
+- Cards Tertiary: `#3A3A38` - Lightest card surfaces for nested elements
 
 **Text:**
 - Almost Black: `#1A1919` - Primary text, headings
@@ -100,10 +106,14 @@ boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)'
 ```
 
 **Elevation Principles:**
-- Use **subtle shadows (0.04 opacity)** for resting cards
+- **Borderless cards by default** - Use color contrast instead of borders
+  - Light mode: White cards (#FFFFFF) on light gray page (#F5F5F5)
+  - Dark mode: Dark cards (#1A1A18, #2A2A28) on darker page (#0F0F0E)
+- Use **subtle shadows (0.04 opacity)** for resting cards in light mode
+- Use **glows (rgba(255,255,255,0.05-0.12))** instead of shadows in dark mode
 - Use **medium shadows (0.08 opacity)** for hover states
 - Use **stronger shadows (0.15 opacity)** for modals/popovers
-- Combine with **1px border** for clear definition
+- Only add **borders** when necessary for visual separation (e.g., thumbnails, critical boundaries)
 - Add **subtle transform** on hover for depth
 
 ### Borders & Radii

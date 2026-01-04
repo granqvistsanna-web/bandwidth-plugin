@@ -3,7 +3,7 @@ import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../types/analysis'
 import { debugLog, type DebugLogEntry } from '../utils/debugLog'
 import { spacing, typography, borders, colors, surfaces, framerColors, backgrounds } from '../styles/designTokens'
-import { formatTimestamp } from '../utils/formatTimestamp'
+import { StatusIndicator } from './common/StatusIndicator'
 
 interface DebugPanelProps {
   analysis: ProjectAnalysis
@@ -108,7 +108,7 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
         marginBottom: spacing.sm
       }}>
         <h1 style={{
-          fontSize: typography.fontSize.xl,
+          fontSize: typography.fontSize.lg,
           fontWeight: typography.fontWeight.bold,
           color: framerColors.text,
           margin: 0,
@@ -116,30 +116,10 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
         }}>
           Debug
         </h1>
-        {lastScanned && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: spacing.xs,
-            padding: `${spacing.xs} ${spacing.sm}`,
-            backgroundColor: surfaces.tertiary,
-            borderRadius: borders.radius.md,
-            fontSize: typography.fontSize.xs,
-            color: framerColors.textSecondary
-          }}>
-            <div
-              style={{
-                width: '6px',
-                height: '6px',
-                borderRadius: '50%',
-                backgroundColor: loading ? '#3b82f6' : '#22c55e',
-                opacity: loading ? 0.8 : 1,
-                flexShrink: 0
-              }}
-            />
-            <span>{loading ? 'analyzing' : formatTimestamp(lastScanned)}</span>
-          </div>
-        )}
+        <StatusIndicator
+          lastScanned={lastScanned}
+          loading={loading}
+        />
       </div>
 
       <div

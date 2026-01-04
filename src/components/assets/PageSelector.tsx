@@ -41,17 +41,14 @@ export function PageSelector({ analysis, selectedPageId, onPageChange }: PageSel
           fontWeight: typography.fontWeight.medium,
           color: framerColors.text,
           backgroundColor: surfaces.primary,
-          border: `${borders.width.thin} solid ${themeBorders.default}`,
           borderRadius: borders.radius.md,
           cursor: 'pointer',
-          transition: 'border-color 0.15s ease',
+          transition: 'all 0.15s ease',
         }}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = framerColors.text
           e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = themeBorders.default
           e.currentTarget.style.boxShadow = 'none'
         }}
       >

@@ -28,7 +28,7 @@ export function BreakdownChart({ breakdown, totalBytes }: BreakdownChartProps) {
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                marginBottom: '4px',
+                marginBottom: spacing.xs,
               }}
             >
               <span

@@ -223,6 +223,7 @@ export const darkMode = {
 // ============================================================================
 
 export const spacing = {
+  xxs: '2px',   // 2px - Micro spacing, subtle margins
   xs: '4px',    // 4px
   sm: '8px',    // 8px
   md: '12px',   // 12px
@@ -253,6 +254,18 @@ export const componentSpacing = {
 } as const
 
 // ============================================================================
+// ICON SIZES
+// ============================================================================
+
+export const iconSize = {
+  xs: '12px',   // Very small icons (chevrons, small arrows)
+  sm: '14px',   // Small icons (action buttons, info icons)
+  md: '16px',   // Medium icons (filters, common UI)
+  lg: '20px',   // Large icons (navigation, featured)
+  xl: '24px',   // Extra large icons (hero, emphasis)
+} as const
+
+// ============================================================================
 // TYPOGRAPHY
 // ============================================================================
 
@@ -268,6 +281,10 @@ export const typography = {
     md: '15px',    // Section headings
     lg: '18px',    // Page headings
     xl: '24px',    // Large headings
+    '2xl': '28px', // Hero metrics, stats
+    '3xl': '32px', // Large hero numbers
+    '4xl': '36px', // Extra large emphasis
+    '5xl': '48px', // Huge displays, empty states
   },
 
   fontWeight: {
@@ -278,15 +295,18 @@ export const typography = {
   },
 
   lineHeight: {
+    none: 1,        // Large display numbers, hero metrics
     tight: 1.2,     // Metrics, large numbers
     normal: 1.5,    // Body text
     relaxed: 1.7,   // Descriptions, long form
   },
 
   letterSpacing: {
-    tight: '-0.02em',   // Large headings
+    tighter: '-0.02em', // Large headings, hero metrics
+    tight: '-0.01em',   // Display headings
     normal: '0',        // Body text
-    wide: '0.02em',     // Labels, uppercase
+    wide: '0.02em',     // Labels
+    wider: '0.05em',    // Uppercase labels, small caps
   }
 } as const
 

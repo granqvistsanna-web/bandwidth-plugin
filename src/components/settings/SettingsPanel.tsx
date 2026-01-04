@@ -1,6 +1,6 @@
 import { spacing, typography, borders, surfaces, backgrounds, framerColors } from '../../styles/designTokens'
 import { useTheme, type ThemeMode } from '../../hooks/useTheme'
-import { formatTimestamp } from '../../utils/formatTimestamp'
+import { StatusIndicator } from '../common/StatusIndicator'
 
 interface SettingsPanelProps {
   lastScanned?: Date | null
@@ -42,7 +42,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
 
   return (
     <div style={{
-      padding: spacing.md,
+      padding: spacing.lg,
       backgroundColor: backgrounds.page,
       minHeight: '100vh'
     }}>
@@ -69,38 +69,18 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
           }}>
             Settings
           </h1>
-          {lastScanned && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: spacing.xs,
-              padding: `${spacing.xs} ${spacing.sm}`,
-              backgroundColor: surfaces.tertiary,
-              borderRadius: borders.radius.md,
-              fontSize: typography.fontSize.xs,
-              color: framerColors.textSecondary
-            }}>
-              <div
-                style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: loading ? 'var(--status-info-solid)' : 'var(--status-success-solid)',
-                  opacity: loading ? 0.8 : 1,
-                  flexShrink: 0
-                }}
-              />
-              <span>{loading ? 'analyzing' : formatTimestamp(lastScanned)}</span>
-            </div>
-          )}
+          <StatusIndicator
+            lastScanned={lastScanned}
+            loading={loading}
+          />
         </div>
 
       {/* Theme Selection */}
       <div>
         <div
           style={{
-            padding: spacing.md,
-            backgroundColor: surfaces.tertiary,
+            padding: spacing.lg,
+            backgroundColor: surfaces.secondary,
             borderRadius: borders.radius.lg,
           }}
         >
@@ -135,8 +115,9 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
                   display: 'flex',
                   alignItems: 'center',
                   gap: spacing.sm,
-                  padding: spacing.sm,
-                  backgroundColor: isSelected ? 'var(--framer-color-bg-secondary)' : 'transparent',
+                  padding: `${spacing.md} ${spacing.sm}`,
+                  minHeight: '48px',
+                  backgroundColor: isSelected ? surfaces.primary : 'transparent',
                   border: `1px solid ${isSelected ? framerColors.text : 'var(--framer-color-divider)'}`,
                   borderRadius: borders.radius.sm,
                   cursor: 'pointer',
@@ -145,7 +126,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                    e.currentTarget.style.backgroundColor = surfaces.primary
                     e.currentTarget.style.borderColor = framerColors.textSecondary
                   }
                 }}
@@ -207,7 +188,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
       <div>
         <div
           style={{
-            padding: spacing.md,
+            padding: spacing.lg,
             backgroundColor: surfaces.secondary,
             borderRadius: borders.radius.lg,
           }}

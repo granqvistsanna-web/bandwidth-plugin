@@ -1,4 +1,5 @@
 import type { AssetsTableHeaderProps, SortConfig } from './types'
+import { framerColors, backgrounds } from '../../styles/designTokens'
 
 interface SortableHeaderProps {
   label: string

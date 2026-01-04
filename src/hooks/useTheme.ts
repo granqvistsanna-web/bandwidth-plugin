@@ -28,10 +28,19 @@ function applyTheme(theme: 'light' | 'dark') {
   }
 }
 
-// Initialize theme immediately on module load
-const initialTheme = getInitialTheme()
-const initialResolved = initialTheme === 'system' ? 'light' : initialTheme
-applyTheme(initialResolved)
+// Initialize theme immediately on module load (with safety checks)
+let initialTheme: ThemeMode = 'light'
+let initialResolved: 'light' | 'dark' = 'light'
+
+try {
+  if (typeof document !== 'undefined') {
+    initialTheme = getInitialTheme()
+    initialResolved = initialTheme === 'system' ? 'light' : initialTheme
+    applyTheme(initialResolved)
+  }
+} catch (error) {
+  console.warn('Failed to initialize theme:', error)
+}
 
 export function useTheme() {
   const [theme, setTheme] = useState<ThemeMode>(initialTheme)
@@ -48,9 +57,15 @@ export function useTheme() {
     setResolvedTheme(newResolvedTheme)
 
     // Log CSS variable values for debugging
-    const surfacePrimary = getComputedStyle(document.documentElement).getPropertyValue('--surface-primary').trim()
-    const textPrimary = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
-    console.log('🎨 CSS Variables - surface:', surfacePrimary, 'text:', textPrimary)
+    try {
+      if (typeof document !== 'undefined' && document.documentElement) {
+        const surfacePrimary = getComputedStyle(document.documentElement).getPropertyValue('--surface-primary').trim()
+        const textPrimary = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+        console.log('🎨 CSS Variables - surface:', surfacePrimary, 'text:', textPrimary)
+      }
+    } catch (error) {
+      console.warn('Failed to read CSS variables:', error)
+    }
   }, [theme])
 
   const updateTheme = (newTheme: ThemeMode) => {

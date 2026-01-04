@@ -5,7 +5,7 @@ import { formatBytes } from '../../utils/formatBytes'
 import { calculateTotalSavings } from '../../services/recommendations'
 import { spacing, typography, borders, colors, backgrounds, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 import { CollapsibleSection } from '../overview/CollapsibleSection'
-import { formatTimestamp } from '../../utils/formatTimestamp'
+import { StatusIndicator } from '../common/StatusIndicator'
 
 interface RecommendationsPanelProps {
   analysis: ProjectAnalysis
@@ -90,27 +90,25 @@ export function RecommendationsPanel({
     <div style={{ padding: spacing.lg, backgroundColor: backgrounds.page, minHeight: '100vh' }}>
       {/* Compact Header */}
       <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: spacing.xl
       }}>
         <h1 style={{
-          fontSize: typography.fontSize.lg,
+          fontSize: typography.fontSize.xl,
           fontWeight: typography.fontWeight.bold,
           color: framerColors.text,
           margin: 0,
-          marginBottom: spacing.xs,
           lineHeight: typography.lineHeight.tight,
-          letterSpacing: '-0.02em'
+          letterSpacing: typography.letterSpacing.tighter
         }}>
           Recommendations
         </h1>
-        {lastScanned && (
-          <div style={{
-            fontSize: typography.fontSize.xs,
-            color: framerColors.textSecondary
-          }}>
-            {loading ? 'Analyzing...' : `Scanned ${formatTimestamp(lastScanned)}`}
-          </div>
-        )}
+        <StatusIndicator
+          lastScanned={lastScanned}
+          loading={loading}
+        />
       </div>
 
       {/* Enhanced Savings Card */}
@@ -121,8 +119,7 @@ export function RecommendationsPanel({
             marginBottom: spacing.lg,
             backgroundColor: surfaces.secondary,
             borderRadius: borders.radius.lg,
-            border: `1px solid ${themeBorders.subtle}`,
-            boxShadow: themeElevation.default
+            boxShadow: themeElevation.subtle
           }}
         >
           <div style={{
@@ -132,11 +129,11 @@ export function RecommendationsPanel({
             marginBottom: spacing.xs
           }}>
             <div style={{
-              fontSize: '28px',
+              fontSize: typography.fontSize['2xl'],
               fontWeight: typography.fontWeight.bold,
               color: framerColors.text,
-              lineHeight: 1,
-              letterSpacing: '-0.02em'
+              lineHeight: typography.lineHeight.none,
+              letterSpacing: typography.letterSpacing.tighter
             }}>
               {formatBytes(totalSavings)}
             </div>
@@ -194,8 +191,8 @@ export function RecommendationsPanel({
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
             color: framerColors.text,
-            backgroundColor: surfaces.primary,
-            border: `1px solid ${themeBorders.subtle}`,
+            backgroundColor: surfaces.secondary,
+            border: 'none',
             borderRadius: borders.radius.md,
             cursor: 'pointer',
             transition: 'all 0.15s ease',
@@ -203,15 +200,14 @@ export function RecommendationsPanel({
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
             backgroundRepeat: 'no-repeat',
             backgroundPosition: 'right 8px center',
-            minWidth: '140px'
+            minWidth: '140px',
+            boxShadow: themeElevation.subtle
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = framerColors.text
-            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
+            e.currentTarget.style.boxShadow = themeElevation.default
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = themeBorders.subtle
-            e.currentTarget.style.boxShadow = 'none'
+            e.currentTarget.style.boxShadow = themeElevation.subtle
           }}
         >
           <option value="all">All ({activeRecommendations.length})</option>
@@ -285,8 +281,8 @@ export function RecommendationsPanel({
             maxWidth: '400px',
             margin: '0 auto'
           }}>
-            <div style={{ 
-              fontSize: '48px',
+            <div style={{
+              fontSize: typography.fontSize['5xl'],
               marginBottom: spacing.md
             }}>✓</div>
             <div style={{ 

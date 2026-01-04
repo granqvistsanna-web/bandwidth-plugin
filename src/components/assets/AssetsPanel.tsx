@@ -6,7 +6,7 @@ import { AssetFilters } from './AssetFilters'
 import { AssetsTable } from './AssetsTable'
 import { debugLog } from '../../utils/debugLog'
 import { spacing, typography, borders, colors, backgrounds, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
-import { formatTimestamp } from '../../utils/formatTimestamp'
+import { StatusIndicator } from '../common/StatusIndicator'
 
 interface AssetsPanelProps {
   analysis: ProjectAnalysis
@@ -161,27 +161,25 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
     }}>
       {/* Compact Header */}
       <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: spacing.md
       }}>
         <h1 style={{
-          fontSize: typography.fontSize.lg,
+          fontSize: typography.fontSize.xl,
           fontWeight: typography.fontWeight.bold,
           color: framerColors.text,
           margin: 0,
-          marginBottom: spacing.xs,
           lineHeight: typography.lineHeight.tight,
-          letterSpacing: '-0.02em'
+          letterSpacing: typography.letterSpacing.tighter
         }}>
           Assets
         </h1>
-        {lastScanned && (
-          <div style={{
-            fontSize: typography.fontSize.xs,
-            color: framerColors.textSecondary
-          }}>
-            {loading ? 'Analyzing...' : `Scanned ${formatTimestamp(lastScanned)}`}
-          </div>
-        )}
+        <StatusIndicator
+          lastScanned={lastScanned}
+          loading={loading}
+        />
       </div>
 
       {/* Filters - integrated into layout */}

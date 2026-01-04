@@ -1,15 +1,16 @@
 import type { ProjectAnalysis } from '../../types/analysis'
 import { BandwidthCalculator } from '../overview/BandwidthCalculator'
 import { spacing, typography, colors, borders, surfaces, themeBorders, themeElevation, framerColors, backgrounds } from '../../styles/designTokens'
-import { formatTimestamp } from '../../utils/formatTimestamp'
+import { StatusIndicator } from '../common/StatusIndicator'
 
 interface BandwidthPanelProps {
   analysis: ProjectAnalysis
   lastScanned?: Date | null
   loading?: boolean
+  onNavigateToRecommendations?: () => void
 }
 
-export function BandwidthPanel({ analysis, lastScanned, loading }: BandwidthPanelProps) {
+export function BandwidthPanel({ analysis, lastScanned, loading, onNavigateToRecommendations }: BandwidthPanelProps) {
   return (
     <div style={{
       padding: spacing.lg,
@@ -21,30 +22,31 @@ export function BandwidthPanel({ analysis, lastScanned, loading }: BandwidthPane
     }}>
       {/* Compact Header */}
       <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: spacing.xl
       }}>
         <h1 style={{
-          fontSize: typography.fontSize.lg,
+          fontSize: typography.fontSize.xl,
           fontWeight: typography.fontWeight.bold,
           color: framerColors.text,
           margin: 0,
-          marginBottom: spacing.xs,
           lineHeight: typography.lineHeight.tight,
-          letterSpacing: '-0.02em'
+          letterSpacing: typography.letterSpacing.tighter
         }}>
           Usage Estimate
         </h1>
-        {lastScanned && (
-          <div style={{
-            fontSize: typography.fontSize.xs,
-            color: framerColors.textSecondary
-          }}>
-            {loading ? 'Analyzing...' : `Scanned ${formatTimestamp(lastScanned)}`}
-          </div>
-        )}
+        <StatusIndicator
+          lastScanned={lastScanned}
+          loading={loading}
+        />
       </div>
 
-      <BandwidthCalculator analysis={analysis} />
+      <BandwidthCalculator
+        analysis={analysis}
+        onNavigateToRecommendations={onNavigateToRecommendations}
+      />
     </div>
   )
 }

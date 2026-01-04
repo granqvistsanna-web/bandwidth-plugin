@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { spacing, typography, borders, colors, surfaces, themeBorders, overlays, hoverStates, framerColors } from '../styles/designTokens'
 import { Button } from './primitives/Button'
-import { formatTimestamp } from '../utils/formatTimestamp'
 import { 
   Squares2X2Icon, 
   PhotoIcon, 
@@ -264,23 +263,20 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
               onClick={onRefresh}
               disabled={loading}
               variant="primary"
+              size="sm"
               fullWidth
               icon={
-                <ArrowPathIcon 
-                  style={{ 
-                    width: '16px',
-                    height: '16px',
+                <ArrowPathIcon
+                  style={{
+                    width: '14px',
+                    height: '14px',
                     animation: loading ? 'spin 1s linear infinite' : 'none',
                     flexShrink: 0
                   }}
                 />
               }
-              style={{
-                justifyContent: isExpanded ? 'center' : 'center',
-                gap: isExpanded ? spacing.xs : 0,
-              }}
             >
-              {isExpanded && (loading ? 'analyzing...' : 'Rescan project')}
+              {isExpanded && (loading ? 'Analyzing...' : 'Rescan project')}
             </Button>
           </div>
         )}

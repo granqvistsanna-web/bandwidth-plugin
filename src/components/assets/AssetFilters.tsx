@@ -87,7 +87,6 @@ export function AssetFilters({
           fontWeight: typography.fontWeight.medium,
           color: framerColors.text,
           backgroundColor: surfaces.primary,
-          border: `1px solid ${themeBorders.subtle}`,
           borderRadius: borders.radius.md,
           cursor: 'pointer',
           flex: '0 0 auto',
@@ -100,11 +99,9 @@ export function AssetFilters({
           backgroundPosition: 'right 6px center',
         }}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = framerColors.text
           e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = themeBorders.subtle
           e.currentTarget.style.boxShadow = 'none'
         }}
       >
