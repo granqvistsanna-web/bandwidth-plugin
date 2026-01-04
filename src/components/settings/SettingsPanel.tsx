@@ -1,6 +1,6 @@
 import { spacing, typography, borders, colors } from '../../styles/designTokens'
 import { useTheme, type ThemeMode } from '../../hooks/useTheme'
-import { formatTimestamp } from '../../App'
+import { formatTimestamp } from '../../utils/formatTimestamp'
 
 interface SettingsPanelProps {
   lastScanned?: Date | null

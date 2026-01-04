@@ -7,7 +7,7 @@ import { CMSAssetsNotice } from './CMSAssetsNotice'
 import { debugLog } from '../../utils/debugLog'
 import type { ManualCMSEstimate } from '../../hooks/useAnalysis'
 import { spacing, typography, borders, colors } from '../../styles/designTokens'
-import { formatTimestamp } from '../../App'
+import { formatTimestamp } from '../../utils/formatTimestamp'
 
 interface OverviewPanelProps {
   analysis: ProjectAnalysis

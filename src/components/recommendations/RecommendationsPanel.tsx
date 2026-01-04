@@ -5,7 +5,7 @@ import { formatBytes } from '../../utils/formatBytes'
 import { calculateTotalSavings } from '../../services/recommendations'
 import { spacing, typography, borders, colors } from '../../styles/designTokens'
 import { CollapsibleSection } from '../overview/CollapsibleSection'
-import { formatTimestamp } from '../../App'
+import { formatTimestamp } from '../../utils/formatTimestamp'
 
 interface RecommendationsPanelProps {
   analysis: ProjectAnalysis

@@ -6,7 +6,7 @@ import { AssetFilters } from './AssetFilters'
 import { AssetsTable } from './AssetsTable'
 import { debugLog } from '../../utils/debugLog'
 import { spacing, typography, borders, colors } from '../../styles/designTokens'
-import { formatTimestamp } from '../../App'
+import { formatTimestamp } from '../../utils/formatTimestamp'
 
 interface AssetsPanelProps {
   analysis: ProjectAnalysis

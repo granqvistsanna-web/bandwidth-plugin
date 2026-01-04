@@ -191,75 +191,55 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
 
         {/* Monthly Pageviews */}
         <div style={{ marginBottom: spacing.md }}>
-          <label style={{
-            display: 'block',
-            fontSize: typography.fontSize.xs,
-            fontWeight: typography.fontWeight.medium,
-            color: 'var(--framer-color-text)',
-            marginBottom: spacing.xs
-          }}>
-            Monthly pageviews
-          </label>
-          
-          {/* Quick Preset Buttons */}
           <div style={{
             display: 'flex',
-            gap: spacing.xs,
-            marginBottom: spacing.sm,
-            flexWrap: 'wrap'
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: spacing.xs
           }}>
-            {[
-              { label: '1K', value: 1000 },
-              { label: '10K', value: 10000 },
-              { label: '50K', value: 50000 },
-              { label: '100K', value: 100000 },
-              { label: '500K', value: 500000 },
-              { label: '1M', value: 1000000 }
-            ].map(preset => {
-              const isSelected = Math.abs(monthlyPageviews - preset.value) < 500
-              return (
-                <button
-                  key={preset.value}
-                  onClick={() => setMonthlyPageviews(preset.value)}
-                  style={{
-                    padding: `${spacing.xs} ${spacing.sm}`,
-                    fontSize: typography.fontSize.xs,
-                    fontWeight: typography.fontWeight.medium,
-                    borderRadius: borders.radius.sm,
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    whiteSpace: 'nowrap',
-                    minWidth: '44px',
-                    textAlign: 'center',
-                    ...(isSelected ? {
-                      backgroundColor: 'var(--framer-color-text)',
-                      color: 'var(--framer-color-bg)',
-                    } : {
-                      backgroundColor: colors.white,
-                      color: 'var(--framer-color-text)',
-                      border: `1px solid var(--framer-color-divider)`
-                    })
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = colors.warmGray[50]
-                      e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = colors.white
-                      e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-                    }
-                  }}
-                >
-                  {preset.label}
-                </button>
-              )
-            })}
+            <label style={{
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              color: 'var(--framer-color-text)'
+            }}>
+              Monthly pageviews
+            </label>
+            <select
+              value={monthlyPageviews}
+              onChange={(e) => setMonthlyPageviews(parseInt(e.target.value))}
+              style={{
+                padding: `${spacing.xs} ${spacing.sm}`,
+                fontSize: typography.fontSize.xs,
+                fontWeight: typography.fontWeight.medium,
+                color: 'var(--framer-color-text)',
+                backgroundColor: colors.white,
+                border: `1px solid var(--framer-color-divider)`,
+                borderRadius: borders.radius.sm,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                minWidth: '100px'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--framer-color-text)'
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              <option value={1000}>1K</option>
+              <option value={5000}>5K</option>
+              <option value={10000}>10K</option>
+              <option value={25000}>25K</option>
+              <option value={50000}>50K</option>
+              <option value={100000}>100K</option>
+              <option value={250000}>250K</option>
+              <option value={500000}>500K</option>
+              <option value={1000000}>1M</option>
+              <option value={monthlyPageviews}>Custom ({monthlyPageviews.toLocaleString()})</option>
+            </select>
           </div>
-
           <input
             type="number"
             value={monthlyPageviews}
@@ -292,122 +272,91 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: spacing.xs,
+            justifyContent: 'space-between',
             marginBottom: spacing.xs
           }}>
-            <label style={{
-              fontSize: typography.fontSize.xs,
-              fontWeight: typography.fontWeight.medium,
-              color: 'var(--framer-color-text)'
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: spacing.xs
             }}>
-              Pages per visit
-            </label>
-            <div style={{ position: 'relative', display: 'inline-block' }}>
-              <svg 
-                style={{ 
-                  width: '14px', 
-                  height: '14px', 
-                  color: 'var(--framer-color-text-tertiary)',
-                  cursor: 'help'
-                }} 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div style={{
-                position: 'absolute',
-                left: 0,
-                bottom: '100%',
-                marginBottom: spacing.xs,
-                width: '240px',
-                padding: spacing.sm,
+              <label style={{
                 fontSize: typography.fontSize.xs,
-                borderRadius: borders.radius.md,
-                backgroundColor: 'var(--framer-color-text)',
-                color: 'var(--framer-color-text-reversed)',
-                opacity: 0,
-                pointerEvents: 'none',
-                transition: 'opacity 0.15s ease',
-                zIndex: 10,
-                whiteSpace: 'normal'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1' }}
-              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0' }}
-              >
-                Most visitors view 1–3 pages. Landing page is always included, other pages are weighted by this value.
+                fontWeight: typography.fontWeight.medium,
+                color: 'var(--framer-color-text)'
+              }}>
+                Pages per visit
+              </label>
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <svg 
+                  style={{ 
+                    width: '12px', 
+                    height: '12px', 
+                    color: 'var(--framer-color-text-tertiary)',
+                    cursor: 'help'
+                  }} 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div style={{
+                  position: 'absolute',
+                  left: 0,
+                  bottom: '100%',
+                  marginBottom: spacing.xs,
+                  width: '240px',
+                  padding: spacing.sm,
+                  fontSize: typography.fontSize.xs,
+                  borderRadius: borders.radius.md,
+                  backgroundColor: 'var(--framer-color-text)',
+                  color: 'var(--framer-color-text-reversed)',
+                  opacity: 0,
+                  pointerEvents: 'none',
+                  transition: 'opacity 0.15s ease',
+                  zIndex: 10,
+                  whiteSpace: 'normal'
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.opacity = '1' }}
+                onMouseLeave={(e) => { e.currentTarget.style.opacity = '0' }}
+                >
+                  Most visitors view 1–3 pages. Landing page is always included, other pages are weighted by this value.
+                </div>
               </div>
             </div>
+            <select
+              value={averagePagesPerVisit.toFixed(1)}
+              onChange={(e) => setAveragePagesPerVisit(parseFloat(e.target.value))}
+              style={{
+                padding: `${spacing.xs} ${spacing.sm}`,
+                fontSize: typography.fontSize.xs,
+                fontWeight: typography.fontWeight.medium,
+                color: 'var(--framer-color-text)',
+                backgroundColor: colors.white,
+                border: `1px solid var(--framer-color-divider)`,
+                borderRadius: borders.radius.sm,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                minWidth: '100px'
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = 'var(--framer-color-text)'
+                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+                e.currentTarget.style.boxShadow = 'none'
+              }}
+            >
+              <option value="1.0">Landing only (1.0)</option>
+              <option value="1.5">Light (1.5)</option>
+              <option value="2.0">Typical (2.0)</option>
+              <option value="2.5">Moderate (2.5)</option>
+              <option value="3.0">Deep (3.0)</option>
+              <option value={averagePagesPerVisit.toFixed(1)}>Custom ({averagePagesPerVisit.toFixed(1)})</option>
+            </select>
           </div>
-          
-          {/* Preset Buttons */}
-          <div style={{
-            display: 'flex',
-            gap: spacing.xs,
-            marginBottom: spacing.sm,
-            flexWrap: 'wrap'
-          }}>
-            {[
-              { label: 'Landing only', value: 1.0, subtitle: '1.0' },
-              { label: 'Light', value: 1.5, subtitle: '1.5' },
-              { label: 'Typical', value: 2.0, subtitle: '2.0' },
-              { label: 'Deep', value: 3.0, subtitle: '3.0+' }
-            ].map(preset => {
-              const isSelected = Math.abs(averagePagesPerVisit - preset.value) < 0.1
-              return (
-                <button
-                  key={preset.value}
-                  onClick={() => setAveragePagesPerVisit(preset.value)}
-                  style={{
-                    padding: `${spacing.sm} ${spacing.md}`,
-                    fontSize: typography.fontSize.xs,
-                    fontWeight: typography.fontWeight.medium,
-                    borderRadius: borders.radius.sm,
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    whiteSpace: 'nowrap',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '2px',
-                    minWidth: '70px',
-                    ...(isSelected ? {
-                      backgroundColor: 'var(--framer-color-text)',
-                      color: 'var(--framer-color-bg)',
-                    } : {
-                      backgroundColor: colors.white,
-                      color: 'var(--framer-color-text)',
-                      border: `1px solid var(--framer-color-divider)`
-                    })
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = colors.warmGray[50]
-                      e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = colors.white
-                      e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-                    }
-                  }}
-                >
-                  <span>{preset.label}</span>
-                  <span style={{
-                    fontSize: '10px',
-                    opacity: isSelected ? 0.8 : 0.6,
-                    fontWeight: typography.fontWeight.regular
-                  }}>
-                    {preset.subtitle}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-
           <input
             type="number"
             value={averagePagesPerVisit}
@@ -434,16 +383,6 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             max={pages.length || 10}
             step="0.1"
           />
-          <div style={{
-            fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-tertiary)',
-            marginTop: spacing.xs
-          }}>
-            {averagePagesPerVisit === 1 ? 'Visitors only view landing page' :
-             averagePagesPerVisit < 2 ? 'Most visitors view 1–2 pages' :
-             averagePagesPerVisit < 3 ? 'Visitors typically browse 2–3 pages' :
-             'Visitors view multiple pages per visit'}
-          </div>
         </div>
       </div>
 
@@ -475,65 +414,36 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
               {planLimit} GB/month limit
             </div>
           </div>
-          <div style={{
-            display: 'flex',
-            gap: spacing.xs,
-            flexWrap: 'wrap'
-          }}>
-            {(Object.keys(FRAMER_PLANS) as PlanKey[]).map((plan) => {
-              const isSelected = selectedPlan === plan
-              return (
-                <button
-                  key={plan}
-                  onClick={() => setSelectedPlan(plan)}
-                  style={{
-                    padding: `${spacing.sm} ${spacing.md}`,
-                    fontSize: typography.fontSize.xs,
-                    fontWeight: typography.fontWeight.medium,
-                    borderRadius: borders.radius.sm,
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    gap: '2px',
-                    minWidth: '60px',
-                    ...(isSelected ? {
-                      backgroundColor: 'var(--framer-color-text)',
-                      color: 'var(--framer-color-bg)',
-                    } : {
-                      backgroundColor: colors.white,
-                      color: 'var(--framer-color-text)',
-                      border: `1px solid var(--framer-color-divider)`
-                    })
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = colors.warmGray[50]
-                      e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = colors.white
-                      e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-                    }
-                  }}
-                  title={`${FRAMER_PLANS[plan].bandwidthGB} GB/month limit`}
-                >
-                  <span>{FRAMER_PLANS[plan].name}</span>
-                  <span style={{
-                    fontSize: '10px',
-                    opacity: isSelected ? 0.8 : 0.6,
-                    fontWeight: typography.fontWeight.regular
-                  }}>
-                    {FRAMER_PLANS[plan].bandwidthGB}GB
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+          <select
+            value={selectedPlan}
+            onChange={(e) => setSelectedPlan(e.target.value as PlanKey)}
+            style={{
+              padding: `${spacing.xs} ${spacing.sm}`,
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              color: 'var(--framer-color-text)',
+              backgroundColor: colors.white,
+              border: `1px solid var(--framer-color-divider)`,
+              borderRadius: borders.radius.sm,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              minWidth: '120px'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'var(--framer-color-text)'
+              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+          >
+            {(Object.keys(FRAMER_PLANS) as PlanKey[]).map((plan) => (
+              <option key={plan} value={plan}>
+                {FRAMER_PLANS[plan].name} ({FRAMER_PLANS[plan].bandwidthGB} GB)
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Usage Progress Bar */}

@@ -3,7 +3,7 @@ import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../types/analysis'
 import { debugLog, type DebugLogEntry } from '../utils/debugLog'
 import { spacing, typography, borders, colors } from '../styles/designTokens'
-import { formatTimestamp } from '../App'
+import { formatTimestamp } from '../utils/formatTimestamp'
 
 interface DebugPanelProps {
   analysis: ProjectAnalysis

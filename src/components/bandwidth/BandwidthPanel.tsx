@@ -1,7 +1,7 @@
 import type { ProjectAnalysis } from '../../types/analysis'
 import { BandwidthCalculator } from '../overview/BandwidthCalculator'
 import { spacing, typography, colors, borders } from '../../styles/designTokens'
-import { formatTimestamp } from '../../App'
+import { formatTimestamp } from '../../utils/formatTimestamp'
 
 interface BandwidthPanelProps {
   analysis: ProjectAnalysis
