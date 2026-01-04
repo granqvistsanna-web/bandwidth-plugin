@@ -4,19 +4,49 @@ import { RecommendationCard } from './RecommendationCard'
 import { formatBytes } from '../../utils/formatBytes'
 import { calculateTotalSavings } from '../../services/recommendations'
 import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { CollapsibleSection } from '../overview/CollapsibleSection'
+import { formatTimestamp } from '../../App'
 
 interface RecommendationsPanelProps {
   analysis: ProjectAnalysis
-  selectedPageId: string | 'all'
+  selectedPageId?: string | 'all' | null
+  ignoredRecommendationIds: Set<string>
+  onIgnoreRecommendation: (id: string) => void
+  onUnignoreRecommendation: (id: string) => void
+  lastScanned?: Date | null
+  loading?: boolean
 }
 
-export function RecommendationsPanel({ analysis }: RecommendationsPanelProps) {
+export function RecommendationsPanel({ 
+  analysis, 
+  ignoredRecommendationIds, 
+  onIgnoreRecommendation, 
+  onUnignoreRecommendation,
+  lastScanned,
+  loading
+}: RecommendationsPanelProps) {
   const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all')
 
-  // Always use all recommendations, sorted globally by impact (potentialSavings)
-  // This ensures recommendations are ranked by impact regardless of page filter
-  // The page filter in the UI is informational only - recommendations show all pages
-  const allRecommendations = analysis.allRecommendations
+  // Safety check: ensure analysis exists
+  if (!analysis) {
+    return (
+      <div style={{ padding: spacing.lg, backgroundColor: 'var(--framer-color-bg)' }}>
+        <div style={{ 
+          textAlign: 'center',
+          padding: spacing.xl,
+          color: 'var(--framer-color-text-secondary)'
+        }}>
+          No analysis data available. Please run a scan first.
+        </div>
+      </div>
+    )
+  }
+
+  try {
+    // Always use all recommendations, sorted globally by impact (potentialSavings)
+    // This ensures recommendations are ranked by impact regardless of page filter
+    // The page filter in the UI is informational only - recommendations show all pages
+    const allRecommendations = analysis.allRecommendations || []
   
   // Stable sort: ensure consistent ordering across renders
   const sortedRecommendations = [...allRecommendations].sort((a, b) => {
@@ -40,212 +70,227 @@ export function RecommendationsPanel({ analysis }: RecommendationsPanelProps) {
     return (a.nodeId || a.id).localeCompare(b.nodeId || b.id)
   })
 
+  // Separate ignored and active recommendations
+  const activeRecommendations = sortedRecommendations.filter(rec => !ignoredRecommendationIds.has(rec.id))
+  const ignoredRecommendations = sortedRecommendations.filter(rec => ignoredRecommendationIds.has(rec.id))
+
   const filteredRecommendations = filter === 'all'
-    ? sortedRecommendations
-    : sortedRecommendations.filter(rec => rec.priority === filter)
+    ? activeRecommendations
+    : activeRecommendations.filter(rec => rec.priority === filter)
 
-  const totalSavings = calculateTotalSavings(sortedRecommendations)
+  const totalSavings = calculateTotalSavings(activeRecommendations)
 
-  const priorityCounts = {
-    high: sortedRecommendations.filter(r => r.priority === 'high').length,
-    medium: sortedRecommendations.filter(r => r.priority === 'medium').length,
-    low: sortedRecommendations.filter(r => r.priority === 'low').length
-  }
+    const priorityCounts = {
+      high: activeRecommendations.filter(r => r.priority === 'high').length,
+      medium: activeRecommendations.filter(r => r.priority === 'medium').length,
+      low: activeRecommendations.filter(r => r.priority === 'low').length
+    }
 
+    return (
+    <div style={{ padding: spacing.lg, backgroundColor: 'var(--framer-color-bg)' }}>
+      {/* Page Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.lg
+      }}>
+        <h1 style={{
+          fontSize: typography.fontSize.xl,
+          fontWeight: typography.fontWeight.bold,
+          color: 'var(--framer-color-text)',
+          margin: 0,
+          lineHeight: typography.lineHeight.tight
+        }}>
+          Recommendations
+        </h1>
+        {lastScanned && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.xs,
+            padding: `${spacing.xs} ${spacing.sm}`,
+            backgroundColor: colors.warmGray[100],
+            borderRadius: borders.radius.md,
+            fontSize: typography.fontSize.xs,
+            color: 'var(--framer-color-text-secondary)'
+          }}>
+            <div
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: loading ? '#3b82f6' : '#22c55e',
+                opacity: loading ? 0.8 : 1,
+                flexShrink: 0
+              }}
+            />
+            <span>{loading ? 'analyzing' : formatTimestamp(lastScanned)}</span>
+          </div>
+        )}
+      </div>
 
-  return (
-    <div className="p-6" style={{ backgroundColor: 'var(--framer-color-bg)' }}>
       {sortedRecommendations.length > 0 && (
-        <div 
-          className="border rounded-lg p-4 mb-5"
+        <div
           style={{
-            backgroundColor: '#FAF9F8',
-            borderColor: 'var(--framer-color-divider)'
+            padding: spacing.md,
+            marginBottom: spacing.lg,
+            backgroundColor: colors.warmGray[100],
+            borderRadius: borders.radius.lg,
           }}
         >
-          <div className="text-xs font-medium mb-1.5 uppercase tracking-wide" style={{ color: 'var(--framer-color-text-tertiary)', letterSpacing: '0.05em' }}>Potential Savings</div>
-          <div className="text-2xl font-semibold mb-2" style={{ color: 'var(--framer-color-text)', lineHeight: '1.2' }}>
+          <div style={{
+            fontSize: typography.fontSize.lg,
+            fontWeight: typography.fontWeight.bold,
+            color: 'var(--framer-color-text)',
+            marginBottom: '2px',
+            lineHeight: typography.lineHeight.tight,
+          }}>
             {formatBytes(totalSavings)}
           </div>
-          <div className="text-xs" style={{ color: 'var(--framer-color-text-secondary)' }}>
-            {priorityCounts.high} high • {priorityCounts.medium} medium • {priorityCounts.low} low priority
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: 'var(--framer-color-text-secondary)',
+            fontFamily: typography.fontFamily.sans,
+          }}>
+            could be saved • {priorityCounts.high} high, {priorityCounts.medium} medium, {priorityCounts.low} low
           </div>
         </div>
       )}
 
-      <div className="flex gap-1.5 mb-5 flex-wrap">
-        <button
-          onClick={() => setFilter('all')}
-          className="px-2 py-1 rounded transition-colors"
-          style={
-            filter === 'all'
-              ? {
-                  backgroundColor: 'var(--framer-color-text)',
-                  color: 'var(--framer-color-bg)',
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.semibold,
-                  border: `1px solid var(--framer-color-text)`,
-                }
-              : {
-                  backgroundColor: '#FAF9F8',
-                  color: 'var(--framer-color-text)',
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.medium,
-                  border: `1px solid var(--framer-color-divider)`,
-                }
-          }
-          onMouseEnter={(e) => {
-            if (filter !== 'all') {
-              e.currentTarget.style.backgroundColor = '#F5F4F3'
+      {/* Priority Filter - Compact Dropdown */}
+      <div style={{ marginBottom: spacing.lg }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: spacing.sm
+        }}>
+          <label style={{
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            color: 'var(--framer-color-text-secondary)',
+          }}>
+            Priority:
+          </label>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value as 'all' | 'high' | 'medium' | 'low')}
+            style={{
+              padding: `${spacing.xs} ${spacing.sm}`,
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              color: 'var(--framer-color-text)',
+              backgroundColor: 'var(--framer-color-bg)',
+              border: `1px solid var(--framer-color-divider)`,
+              borderRadius: borders.radius.sm,
+              cursor: 'pointer',
+              minWidth: '140px',
+              transition: 'all 0.15s ease'
+            }}
+            onFocus={(e) => {
               e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (filter !== 'all') {
-              e.currentTarget.style.backgroundColor = '#FAF9F8'
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+            }}
+            onBlur={(e) => {
               e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-            }
-          }}
-        >
-          All ({sortedRecommendations.length})
-        </button>
-        <button
-          onClick={() => setFilter('high')}
-          className="px-2 py-1 rounded transition-colors"
-          style={
-            filter === 'high'
-              ? {
-                  backgroundColor: 'var(--framer-color-text)',
-                  color: 'var(--framer-color-bg)',
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.semibold,
-                  border: `1px solid var(--framer-color-text)`,
-                }
-              : {
-                  backgroundColor: '#FAF9F8',
-                  color: 'var(--framer-color-text)',
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.medium,
-                  border: `1px solid var(--framer-color-divider)`,
-                }
-          }
-          onMouseEnter={(e) => {
-            if (filter !== 'high') {
-              e.currentTarget.style.backgroundColor = '#F5F4F3'
-              e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (filter !== 'high') {
-              e.currentTarget.style.backgroundColor = '#FAF9F8'
-              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-            }
-          }}
-        >
-          High ({priorityCounts.high})
-        </button>
-        <button
-          onClick={() => setFilter('medium')}
-          className="px-2 py-1 rounded transition-colors"
-          style={
-            filter === 'medium'
-              ? {
-                  backgroundColor: 'var(--framer-color-text)',
-                  color: 'var(--framer-color-bg)',
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.semibold,
-                  border: `1px solid var(--framer-color-text)`,
-                }
-              : {
-                  backgroundColor: '#FAF9F8',
-                  color: 'var(--framer-color-text)',
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.medium,
-                  border: `1px solid var(--framer-color-divider)`,
-                }
-          }
-          onMouseEnter={(e) => {
-            if (filter !== 'medium') {
-              e.currentTarget.style.backgroundColor = '#F5F4F3'
-              e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (filter !== 'medium') {
-              e.currentTarget.style.backgroundColor = '#FAF9F8'
-              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-            }
-          }}
-        >
-          Medium ({priorityCounts.medium})
-        </button>
-        <button
-          onClick={() => setFilter('low')}
-          className="px-2 py-1 rounded transition-colors"
-          style={
-            filter === 'low'
-              ? {
-                  backgroundColor: 'var(--framer-color-text)',
-                  color: 'var(--framer-color-bg)',
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.semibold,
-                  border: `1px solid var(--framer-color-text)`,
-                }
-              : {
-                  backgroundColor: '#FAF9F8',
-                  color: 'var(--framer-color-text)',
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.medium,
-                  border: `1px solid var(--framer-color-divider)`,
-                }
-          }
-          onMouseEnter={(e) => {
-            if (filter !== 'low') {
-              e.currentTarget.style.backgroundColor = '#F5F4F3'
-              e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (filter !== 'low') {
-              e.currentTarget.style.backgroundColor = '#FAF9F8'
-              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-            }
-          }}
-        >
-          Low ({priorityCounts.low})
-        </button>
+              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+            }}
+          >
+            <option value="all">All ({activeRecommendations.length})</option>
+            <option value="high">High priority ({priorityCounts.high})</option>
+            <option value="medium">Medium priority ({priorityCounts.medium})</option>
+            <option value="low">Low priority ({priorityCounts.low})</option>
+          </select>
+        </div>
       </div>
 
-      <div className="space-y-3">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
         {filteredRecommendations.map(recommendation => (
           <RecommendationCard 
             key={recommendation.id} 
             recommendation={recommendation}
-            allPages={analysis.pages.map(p => ({ pageId: p.pageId, pageName: p.pageName }))}
+            allPages={(analysis.pages || []).map(p => ({ pageId: p.pageId, pageName: p.pageName }))}
+            onIgnore={() => onIgnoreRecommendation(recommendation.id)}
           />
         ))}
 
-        {filteredRecommendations.length === 0 && sortedRecommendations.length > 0 && (
-          <div className="text-center py-12 px-4">
-            <div className="text-3xl mb-3">🔍</div>
-            <div className="font-semibold mb-2" style={{ color: 'var(--framer-color-text)' }}>
+        {/* Ignored Recommendations Section */}
+        {ignoredRecommendations.length > 0 && (
+          <CollapsibleSection
+            title={`Ignored (${ignoredRecommendations.length})`}
+            defaultCollapsed={true}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
+              {ignoredRecommendations.map(recommendation => (
+                <div key={recommendation.id} style={{ opacity: 0.7 }}>
+                  <RecommendationCard 
+                    recommendation={recommendation}
+                    allPages={(analysis.pages || []).map(p => ({ pageId: p.pageId, pageName: p.pageName }))}
+                    onIgnore={() => onUnignoreRecommendation(recommendation.id)}
+                    isIgnored={true}
+                  />
+                </div>
+              ))}
+            </div>
+          </CollapsibleSection>
+        )}
+
+        {filteredRecommendations.length === 0 && activeRecommendations.length > 0 && (
+          <div style={{ 
+            textAlign: 'center',
+            padding: `${spacing.xl} ${spacing.md}`
+          }}>
+            <div style={{ 
+              fontSize: typography.fontSize.xl,
+              marginBottom: spacing.md
+            }}>🔍</div>
+            <div style={{ 
+              fontWeight: typography.fontWeight.semibold,
+              marginBottom: spacing.sm,
+              color: 'var(--framer-color-text)',
+              fontSize: typography.fontSize.md
+            }}>
               No {filter} Priority Recommendations
             </div>
-            <div className="text-sm" style={{ color: 'var(--framer-color-text-secondary)' }}>
+            <div style={{ 
+              fontSize: typography.fontSize.sm,
+              color: 'var(--framer-color-text-secondary)'
+            }}>
               Try selecting a different priority filter to see other recommendations.
             </div>
           </div>
         )}
 
-        {sortedRecommendations.length === 0 && (
-          <div className="text-center py-12 px-4 max-w-sm mx-auto">
-            <div className="text-5xl mb-4">✓</div>
-            <div className="font-semibold text-lg mb-2" style={{ color: 'var(--framer-color-text)' }}>
+        {activeRecommendations.length === 0 && (
+          <div style={{ 
+            textAlign: 'center',
+            padding: `${spacing.xl} ${spacing.md}`,
+            maxWidth: '400px',
+            margin: '0 auto'
+          }}>
+            <div style={{ 
+              fontSize: '48px',
+              marginBottom: spacing.md
+            }}>✓</div>
+            <div style={{ 
+              fontWeight: typography.fontWeight.semibold,
+              fontSize: typography.fontSize.lg,
+              marginBottom: spacing.sm,
+              color: 'var(--framer-color-text)'
+            }}>
               Great! No Optimization Needed
             </div>
-            <div className="text-sm mb-4 leading-relaxed" style={{ color: 'var(--framer-color-text-secondary)' }}>
-              <p className="mb-2">Your assets are well-optimized.</p>
-              <p className="text-xs" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+            <div style={{ 
+              fontSize: typography.fontSize.sm,
+              marginBottom: spacing.md,
+              lineHeight: typography.lineHeight.relaxed,
+              color: 'var(--framer-color-text-secondary)'
+            }}>
+              <p style={{ marginBottom: spacing.sm }}>Your assets are well-optimized.</p>
+              <p style={{ 
+                fontSize: typography.fontSize.xs,
+                color: 'var(--framer-color-text-tertiary)'
+              }}>
                 Your images are properly sized and formatted. All assets are under recommended thresholds and using efficient formats like WebP or AVIF.
               </p>
             </div>
@@ -253,5 +298,38 @@ export function RecommendationsPanel({ analysis }: RecommendationsPanelProps) {
         )}
       </div>
     </div>
-  )
+    )
+  } catch (error) {
+    console.error('Error rendering RecommendationsPanel:', error)
+    return (
+      <div style={{ padding: spacing.lg, backgroundColor: 'var(--framer-color-bg)' }}>
+        <div style={{ 
+          textAlign: 'center',
+          padding: spacing.xl,
+          color: 'var(--framer-color-text)'
+        }}>
+          <div style={{ 
+            fontSize: typography.fontSize.lg,
+            fontWeight: typography.fontWeight.bold,
+            marginBottom: spacing.md
+          }}>
+            Error Loading Recommendations
+          </div>
+          <div style={{ 
+            fontSize: typography.fontSize.sm,
+            color: 'var(--framer-color-text-secondary)',
+            marginBottom: spacing.md
+          }}>
+            {error instanceof Error ? error.message : 'An unexpected error occurred'}
+          </div>
+          <div style={{ 
+            fontSize: typography.fontSize.xs,
+            color: 'var(--framer-color-text-tertiary)'
+          }}>
+            Please try rescanning your project.
+          </div>
+        </div>
+      </div>
+    )
+  }
 }

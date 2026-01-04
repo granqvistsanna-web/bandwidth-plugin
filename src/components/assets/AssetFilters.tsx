@@ -176,7 +176,7 @@ export function AssetFilters({
                   fontWeight: typography.fontWeight.semibold,
                   minWidth: '16px',
                   height: '16px',
-                  borderRadius: '8px',
+                  borderRadius: borders.radius.sm,
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',

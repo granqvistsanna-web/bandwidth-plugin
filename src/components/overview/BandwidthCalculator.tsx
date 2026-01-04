@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react'
 import { formatBytes } from '../../utils/formatBytes'
 import type { ProjectAnalysis } from '../../types/analysis'
+import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { CollapsibleSection } from './CollapsibleSection'
 
 interface BandwidthCalculatorProps {
   analysis: ProjectAnalysis
@@ -11,22 +13,18 @@ const FRAMER_PLANS = {
   free: {
     name: 'Free',
     bandwidthGB: 1,
-    color: 'gray'
   },
   mini: {
     name: 'Mini',
     bandwidthGB: 10,
-    color: 'blue'
   },
   basic: {
     name: 'Basic',
     bandwidthGB: 50,
-    color: 'green'
   },
   pro: {
     name: 'Pro',
     bandwidthGB: 200,
-    color: 'purple'
   }
 } as const
 
@@ -120,331 +118,482 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
   // Determine risk level
   let riskLevel: 'safe' | 'warning' | 'danger' = 'safe'
   let riskMessage = ''
+  let riskTitle = ''
 
   if (usagePercent > 100) {
     riskLevel = 'danger'
-    riskMessage = `⚠️ You'll exceed your ${FRAMER_PLANS[selectedPlan].name} plan monthly limit by ${formatBytes(overageGB * 1024 * 1024 * 1024)}`
+    riskTitle = 'Exceeds plan limit'
+    riskMessage = `Your estimate exceeds the ${FRAMER_PLANS[selectedPlan].name} plan limit by ${formatBytes(overageGB * 1024 * 1024 * 1024)}`
   } else if (usagePercent > 80) {
     riskLevel = 'warning'
-    riskMessage = `⚡ You're using ${usagePercent.toFixed(0)}% of your ${FRAMER_PLANS[selectedPlan].name} plan monthly bandwidth limit`
+    riskTitle = 'Approaching limit'
+    riskMessage = `Using ${usagePercent.toFixed(0)}% of your ${FRAMER_PLANS[selectedPlan].name} plan monthly limit`
   } else {
     riskLevel = 'safe'
-    riskMessage = `✓ You're using ${usagePercent.toFixed(0)}% of your ${FRAMER_PLANS[selectedPlan].name} plan monthly bandwidth limit`
-  }
-
-  const riskStyles = {
-    safe: { 
-      backgroundColor: '#FAF9F8', 
-      borderColor: 'var(--framer-color-divider)', 
-      color: 'var(--framer-color-text)',
-      borderWidth: '1px'
-    },
-    warning: { 
-      backgroundColor: '#FAF9F8', 
-      borderColor: 'var(--framer-color-text-secondary)', 
-      color: 'var(--framer-color-text)',
-      borderWidth: '1px'
-    },
-    danger: { 
-      backgroundColor: '#FAF9F8', 
-      borderColor: 'var(--framer-color-text)', 
-      color: 'var(--framer-color-text)',
-      borderWidth: '2px'
-    }
+    riskTitle = 'Within limits'
+    riskMessage = `Using ${usagePercent.toFixed(0)}% of your ${FRAMER_PLANS[selectedPlan].name} plan monthly limit`
   }
 
   return (
-    <div 
-      className="rounded-lg p-6 overflow-hidden border"
-      style={{
-        backgroundColor: '#FAF9F8',
-        borderColor: 'var(--framer-color-divider)'
-      }}
-    >
-
-      {/* Per 1,000 Pageviews - Prominent Display */}
-      <div 
-        className="rounded-lg p-3 border-2 mb-4 shadow-sm"
-        style={{
-          backgroundColor: '#FAF9F8',
-          borderColor: 'var(--framer-color-divider)'
-        }}
-      >
-        <div className="flex items-center gap-1.5 mb-1">
-          <div className="text-xs font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>Per 1,000 Pageviews</div>
-          <div className="relative group">
-            <svg className="w-3.5 h-3.5 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="absolute left-0 bottom-full mb-2 w-64 p-2 text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" style={{ backgroundColor: 'var(--framer-color-text)', color: 'var(--framer-color-text-reversed)' }}>
-              This is how much bandwidth 1,000 pageviews will use based on your average pages per visit setting.
-            </div>
-          </div>
-        </div>
-        <div className="text-2xl font-bold" style={{ color: 'var(--framer-color-text)' }}>
-          {bandwidthPer1000.toFixed(3)} GB
-        </div>
-        <div className="text-xs mt-1" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-          Based on {formatBytes(bytesPerVisit)} per visit
-        </div>
-      </div>
-
-      {/* Average Pages per Visit Input */}
-      <div className="mb-3">
-        <div className="flex items-center gap-1.5 mb-1">
-          <label className="text-xs font-medium block" style={{ color: 'var(--framer-color-text)' }}>
-            Average Pages per Visit
-          </label>
-          <div className="relative group">
-            <svg className="w-3.5 h-3.5 cursor-help" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div className="absolute left-0 bottom-full mb-2 w-64 p-2 text-xs rounded-lg shadow-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10" style={{ backgroundColor: 'var(--framer-color-text)', color: 'var(--framer-color-text-reversed)' }}>
-              Most visitors view 1–3 pages. Adjust based on your site's navigation patterns. Landing page is always included (100%), other pages are weighted by this value.
-            </div>
-          </div>
-        </div>
-        <div className="flex gap-1 mb-2 flex-wrap">
-          {[
-            { label: 'Landing only', value: 1.0 },
-            { label: 'Light (1.5)', value: 1.5 },
-            { label: 'Typical (2.0)', value: 2.0 },
-            { label: 'Deep (3.0+)', value: 3.0 }
-          ].map(preset => (
-            <button
-              key={preset.value}
-              onClick={() => setAveragePagesPerVisit(preset.value)}
-              className="px-1.5 py-1 text-xs rounded transition-colors flex-shrink-0"
-              style={Math.abs(averagePagesPerVisit - preset.value) < 0.1 ? {
-                backgroundColor: 'var(--framer-color-text)',
-                color: 'var(--framer-color-bg)',
-                border: '1px solid var(--framer-color-text)'
-              } : {
-                backgroundColor: '#FAF9F8',
-                color: 'var(--framer-color-text)',
-                border: '1px solid var(--framer-color-divider)'
-              }}
-              onMouseEnter={(e) => {
-                if (Math.abs(averagePagesPerVisit - preset.value) >= 0.1) {
-                  e.currentTarget.style.backgroundColor = '#F5F4F3'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (Math.abs(averagePagesPerVisit - preset.value) >= 0.1) {
-                  e.currentTarget.style.backgroundColor = '#FAF9F8'
-                }
-              }}
-            >
-              <span className="whitespace-nowrap">{preset.label}</span>
-            </button>
-          ))}
-        </div>
-        <input
-          type="number"
-          value={averagePagesPerVisit}
-          onChange={(e) => setAveragePagesPerVisit(Math.max(0.1, parseFloat(e.target.value) || 1))}
-          className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2"
-          style={{
-            borderColor: 'var(--framer-color-divider)',
-            backgroundColor: '#FAF9F8',
-            color: 'var(--framer-color-text)'
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--framer-color-text)'
-            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-            e.currentTarget.style.boxShadow = 'none'
-          }}
-          min="0.1"
-          max={pages.length || 10}
-          step="0.1"
-        />
-        <div className="text-xs mt-1" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-          {averagePagesPerVisit === 1 ? 'Visitors only view one page (usually landing page)' :
-           averagePagesPerVisit < 2 ? 'Most visitors view 1–2 pages' :
-           averagePagesPerVisit < 3 ? 'Visitors typically browse 2–3 pages' :
-           'Visitors view multiple pages per visit'}
-        </div>
-      </div>
-
-      {/* Pageviews Input */}
-      <div className="mb-3">
-        <label className="text-xs font-medium block mb-1" style={{ color: 'var(--framer-color-text)' }}>
-          Expected Monthly Pageviews
-        </label>
-        <input
-          type="number"
-          value={monthlyPageviews}
-          onChange={(e) => setMonthlyPageviews(Math.max(1, parseInt(e.target.value) || 0))}
-          className="w-full px-3 py-2 text-sm border rounded-lg focus:outline-none focus:ring-2"
-          style={{
-            borderColor: 'var(--framer-color-divider)',
-            backgroundColor: '#FAF9F8',
-            color: 'var(--framer-color-text)'
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--framer-color-text)'
-            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-            e.currentTarget.style.boxShadow = 'none'
-          }}
-          min="1"
-          step="1000"
-          placeholder="Enter expected pageviews"
-        />
-        <div className="text-xs mt-1" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-          Common: 1K, 10K, 50K, 100K, 500K, 1M+
-        </div>
-      </div>
-
-      {/* Monthly Total - Prominent */}
-      <div 
-        className="rounded-lg p-3 border mb-3"
-        style={{
-          backgroundColor: '#F5F4F3',
-          borderColor: 'var(--framer-color-divider)'
-        }}
-      >
-        <div className="text-xs mb-1" style={{ color: 'var(--framer-color-text-secondary)' }}>Bandwidth per Visit</div>
-        <div className="text-sm font-medium mb-2" style={{ color: 'var(--framer-color-text)' }}>
-          {formatBytes(bytesPerVisit)}
-        </div>
-        <div className="text-xs mb-1 pt-2 border-t" style={{ borderColor: 'var(--framer-color-divider)', color: 'var(--framer-color-text-secondary)' }}>Estimated Monthly Bandwidth</div>
-        <div className="text-xl font-bold" style={{ color: 'var(--framer-color-text)' }}>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: spacing.lg,
+      maxWidth: '900px',
+      margin: '0 auto'
+    }}>
+      {/* Hero: Monthly Bandwidth */}
+      <div style={{
+        backgroundColor: colors.white,
+        borderRadius: borders.radius.lg,
+        padding: spacing.lg,
+        textAlign: 'center'
+      }}>
+        <div style={{
+          fontSize: '36px',
+          fontWeight: typography.fontWeight.bold,
+          lineHeight: '1',
+          color: 'var(--framer-color-text)',
+          marginBottom: spacing.xs,
+          letterSpacing: '-0.02em'
+        }}>
           {monthlyBandwidthGB.toFixed(2)} GB
         </div>
-        <div className="text-xs mt-1" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+        <div style={{
+          fontSize: typography.fontSize.sm,
+          color: 'var(--framer-color-text-secondary)',
+          marginBottom: spacing.xs
+        }}>
+          Estimated monthly bandwidth
+        </div>
+        <div style={{
+          fontSize: typography.fontSize.xs,
+          color: 'var(--framer-color-text-tertiary)'
+        }}>
           For {monthlyPageviews.toLocaleString()} pageviews
         </div>
       </div>
 
-      {/* Plan Selector */}
-      <div className="mb-3">
-        <label className="text-xs font-medium block mb-1" style={{ color: 'var(--framer-color-text)' }}>
-          Your Framer Plan
-        </label>
-        <div className="grid grid-cols-4 gap-1">
-          {(Object.keys(FRAMER_PLANS) as PlanKey[]).map((plan) => (
-            <button
-              key={plan}
-              onClick={() => setSelectedPlan(plan)}
-              className="px-2 py-1.5 text-xs font-medium rounded transition-colors"
-              style={selectedPlan === plan ? {
+      {/* Traffic Estimate Inputs */}
+      <div style={{
+        backgroundColor: colors.warmGray[100],
+        borderRadius: borders.radius.lg,
+        padding: spacing.md
+      }}>
+        <div style={{
+          fontSize: typography.fontSize.md,
+          fontWeight: typography.fontWeight.semibold,
+          color: 'var(--framer-color-text)',
+          marginBottom: spacing.md
+        }}>
+          Traffic Estimate
+        </div>
+
+        {/* Monthly Pageviews */}
+        <div style={{ marginBottom: spacing.md }}>
+          <label style={{
+            display: 'block',
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            color: 'var(--framer-color-text)',
+            marginBottom: spacing.xs
+          }}>
+            Monthly pageviews
+          </label>
+          <input
+            type="number"
+            value={monthlyPageviews}
+            onChange={(e) => setMonthlyPageviews(Math.max(1, parseInt(e.target.value) || 0))}
+            style={{
+              width: '100%',
+              padding: `${spacing.sm} ${spacing.md}`,
+              fontSize: typography.fontSize.sm,
+              color: 'var(--framer-color-text)',
+              backgroundColor: colors.white,
+              border: `1px solid var(--framer-color-divider)`,
+              borderRadius: borders.radius.md,
+              transition: 'all 0.15s ease'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'var(--framer-color-text)'
+              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+            min="1"
+            step="1000"
+          />
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: 'var(--framer-color-text-tertiary)',
+            marginTop: spacing.xs
+          }}>
+            Common: 1K, 10K, 50K, 100K, 500K, 1M+
+          </div>
+        </div>
+
+        {/* Pages per Visit */}
+        <div>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.xs,
+            marginBottom: spacing.xs
+          }}>
+            <label style={{
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              color: 'var(--framer-color-text)'
+            }}>
+              Pages per visit
+            </label>
+            <div style={{ position: 'relative', display: 'inline-block' }}>
+              <svg 
+                style={{ 
+                  width: '14px', 
+                  height: '14px', 
+                  color: 'var(--framer-color-text-tertiary)',
+                  cursor: 'help'
+                }} 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div style={{
+                position: 'absolute',
+                left: 0,
+                bottom: '100%',
+                marginBottom: spacing.xs,
+                width: '240px',
+                padding: spacing.sm,
+                fontSize: typography.fontSize.xs,
+                borderRadius: borders.radius.md,
                 backgroundColor: 'var(--framer-color-text)',
-                color: 'var(--framer-color-bg)',
-                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-                border: '1px solid var(--framer-color-text)'
-              } : {
-                backgroundColor: '#FAF9F8',
-                color: 'var(--framer-color-text)',
-                border: '1px solid var(--framer-color-divider)'
+                color: 'var(--framer-color-text-reversed)',
+                opacity: 0,
+                pointerEvents: 'none',
+                transition: 'opacity 0.15s ease',
+                zIndex: 10,
+                whiteSpace: 'normal'
               }}
-              onMouseEnter={(e) => {
-                if (selectedPlan !== plan) {
-                  e.currentTarget.style.backgroundColor = '#F5F4F3'
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (selectedPlan !== plan) {
-                  e.currentTarget.style.backgroundColor = '#FAF9F8'
-                }
-              }}
-            >
-              {FRAMER_PLANS[plan].name}
-            </button>
-          ))}
-        </div>
-        <div className="text-xs mt-1 font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>
-          {planLimit} GB/month limit
-        </div>
-        {monthlyBandwidthGB > 0 && (() => {
-          let recommendedPlan: PlanKey | null = null
-          if (monthlyBandwidthGB <= FRAMER_PLANS.free.bandwidthGB) recommendedPlan = 'free'
-          else if (monthlyBandwidthGB <= FRAMER_PLANS.mini.bandwidthGB) recommendedPlan = 'mini'
-          else if (monthlyBandwidthGB <= FRAMER_PLANS.basic.bandwidthGB) recommendedPlan = 'basic'
-          else recommendedPlan = 'pro'
-          
-          if (recommendedPlan && recommendedPlan !== selectedPlan) {
-            return (
-              <div className="text-xs mt-2 pt-2 border-t" style={{ borderColor: 'var(--framer-color-divider)', color: 'var(--framer-color-text-secondary)' }}>
-                Based on your estimate, we recommend the <strong style={{ color: 'var(--framer-color-text)' }}>{FRAMER_PLANS[recommendedPlan].name}</strong> plan
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = '1' }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '0' }}
+              >
+                Most visitors view 1–3 pages. Landing page is always included, other pages are weighted by this value.
               </div>
-            )
-          }
-          return null
-        })()}
+            </div>
+          </div>
+          
+          {/* Preset Buttons */}
+          <div style={{
+            display: 'flex',
+            gap: spacing.xs,
+            marginBottom: spacing.sm,
+            flexWrap: 'wrap'
+          }}>
+            {[
+              { label: 'Landing only', value: 1.0 },
+              { label: 'Light', value: 1.5 },
+              { label: 'Typical', value: 2.0 },
+              { label: 'Deep', value: 3.0 }
+            ].map(preset => {
+              const isSelected = Math.abs(averagePagesPerVisit - preset.value) < 0.1
+              return (
+                <button
+                  key={preset.value}
+                  onClick={() => setAveragePagesPerVisit(preset.value)}
+                  style={{
+                    padding: `${spacing.xs} ${spacing.sm}`,
+                    fontSize: typography.fontSize.xs,
+                    fontWeight: typography.fontWeight.medium,
+                    borderRadius: borders.radius.sm,
+                    border: 'none',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    whiteSpace: 'nowrap',
+                    ...(isSelected ? {
+                      backgroundColor: 'var(--framer-color-text)',
+                      color: 'var(--framer-color-bg)',
+                    } : {
+                      backgroundColor: colors.warmGray[50],
+                      color: 'var(--framer-color-text)',
+                      border: `1px solid var(--framer-color-divider)`
+                    })
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = colors.warmGray[200]
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = colors.warmGray[50]
+                    }
+                  }}
+                >
+                  {preset.label}
+                </button>
+              )
+            })}
+          </div>
+
+          <input
+            type="number"
+            value={averagePagesPerVisit}
+            onChange={(e) => setAveragePagesPerVisit(Math.max(0.1, parseFloat(e.target.value) || 1))}
+            style={{
+              width: '100%',
+              padding: `${spacing.sm} ${spacing.md}`,
+              fontSize: typography.fontSize.sm,
+              color: 'var(--framer-color-text)',
+              backgroundColor: colors.white,
+              border: `1px solid var(--framer-color-divider)`,
+              borderRadius: borders.radius.md,
+              transition: 'all 0.15s ease'
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.borderColor = 'var(--framer-color-text)'
+              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+              e.currentTarget.style.boxShadow = 'none'
+            }}
+            min="0.1"
+            max={pages.length || 10}
+            step="0.1"
+          />
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: 'var(--framer-color-text-tertiary)',
+            marginTop: spacing.xs
+          }}>
+            {averagePagesPerVisit === 1 ? 'Visitors only view landing page' :
+             averagePagesPerVisit < 2 ? 'Most visitors view 1–2 pages' :
+             averagePagesPerVisit < 3 ? 'Visitors typically browse 2–3 pages' :
+             'Visitors view multiple pages per visit'}
+          </div>
+        </div>
       </div>
 
-      {/* Risk Warning */}
-      <div 
-        className="rounded-lg p-4 border"
-        style={riskStyles[riskLevel]}
-      >
-        <div className="flex items-start gap-2">
-          <div className="flex-1">
-            <div className="text-sm font-semibold mb-1.5" style={{ color: 'var(--framer-color-text)' }}>
-              {riskLevel === 'danger' && '⚠️ Risk of Overage'}
-              {riskLevel === 'warning' && '⚡ Approaching Limit'}
-              {riskLevel === 'safe' && '✓ Within Plan Limits'}
+      {/* Plan Status */}
+      <div style={{
+        backgroundColor: colors.warmGray[100],
+        borderRadius: borders.radius.lg,
+        padding: spacing.md
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: spacing.sm
+        }}>
+          <div>
+            <div style={{
+              fontSize: typography.fontSize.sm,
+              fontWeight: typography.fontWeight.medium,
+              color: 'var(--framer-color-text)',
+              marginBottom: '2px'
+            }}>
+              Plan: {FRAMER_PLANS[selectedPlan].name}
             </div>
-            <div className="text-xs" style={{ color: 'var(--framer-color-text-secondary)' }}>
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              color: 'var(--framer-color-text-secondary)'
+            }}>
+              {planLimit} GB/month limit
+            </div>
+          </div>
+          <div style={{
+            display: 'flex',
+            gap: spacing.xs
+          }}>
+            {(Object.keys(FRAMER_PLANS) as PlanKey[]).map((plan) => (
+              <button
+                key={plan}
+                onClick={() => setSelectedPlan(plan)}
+                style={{
+                  padding: `${spacing.xs} ${spacing.sm}`,
+                  fontSize: typography.fontSize.xs,
+                  fontWeight: typography.fontWeight.medium,
+                  borderRadius: borders.radius.sm,
+                  border: 'none',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  ...(selectedPlan === plan ? {
+                    backgroundColor: 'var(--framer-color-text)',
+                    color: 'var(--framer-color-bg)',
+                  } : {
+                    backgroundColor: colors.warmGray[50],
+                    color: 'var(--framer-color-text)',
+                    border: `1px solid var(--framer-color-divider)`
+                  })
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedPlan !== plan) {
+                    e.currentTarget.style.backgroundColor = colors.warmGray[200]
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (selectedPlan !== plan) {
+                    e.currentTarget.style.backgroundColor = colors.warmGray[50]
+                  }
+                }}
+              >
+                {FRAMER_PLANS[plan].name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Usage Progress Bar */}
+        {monthlyBandwidthGB > 0 && (
+          <div style={{ marginTop: spacing.md }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: spacing.xs
+            }}>
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                fontWeight: typography.fontWeight.medium,
+                color: 'var(--framer-color-text)'
+              }}>
+                {riskTitle}
+              </div>
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                color: 'var(--framer-color-text-secondary)'
+              }}>
+                {usagePercent.toFixed(1)}% used
+              </div>
+            </div>
+            <div style={{
+              width: '100%',
+              height: '8px',
+              backgroundColor: 'var(--framer-color-divider)',
+              borderRadius: borders.radius.full,
+              overflow: 'hidden',
+              marginBottom: spacing.sm
+            }}>
+              <div
+                style={{
+                  height: '100%',
+                  width: `${Math.min(usagePercent, 100)}%`,
+                  backgroundColor: riskLevel === 'danger' ? 'var(--framer-color-text)' :
+                                  riskLevel === 'warning' ? 'var(--framer-color-text-secondary)' :
+                                  'var(--framer-color-text-tertiary)',
+                  transition: 'width 0.3s ease'
+                }}
+              />
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              color: 'var(--framer-color-text-secondary)',
+              lineHeight: typography.lineHeight.relaxed
+            }}>
               {riskMessage}
             </div>
             {overageGB > 0 && (
-              <div className="text-xs mt-2 font-medium" style={{ color: 'var(--framer-color-text)' }}>
-                Estimated monthly overage: <span className="font-bold">{overageGB.toFixed(2)} GB</span> beyond plan limit
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                fontWeight: typography.fontWeight.medium,
+                color: 'var(--framer-color-text)',
+                marginTop: spacing.sm,
+                paddingTop: spacing.sm,
+                borderTop: `1px solid var(--framer-color-divider)`
+              }}>
+                Estimated overage: {overageGB.toFixed(2)} GB beyond plan limit
               </div>
             )}
-            {usagePercent > 0 && usagePercent <= 100 && (
-              <div className="mt-3">
-                <div 
-                  className="w-full rounded-full h-2"
-                  style={{ backgroundColor: 'var(--framer-color-divider)' }}
-                >
-                  <div
-                    className="h-2 rounded-full transition-all"
-                    style={{ 
-                      width: `${Math.min(usagePercent, 100)}%`,
-                      backgroundColor: riskLevel === 'danger' ? 'var(--framer-color-text)' :
-                                      riskLevel === 'warning' ? 'var(--framer-color-text-secondary)' :
-                                      'var(--framer-color-text-tertiary)'
-                    }}
-                  />
-                </div>
-                <div className="text-xs mt-1.5" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-                  {usagePercent.toFixed(1)}% of monthly plan limit used
-                </div>
+            {suggestedPlan && suggestedPlan !== selectedPlan && (
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                color: 'var(--framer-color-text-secondary)',
+                marginTop: spacing.sm,
+                paddingTop: spacing.sm,
+                borderTop: `1px solid var(--framer-color-divider)`
+              }}>
+                Based on your estimate, we recommend the <strong style={{ color: 'var(--framer-color-text)' }}>{FRAMER_PLANS[suggestedPlan].name}</strong> plan
               </div>
             )}
-          </div>
-        </div>
-        {overageGB > 0 && (
-          <div className="text-xs mt-3 pt-3 border-t" style={{ borderColor: 'var(--framer-color-divider)', color: 'var(--framer-color-text-secondary)' }}>
-            <strong>Action needed:</strong> Optimize images (see Recommendations) or upgrade to a higher plan to avoid monthly overage charges.
           </div>
         )}
       </div>
 
-      {/* Quick Tips */}
-      {usagePercent > 80 && (
-        <div 
-          className="mt-4 text-xs rounded-lg p-3 border"
-          style={{
+      {/* Secondary Metrics - Collapsible */}
+      <CollapsibleSection
+        title="Details"
+        defaultCollapsed={true}
+      >
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: spacing.md,
+          paddingTop: spacing.sm
+        }}>
+          <div>
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              color: 'var(--framer-color-text-secondary)',
+              marginBottom: spacing.xs
+            }}>
+              Per visit
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.md,
+              fontWeight: typography.fontWeight.semibold,
+              color: 'var(--framer-color-text)'
+            }}>
+              {formatBytes(bytesPerVisit)}
+            </div>
+          </div>
+          <div>
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              color: 'var(--framer-color-text-secondary)',
+              marginBottom: spacing.xs
+            }}>
+              Per 1,000 views
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.md,
+              fontWeight: typography.fontWeight.semibold,
+              color: 'var(--framer-color-text)'
+            }}>
+              {bandwidthPer1000.toFixed(3)} GB
+            </div>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      {/* Action Items */}
+      {(usagePercent > 80 || overageGB > 0) && (
+        <div style={{
+          backgroundColor: colors.warmGray[100],
+          borderRadius: borders.radius.lg,
+          padding: spacing.md
+        }}>
+          <div style={{
+            fontSize: typography.fontSize.sm,
+            fontWeight: typography.fontWeight.medium,
             color: 'var(--framer-color-text)',
-            backgroundColor: '#FAF9F8',
-            borderColor: 'var(--framer-color-divider)'
-          }}
-        >
-          <div className="font-medium mb-1.5" style={{ color: 'var(--framer-color-text)' }}>Quick fixes:</div>
-          <ul className="list-disc list-inside space-y-0.5" style={{ color: 'var(--framer-color-text-secondary)' }}>
-            <li>Optimize your largest images (see Recommendations)</li>
-            <li>Convert PNGs to WebP format</li>
-            <li>Enable Framer's image optimization</li>
-          </ul>
+            marginBottom: spacing.xs
+          }}>
+            Reduce bandwidth usage
+          </div>
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: 'var(--framer-color-text-secondary)',
+            lineHeight: typography.lineHeight.relaxed
+          }}>
+            Optimize your largest images, convert PNGs to WebP, and enable Framer's image optimization. See the Recommendations page for specific opportunities.
+          </div>
         </div>
       )}
     </div>

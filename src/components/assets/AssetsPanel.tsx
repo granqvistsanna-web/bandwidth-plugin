@@ -5,11 +5,15 @@ import type { FilterState, SortConfig, AssetCounts } from './types'
 import { AssetFilters } from './AssetFilters'
 import { AssetsTable } from './AssetsTable'
 import { debugLog } from '../../utils/debugLog'
+import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { formatTimestamp } from '../../App'
 
 interface AssetsPanelProps {
   analysis: ProjectAnalysis
   selectedPageId: string | null
   onPageChange?: (pageId: string | null) => void
+  lastScanned?: Date | null
+  loading?: boolean
 }
 
 const DEFAULT_FILTERS: FilterState = {
@@ -24,7 +28,7 @@ const DEFAULT_SORT: SortConfig = {
   direction: 'desc'
 }
 
-export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPanelProps) {
+export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanned, loading }: AssetsPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortConfig, setSortConfig] = useState<SortConfig>(DEFAULT_SORT)
@@ -158,7 +162,56 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPa
   }
 
   return (
-    <div className="h-full flex flex-col p-6 space-y-4" style={{ backgroundColor: 'var(--framer-color-bg)' }}>
+    <div style={{
+      padding: spacing.lg,
+      backgroundColor: 'var(--framer-color-bg)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: spacing.md,
+      height: '100%'
+    }}>
+      {/* Page Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.sm
+      }}>
+        <h1 style={{
+          fontSize: typography.fontSize.xl,
+          fontWeight: typography.fontWeight.bold,
+          color: 'var(--framer-color-text)',
+          margin: 0,
+          lineHeight: typography.lineHeight.tight
+        }}>
+          Assets
+        </h1>
+        {lastScanned && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.xs,
+            padding: `${spacing.xs} ${spacing.sm}`,
+            backgroundColor: colors.warmGray[100],
+            borderRadius: borders.radius.md,
+            fontSize: typography.fontSize.xs,
+            color: 'var(--framer-color-text-secondary)'
+          }}>
+            <div
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: loading ? '#3b82f6' : '#22c55e',
+                opacity: loading ? 0.8 : 1,
+                flexShrink: 0
+              }}
+            />
+            <span>{loading ? 'analyzing' : formatTimestamp(lastScanned)}</span>
+          </div>
+        )}
+      </div>
+
       {/* Filters */}
       <AssetFilters
         filters={filters}
@@ -168,11 +221,58 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPa
         assetCounts={assetCounts}
       />
 
+      {/* Sort Control */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+        <label style={{
+          fontSize: typography.fontSize.xs,
+          fontWeight: typography.fontWeight.medium,
+          color: 'var(--framer-color-text-secondary)',
+        }}>
+          Sort by:
+        </label>
+        <select
+          value={`${sortConfig.column}-${sortConfig.direction}`}
+          onChange={(e) => {
+            const [column, direction] = e.target.value.split('-') as [SortConfig['column'], 'asc' | 'desc']
+            setSortConfig({ column, direction })
+          }}
+          style={{
+            padding: `${spacing.xs} ${spacing.sm}`,
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            color: 'var(--framer-color-text)',
+            backgroundColor: 'var(--framer-color-bg)',
+            border: `1px solid var(--framer-color-divider)`,
+            borderRadius: borders.radius.sm,
+            cursor: 'pointer',
+            flex: 1,
+          }}
+        >
+          <option value="size-desc">Size (largest first)</option>
+          <option value="size-asc">Size (smallest first)</option>
+          <option value="name-asc">Name (A-Z)</option>
+          <option value="name-desc">Name (Z-A)</option>
+          <option value="dimensions-desc">Dimensions (largest first)</option>
+          <option value="dimensions-asc">Dimensions (smallest first)</option>
+          <option value="format-asc">Format (A-Z)</option>
+        </select>
+      </div>
+
       {/* Results Count */}
       {(filters.type !== 'all' || filters.format !== 'all' || filters.sizeRange.min !== 0 || filters.sizeRange.max !== Infinity || searchQuery) && (
-        <div className="px-4 py-2 border-b" style={{ borderColor: 'var(--framer-color-divider)', backgroundColor: 'var(--framer-color-bg-secondary)' }}>
-          <span className="text-sm" style={{ color: 'var(--framer-color-text-secondary)' }}>
-            Showing <span className="font-semibold" style={{ color: 'var(--framer-color-text)' }}>{sortedAssets.length}</span> of {baseAssets.length} assets
+        <div style={{
+          padding: `${spacing.xs} ${spacing.sm}`,
+          backgroundColor: 'var(--framer-color-bg-secondary)',
+          borderRadius: borders.radius.sm
+        }}>
+          <span style={{
+            fontSize: typography.fontSize.xs,
+            color: 'var(--framer-color-text-secondary)'
+          }}>
+            Showing <span style={{
+              fontWeight: typography.fontWeight.semibold,
+              color: 'var(--framer-color-text)'
+            }}>{sortedAssets.length}</span> of {baseAssets.length}
           </span>
         </div>
       )}
@@ -191,7 +291,7 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange }: AssetsPa
             <div className="text-center py-12 px-4 max-w-sm mx-auto">
               <div className="text-4xl mb-4">
                 {baseAssets.length === 0 ? '📦' : '🔍'}
-              </div>
+                </div>
               <div className="font-semibold text-lg mb-2" style={{ color: 'var(--framer-color-text)' }}>
                 {baseAssets.length === 0 ? 'No Assets Found' : 'No Matching Assets'}
               </div>

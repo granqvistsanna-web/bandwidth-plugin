@@ -7,16 +7,20 @@ import { optimizeImage } from '../../services/imageOptimizer'
 import { replaceImageOnNode, replaceImageEverywhere, canReplaceImage } from '../../services/assetReplacer'
 import { ReplaceImageModal } from './ReplaceImageModal'
 import { debugLog } from '../../utils/debugLog'
+import { colors, spacing, typography, borders } from '../../styles/designTokens'
 
 interface RecommendationCardProps {
   recommendation: Recommendation
   allPages?: { pageId: string; pageName: string }[]
+  onIgnore?: () => void
+  isIgnored?: boolean
 }
 
-export function RecommendationCard({ recommendation }: RecommendationCardProps) {
+export function RecommendationCard({ recommendation, onIgnore, isIgnored = false }: RecommendationCardProps) {
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [showReplaceModal, setShowReplaceModal] = useState(false)
   const [optimizationProgress, setOptimizationProgress] = useState<string>('')
+  const [isExpanded, setIsExpanded] = useState(false)
 
   const handleOptimize = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -314,145 +318,246 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
         nodeName={recommendation.nodeName}
       />
     <div 
-      className="border rounded-lg p-3 transition-all"
       style={{
-        backgroundColor: '#FAF9F8',
-        borderColor: 'var(--framer-color-divider)'
+        backgroundColor: colors.warmGray[100],
+        borderRadius: borders.radius.lg,
+        padding: spacing.md,
+        transition: 'all 0.15s ease',
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
         e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.04)'
       }}
       onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
         e.currentTarget.style.boxShadow = 'none'
       }}
     >
-      <div className="flex items-start gap-2.5 mb-2.5">
-        {/* Preview thumbnail */}
+      {/* Compact Header Row */}
+      <div style={{ 
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: spacing.sm,
+        marginBottom: spacing.sm
+      }}>
+        {/* Thumbnail - smaller on mobile */}
         {hasPreview && (
           <div 
-            className="flex-shrink-0 w-14 h-14 rounded border overflow-hidden"
             style={{
-              borderColor: 'var(--framer-color-divider)',
-              backgroundColor: 'var(--framer-color-bg-secondary)'
+              flexShrink: 0,
+              width: '48px',
+              height: '48px',
+              borderRadius: borders.radius.md,
+              border: `1px solid var(--framer-color-divider)`,
+              backgroundColor: 'var(--framer-color-bg-secondary)',
+              overflow: 'hidden'
             }}
           >
             <img
               src={recommendation.url}
               alt={recommendation.nodeName}
-              className="w-full h-full object-cover"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
               onError={(e) => {
-                // Hide image on error
                 e.currentTarget.style.display = 'none'
               }}
             />
           </div>
         )}
-        {!hasPreview && (
-          <div 
-            className="flex-shrink-0 w-14 h-14 rounded border flex items-center justify-center"
-            style={{
-              borderColor: 'var(--framer-color-divider)',
-              backgroundColor: 'var(--framer-color-bg-secondary)'
-            }}
-          >
-            <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </div>
-        )}
         
-        <div className="flex-1 min-w-0">
-          {/* Header: Node name, badges, and savings in one row */}
-          <div className="flex items-start justify-between gap-2 mb-1.5">
-            <div className="flex-1 min-w-0">
-              <h4 className="font-semibold text-sm break-words mb-1" style={{ color: 'var(--framer-color-text)' }}>
+        {/* Main Content */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Title and Savings Row */}
+          <div style={{ 
+            display: 'flex',
+            alignItems: 'flex-start',
+            justifyContent: 'space-between',
+            gap: spacing.sm,
+            marginBottom: spacing.xs
+          }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <h4 style={{ 
+                fontWeight: typography.fontWeight.semibold,
+                fontSize: typography.fontSize.sm,
+                wordBreak: 'break-word',
+                marginBottom: spacing.xs,
+                color: 'var(--framer-color-text)',
+                lineHeight: typography.lineHeight.tight
+              }}>
                 {recommendation.nodeName || 'Unnamed'}
               </h4>
-              <div className="flex items-center gap-1.5 flex-wrap">
+              <div style={{ 
+                display: 'flex',
+                alignItems: 'center',
+                gap: spacing.xs,
+                flexWrap: 'wrap'
+              }}>
           <Badge variant={recommendation.priority}>
             {recommendation.priority.toUpperCase()}
           </Badge>
-          <Badge variant="default">
-            {typeLabels[recommendation.type]}
-          </Badge>
                 {recommendation.currentBytes > 0 && (
-                  <span className="text-xs font-medium" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-                    {Math.round((recommendation.potentialSavings / recommendation.currentBytes) * 100)}% off
+                  <span style={{ 
+                    fontSize: typography.fontSize.xs,
+                    color: 'var(--framer-color-text-tertiary)'
+                  }}>
+                    {Math.round((recommendation.potentialSavings / recommendation.currentBytes) * 100)}% smaller
                   </span>
                 )}
               </div>
             </div>
-            <div className="flex-shrink-0 text-right">
-              <div className="text-base font-semibold" style={{ color: 'var(--framer-color-text)' }}>
+            <div style={{ flexShrink: 0, textAlign: 'right' }}>
+              <div style={{ 
+                fontSize: typography.fontSize.md,
+                fontWeight: typography.fontWeight.bold,
+                color: 'var(--framer-color-text)',
+                lineHeight: typography.lineHeight.tight
+              }}>
                 {formatBytes(recommendation.potentialSavings)}
-              </div>
-              <div className="text-xs font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>
-                savings
               </div>
             </div>
           </div>
 
-          {/* Page info and description */}
-          <div className="text-xs mb-2" style={{ color: 'var(--framer-color-text-secondary)' }}>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <span>Page:</span>
-              {recommendation.pageSlug || recommendation.pageName ? (
-                recommendation.pageUrl ? (
+          {/* Compact Metadata Row */}
+          <div style={{ 
+            fontSize: typography.fontSize.xs,
+            color: 'var(--framer-color-text-secondary)',
+            marginBottom: spacing.xs,
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.sm,
+            flexWrap: 'wrap'
+          }}>
+            {recommendation.pageSlug || recommendation.pageName ? (
+              <span>
+                {recommendation.pageUrl ? (
                   <a
                     href={recommendation.pageUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="underline hover:opacity-70 transition-opacity"
-                    style={{ color: 'var(--framer-color-text)' }}
+                    style={{
+                      textDecoration: 'underline',
+                      color: 'var(--framer-color-text)',
+                      transition: 'opacity 0.15s ease'
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.opacity = '0.7'}
+                    onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
                     onClick={(e) => e.stopPropagation()}
-                    title={recommendation.pageUrl}
                   >
                     {recommendation.pageSlug || recommendation.pageName}
                   </a>
                 ) : (
                   <span>{recommendation.pageSlug || recommendation.pageName}</span>
-                )
-              ) : (
-                <span style={{ color: 'var(--framer-color-text-tertiary)', fontStyle: 'italic' }}>Unknown</span>
-              )}
-              {!canSelect && (
-                <span className="flex items-center gap-1" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>CMS/Settings</span>
-                </span>
-              )}
-            </div>
-          </div>
-
-          {/* Description and action combined */}
-          <div className="text-xs mb-2 leading-relaxed" style={{ color: 'var(--framer-color-text-secondary)', lineHeight: '1.5' }}>
-            {recommendation.description}
-          </div>
-          <div className="text-xs font-medium" style={{ color: 'var(--framer-color-text)' }}>
-            {recommendation.actionable}
-          </div>
+                )}
+              </span>
+            ) : null}
+            {!canSelect && (
+              <span style={{ color: 'var(--framer-color-text-tertiary)' }}>
+                • CMS
+              </span>
+            )}
+        </div>
         </div>
       </div>
 
-      <div className="flex gap-2">
+      {/* Collapsible Details */}
+      {isExpanded && (
+        <div style={{ 
+          marginTop: spacing.sm,
+          paddingTop: spacing.sm,
+          borderTop: `1px solid var(--framer-color-divider)`
+        }}>
+          <div style={{ 
+            fontSize: typography.fontSize.xs,
+            lineHeight: typography.lineHeight.relaxed,
+            color: 'var(--framer-color-text-secondary)',
+            marginBottom: spacing.xs
+          }}>
+            {recommendation.description}
+          </div>
+          <div style={{ 
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            color: 'var(--framer-color-text)'
+          }}>
+            {recommendation.actionable}
+          </div>
+      </div>
+      )}
+
+      {/* Expand/Collapse Button */}
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{
+          marginTop: spacing.xs,
+          padding: `${spacing.xs} 0`,
+          fontSize: typography.fontSize.xs,
+          color: 'var(--framer-color-text-tertiary)',
+          backgroundColor: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: spacing.xs,
+          transition: 'color 0.15s ease'
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = 'var(--framer-color-text)'
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = 'var(--framer-color-text-tertiary)'
+        }}
+      >
+        <svg 
+          style={{ 
+            width: '12px', 
+            height: '12px',
+            transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 0.15s ease'
+          }} 
+          fill="none" 
+          viewBox="0 0 24 24" 
+          stroke="currentColor" 
+          strokeWidth={2}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+        <span>{isExpanded ? 'Less' : 'Details'}</span>
+      </button>
+
+      {/* Action Buttons - Responsive Layout */}
+      <div style={{ 
+        display: 'flex',
+        gap: spacing.sm,
+        marginTop: spacing.sm,
+        flexWrap: 'wrap'
+      }}>
         {canOptimize && (
           <button
             onClick={handleOptimize}
             disabled={isOptimizing}
-            className="flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1.5 min-w-0"
-            style={isOptimizing ? {
-              backgroundColor: 'var(--framer-color-bg-tertiary)',
-              color: 'var(--framer-color-text-tertiary)',
-              cursor: 'not-allowed',
-              border: '1px solid var(--framer-color-divider)'
-            } : {
-              backgroundColor: 'var(--framer-color-bg)',
-              color: 'var(--framer-color-text)',
-              border: '1px solid var(--framer-color-divider)'
+            style={{
+              flex: 1,
+              minWidth: '120px',
+              padding: `${spacing.sm} ${spacing.md}`,
+              borderRadius: borders.radius.md,
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              transition: 'all 0.15s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              ...(isOptimizing ? {
+                backgroundColor: 'var(--framer-color-bg-tertiary)',
+                color: 'var(--framer-color-text-tertiary)',
+                cursor: 'not-allowed',
+                border: '1px solid var(--framer-color-divider)'
+              } : {
+                backgroundColor: 'var(--framer-color-bg)',
+                color: 'var(--framer-color-text)',
+                border: '1px solid var(--framer-color-divider)'
+              })
             }}
             onMouseEnter={(e) => {
               if (!isOptimizing) {
@@ -472,35 +577,61 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
           >
             {isOptimizing ? (
               <>
-                <svg className="w-3.5 h-3.5 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                <svg style={{ 
+                  width: '14px',
+                  height: '14px',
+                  animation: 'spin 1s linear infinite',
+                  flexShrink: 0
+                }} fill="none" viewBox="0 0 24 24">
+                  <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                <span className="truncate min-w-0">{optimizationProgress || 'Optimizing...'}</span>
+                <span style={{ 
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  minWidth: 0
+                }}>{optimizationProgress || 'Optimizing...'}</span>
               </>
             ) : (
               <>
-                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg style={{ width: '14px', height: '14px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
-                <span className="truncate">Optimize</span>
+                <span style={{ 
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}>Optimize</span>
               </>
             )}
           </button>
         )}
-      <button
-        onClick={handleNavigate}
+        <button
+          onClick={handleNavigate}
           disabled={!canSelect || isOptimizing}
-          className="flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1.5 min-w-0"
-          style={!canSelect || isOptimizing ? {
-            backgroundColor: 'var(--framer-color-bg-tertiary)',
-            color: 'var(--framer-color-text-tertiary)',
-            cursor: 'not-allowed',
-            border: '1px solid var(--framer-color-divider)'
-          } : {
-            backgroundColor: 'var(--framer-color-bg)',
-            color: 'var(--framer-color-text)',
-            border: '1px solid var(--framer-color-divider)'
+          style={{
+            flex: 1,
+            minWidth: '120px',
+            padding: `${spacing.sm} ${spacing.md}`,
+            borderRadius: borders.radius.md,
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            transition: 'all 0.15s ease',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: spacing.xs,
+            ...(!canSelect || isOptimizing ? {
+              backgroundColor: 'var(--framer-color-bg-tertiary)',
+              color: 'var(--framer-color-text-tertiary)',
+              cursor: 'not-allowed',
+              border: '1px solid var(--framer-color-divider)'
+            } : {
+              backgroundColor: 'var(--framer-color-bg)',
+              color: 'var(--framer-color-text)',
+              border: '1px solid var(--framer-color-divider)'
+            })
           }}
           onMouseEnter={(e) => {
             if (canSelect && !isOptimizing) {
@@ -523,20 +654,71 @@ export function RecommendationCard({ recommendation }: RecommendationCardProps) 
         >
           {canSelect ? (
             <>
-              <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg style={{ width: '14px', height: '14px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
               </svg>
-              <span className="truncate">
-                {recommendation.pageName 
-                  ? `Select on "${recommendation.pageName}"`
-                  : 'Select in Canvas'
-                }
+              <span style={{ 
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                Select
               </span>
             </>
           ) : (
             <span>Multiple Items</span>
           )}
       </button>
+        {onIgnore && (
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onIgnore()
+            }}
+            style={{
+              padding: `${spacing.sm} ${spacing.md}`,
+              borderRadius: borders.radius.md,
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              transition: 'all 0.15s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              backgroundColor: 'var(--framer-color-bg)',
+              color: 'var(--framer-color-text-secondary)',
+              border: '1px solid var(--framer-color-divider)',
+              minWidth: 'auto'
+            }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+            e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+            e.currentTarget.style.color = 'var(--framer-color-text)'
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+            e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+            e.currentTarget.style.color = 'var(--framer-color-text-secondary)'
+          }}
+          title={isIgnored ? 'Restore this recommendation' : 'Hide this recommendation'}
+        >
+          <svg style={{ width: '14px', height: '14px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            {isIgnored ? (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            ) : (
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            )}
+          </svg>
+            <svg style={{ width: '14px', height: '14px', flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              {isIgnored ? (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              )}
+            </svg>
+          </button>
+        )}
       </div>
     </div>
     </>

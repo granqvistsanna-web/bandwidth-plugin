@@ -23,99 +23,121 @@ function formatTimestamp(date: Date): string {
 export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
   return (
     <div
-      className="px-6 py-4 border-b"
       style={{
-        borderColor: 'var(--framer-color-divider)',
+        padding: `${spacing.md} ${spacing.lg}`,
+        borderBottom: `${borders.width.thin} solid var(--framer-color-divider)`,
         backgroundColor: 'var(--framer-color-bg)',
       }}
     >
-      <div className="flex flex-col gap-3">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
         {/* Title and Status */}
-        <div className="flex items-center gap-3">
+        <div style={{ display: 'flex', alignItems: 'center', gap: spacing.md }}>
           <h1
-            className="leading-tight tracking-tight"
             style={{
               fontSize: typography.fontSize.lg,
               fontWeight: typography.fontWeight.semibold,
               color: 'var(--framer-color-text)',
+              margin: 0,
+              lineHeight: typography.lineHeight.tight,
             }}
           >
             Bandwidth Check
           </h1>
+          
+          {/* Status indicator - minimal dot only */}
           {lastScanned && (
-            <div className="flex items-center gap-1.5">
+            <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
               <div
-                className={`w-2 h-2 rounded-full ${loading ? 'animate-pulse' : ''}`}
-                style={{ 
-                  backgroundColor: loading 
-                    ? '#3b82f6' // Blue when analyzing
-                    : '#22c55e' // Green when complete
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: loading ? '#3b82f6' : '#22c55e',
+                  opacity: loading ? 0.8 : 1,
                 }}
               />
               <span
-                className="font-medium"
                 style={{
                   fontSize: typography.fontSize.xs,
                   color: 'var(--framer-color-text-secondary)',
+                  fontFamily: typography.fontFamily.sans,
                 }}
               >
-                {loading ? 'Analyzing...' : `Scanned ${formatTimestamp(lastScanned)}`}
+                {loading ? 'analyzing' : formatTimestamp(lastScanned)}
               </span>
             </div>
           )}
         </div>
 
-        {/* Rescan Button */}
+        {/* Rescan Button - improved styling */}
         <button
           onClick={onRefresh}
           disabled={loading}
-          className="flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 w-fit active:scale-[0.98]"
-          style={
-            loading
-              ? {
-                  backgroundColor: 'var(--framer-color-bg-tertiary)',
-                  color: 'var(--framer-color-text-tertiary)',
-                  cursor: 'not-allowed',
-                  fontSize: typography.fontSize.sm,
-                  fontWeight: typography.fontWeight.semibold,
-                  border: '1px solid var(--framer-color-divider)',
-                }
-              : {
-                  backgroundColor: 'var(--framer-color-bg)',
-                  color: 'var(--framer-color-text)',
-                  fontSize: typography.fontSize.sm,
-                  fontWeight: typography.fontWeight.semibold,
-                  border: '1px solid var(--framer-color-divider)',
-                }
-          }
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: spacing.xs,
+            padding: `${spacing.sm} ${spacing.md}`,
+            fontSize: typography.fontSize.sm,
+            fontWeight: typography.fontWeight.medium,
+            color: loading ? 'var(--framer-color-text-tertiary)' : colors.almostBlack,
+            backgroundColor: loading ? colors.warmGray[50] : '#E4F222',
+            border: 'none',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            borderRadius: borders.radius.sm,
+            transition: 'all 0.15s ease',
+            alignSelf: 'flex-start',
+            width: 'auto',
+          }}
           onMouseEnter={(e) => {
             if (!loading) {
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-              e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+              e.currentTarget.style.backgroundColor = '#D9E01F'
+              e.currentTarget.style.transform = 'translateY(-1px)'
             }
           }}
           onMouseLeave={(e) => {
             if (!loading) {
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
-              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+              e.currentTarget.style.backgroundColor = '#E4F222'
+              e.currentTarget.style.transform = 'translateY(0)'
             }
           }}
           title={loading ? 'Analyzing project...' : 'Rescan project for changes'}
         >
           {loading ? (
             <>
-              <svg className="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              <svg 
+                className="animate-spin" 
+                width="14" 
+                height="14" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2"
+                style={{ flexShrink: 0 }}
+              >
+                <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-              <span>Analyzing</span>
+              <span>analyzing...</span>
             </>
           ) : (
             <>
-              <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <svg 
+                width="14" 
+                height="14" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2"
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+                style={{ flexShrink: 0 }}
+              >
+                <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+                <path d="M21 3v5h-5" />
+                <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+                <path d="M8 16H3v5" />
               </svg>
-              <span>Rescan</span>
+              <span>Rescan project</span>
             </>
           )}
         </button>

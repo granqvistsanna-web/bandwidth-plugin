@@ -1,6 +1,5 @@
 import { framer } from "framer-plugin"
 import { useState, useEffect } from "react"
-import { Header } from "./components/Header"
 import { SidebarNavigation } from "./components/SidebarNavigation"
 import { OverviewPanel } from "./components/overview/OverviewPanel"
 import { AssetsPanel } from "./components/assets/AssetsPanel"
@@ -11,6 +10,22 @@ import { DebugPanel } from "./components/DebugPanel"
 import { LoadingSpinner } from "./components/common/LoadingSpinner"
 import { ErrorMessage } from "./components/common/ErrorMessage"
 import { useAnalysis } from "./hooks/useAnalysis"
+import { useTheme } from "./hooks/useTheme"
+import { spacing, typography } from "./styles/designTokens"
+
+export function formatTimestamp(date: Date): string {
+  const now = new Date()
+  const diffMs = now.getTime() - date.getTime()
+  const diffSecs = Math.floor(diffMs / 1000)
+  const diffMins = Math.floor(diffSecs / 60)
+  const diffHours = Math.floor(diffMins / 60)
+
+  if (diffSecs < 60) return 'just now'
+  if (diffMins < 60) return `${diffMins}m ago`
+  if (diffHours < 24) return `${diffHours}h ago`
+
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+}
 
 framer.showUI({
     position: "top right",
@@ -39,8 +54,14 @@ export function App() {
       manualCMSEstimates,
       addManualCMSEstimate,
       updateManualCMSEstimate,
-      removeManualCMSEstimate
+      removeManualCMSEstimate,
+      ignoredRecommendationIds,
+      ignoreRecommendation,
+      unignoreRecommendation
     } = useAnalysis()
+
+    // Initialize theme
+    useTheme()
 
     // Auto-run analysis on mount
     useEffect(() => {
@@ -50,12 +71,16 @@ export function App() {
     return (
         <div className="relative h-full w-full" style={{ backgroundColor: 'var(--framer-color-bg)' }}>
             {!loading && !error && (
-                <SidebarNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+                <SidebarNavigation 
+                  activeTab={activeTab} 
+                  onTabChange={setActiveTab}
+                  onRefresh={runAnalysis}
+                  loading={loading}
+                  lastScanned={lastScanned}
+                />
             )}
 
             <div className="w-full h-full flex flex-col pl-16">
-                <Header onRefresh={runAnalysis} loading={loading} lastScanned={lastScanned} />
-
                 <div className="flex-1 overflow-y-auto">
                     {loading && <LoadingSpinner />}
 
@@ -72,6 +97,8 @@ export function App() {
                                     updateManualCMSEstimate={updateManualCMSEstimate}
                                     removeManualCMSEstimate={removeManualCMSEstimate}
                                     onRescan={runAnalysis}
+                                    lastScanned={lastScanned}
+                                    loading={loading}
                                 />
                             )}
                             {activeTab === 'assets' && (
@@ -79,22 +106,40 @@ export function App() {
                                     analysis={analysis}
                                     selectedPageId={selectedPageId}
                                     onPageChange={setSelectedPageId}
+                                    lastScanned={lastScanned}
+                                    loading={loading}
                                 />
                             )}
                             {activeTab === 'recommendations' && (
                                 <RecommendationsPanel
                                     analysis={analysis}
                                     selectedPageId={selectedPageId}
+                                    ignoredRecommendationIds={ignoredRecommendationIds}
+                                    onIgnoreRecommendation={ignoreRecommendation}
+                                    onUnignoreRecommendation={unignoreRecommendation}
+                                    lastScanned={lastScanned}
+                                    loading={loading}
                                 />
                             )}
                             {activeTab === 'bandwidth' && (
-                                <BandwidthPanel analysis={analysis} />
+                                <BandwidthPanel 
+                                    analysis={analysis}
+                                    lastScanned={lastScanned}
+                                    loading={loading}
+                                />
                             )}
                             {activeTab === 'settings' && (
-                                <SettingsPanel />
+                                <SettingsPanel 
+                                    lastScanned={lastScanned}
+                                    loading={loading}
+                                />
                             )}
                             {activeTab === 'debug' && (
-                                <DebugPanel analysis={analysis} />
+                                <DebugPanel 
+                                    analysis={analysis}
+                                    lastScanned={lastScanned}
+                                    loading={loading}
+                                />
                             )}
                         </>
                     )}

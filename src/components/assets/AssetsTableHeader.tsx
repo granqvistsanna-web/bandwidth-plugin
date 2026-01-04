@@ -36,7 +36,7 @@ function SortableHeader({ label, column, sortConfig, onSort, align = 'left' }: S
         style={{
           color: isActive ? 'var(--framer-color-text)' : 'var(--framer-color-text-secondary)',
           justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start',
-          padding: '8px 12px'
+          padding: '4px 12px'
         }}
       >
         {label}
@@ -62,7 +62,7 @@ export function AssetsTableHeader({ sortConfig, onSort }: AssetsTableHeaderProps
     >
       <tr style={{ borderBottom: `1px solid var(--framer-color-divider)` }}>
         {/* Preview */}
-        <th style={{ width: '100px', padding: 0 }} />
+        <th style={{ width: '64px', padding: 0 }} />
 
         {/* Name */}
         <th style={{ minWidth: '200px', padding: 0 }}>
@@ -70,30 +70,18 @@ export function AssetsTableHeader({ sortConfig, onSort }: AssetsTableHeaderProps
         </th>
 
         {/* Dimensions */}
-        <th style={{ width: '140px', padding: 0 }}>
+        <th style={{ width: '120px', padding: 0 }}>
           <SortableHeader label="Dimensions" column="dimensions" sortConfig={sortConfig} onSort={onSort} align="left" />
         </th>
 
         {/* Format */}
-        <th style={{ width: '120px', padding: 0 }}>
+        <th style={{ width: '100px', padding: 0 }}>
           <SortableHeader label="Format" column="format" sortConfig={sortConfig} onSort={onSort} align="left" />
         </th>
 
         {/* Size */}
-        <th style={{ width: '160px', padding: 0 }}>
+        <th style={{ width: '140px', padding: 0 }}>
           <SortableHeader label="Size" column="size" sortConfig={sortConfig} onSort={onSort} align="left" />
-        </th>
-
-        {/* Usage */}
-        <th style={{ width: '120px', padding: 0 }}>
-          <SortableHeader label="Usage" column="usage" sortConfig={sortConfig} onSort={onSort} align="center" />
-        </th>
-
-        {/* Actions */}
-        <th style={{ width: '100px', textAlign: 'right', padding: '8px 12px' }}>
-          <div className="text-xs font-medium" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-            Action
-          </div>
         </th>
       </tr>
     </thead>

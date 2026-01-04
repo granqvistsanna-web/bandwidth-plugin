@@ -34,7 +34,7 @@ export function BreakdownChart({ breakdown, totalBytes }: BreakdownChartProps) {
                 style={{
                   fontSize: typography.fontSize.sm,
                   fontWeight: typography.fontWeight.medium,
-                  color: colors.black,
+                  color: colors.almostBlack,
                 }}
               >
                 {item.label}

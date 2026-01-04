@@ -1,82 +1,301 @@
-import { spacing, typography } from '../../styles/designTokens'
+import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { useTheme, type ThemeMode } from '../../hooks/useTheme'
+import { formatTimestamp } from '../../App'
 
 interface SettingsPanelProps {
-  // Settings panel props - can be expanded later
+  lastScanned?: Date | null
+  loading?: boolean
 }
 
-export function SettingsPanel({}: SettingsPanelProps) {
+export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
+  const { theme, resolvedTheme, setTheme } = useTheme()
+
+  const themeOptions: { value: ThemeMode; label: string; icon: JSX.Element }[] = [
+    {
+      value: 'light',
+      label: 'Light',
+      icon: (
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      )
+    },
+    {
+      value: 'dark',
+      label: 'Dark',
+      icon: (
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+      )
+    },
+    {
+      value: 'system',
+      label: 'System',
+      icon: (
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      )
+    }
+  ]
+
   return (
-    <div className="p-6" style={{ backgroundColor: 'var(--framer-color-bg)' }}>
-      <div style={{ marginBottom: spacing.xl }}>
-        <h2
-          style={{
+    <div style={{
+      padding: spacing.md,
+      backgroundColor: 'var(--framer-color-bg)',
+      minHeight: '100vh'
+    }}>
+      <div style={{
+        maxWidth: '900px',
+        margin: '0 auto',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: spacing.lg
+      }}>
+        {/* Page Header */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: spacing.sm
+        }}>
+          <h1 style={{
             fontSize: typography.fontSize.xl,
             fontWeight: typography.fontWeight.bold,
             color: 'var(--framer-color-text)',
-            marginBottom: spacing.xs,
-          }}
-        >
-          Settings
-        </h2>
-        <p
+            margin: 0,
+            lineHeight: typography.lineHeight.tight
+          }}>
+            Settings
+          </h1>
+          {lastScanned && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: spacing.xs,
+              padding: `${spacing.xs} ${spacing.sm}`,
+              backgroundColor: colors.warmGray[100],
+              borderRadius: borders.radius.md,
+              fontSize: typography.fontSize.xs,
+              color: 'var(--framer-color-text-secondary)'
+            }}>
+              <div
+                style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  backgroundColor: loading ? '#3b82f6' : '#22c55e',
+                  opacity: loading ? 0.8 : 1,
+                  flexShrink: 0
+                }}
+              />
+              <span>{loading ? 'analyzing' : formatTimestamp(lastScanned)}</span>
+            </div>
+          )}
+        </div>
+
+      {/* Theme Selection */}
+      <div>
+        <div
           style={{
-            fontSize: typography.fontSize.sm,
-            color: 'var(--framer-color-text-secondary)',
+            padding: spacing.md,
+            backgroundColor: colors.warmGray[100],
+            borderRadius: borders.radius.lg,
           }}
         >
-          Configure plugin preferences and analysis options.
-        </p>
+          <div style={{ marginBottom: spacing.sm }}>
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              color: 'var(--framer-color-text)',
+              marginBottom: '2px'
+            }}>
+              Theme
+            </div>
+            <p
+              style={{
+                fontSize: typography.fontSize.xs,
+                color: 'var(--framer-color-text-secondary)',
+                lineHeight: '1.4'
+              }}
+            >
+              Choose your preferred appearance
+            </p>
+          </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xs }}>
+          {themeOptions.map((option) => {
+            const isSelected = theme === option.value
+            return (
+              <button
+                key={option.value}
+                onClick={() => setTheme(option.value)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: spacing.sm,
+                  padding: spacing.sm,
+                  backgroundColor: isSelected ? 'var(--framer-color-bg-secondary)' : 'transparent',
+                  border: `1px solid ${isSelected ? 'var(--framer-color-text)' : 'var(--framer-color-divider)'}`,
+                  borderRadius: borders.radius.sm,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  textAlign: 'left' as const,
+                }}
+                onMouseEnter={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+                    e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isSelected) {
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                    e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+                  }
+                }}
+              >
+                <div
+                  style={{
+                    color: isSelected ? 'var(--framer-color-text)' : 'var(--framer-color-text-secondary)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '14px',
+                    height: '14px'
+                  }}
+                >
+                  {option.icon}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div
+                    style={{
+                      fontSize: typography.fontSize.xs,
+                      fontWeight: isSelected ? typography.fontWeight.semibold : typography.fontWeight.medium,
+                      color: 'var(--framer-color-text)',
+                      marginBottom: '1px',
+                    }}
+                  >
+                    {option.label}
+                  </div>
+                  {option.value === 'system' && (
+                    <div
+                      style={{
+                        fontSize: typography.fontSize.xs,
+                        color: 'var(--framer-color-text-secondary)',
+                        lineHeight: '1.3'
+                      }}
+                    >
+                      Currently: {resolvedTheme === 'dark' ? 'Dark' : 'Light'}
+                    </div>
+                  )}
+                </div>
+                {isSelected && (
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--framer-color-text)' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                )}
+              </button>
+            )
+          })}
+        </div>
+        </div>
       </div>
 
-      <div
-        className="rounded-lg p-6 border"
-        style={{
-          backgroundColor: '#FAF9F8',
-          borderColor: 'var(--framer-color-divider)',
-        }}
-      >
-        <div className="text-center py-8">
-          <svg 
-            className="w-12 h-12 mx-auto mb-4" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-            style={{ color: 'var(--framer-color-text-tertiary)' }}
-          >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={1.5} 
-              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" 
-            />
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={1.5} 
-              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" 
-            />
-          </svg>
-          <h3
-            style={{
-              fontSize: typography.fontSize.md,
-              fontWeight: typography.fontWeight.semibold,
+      {/* About Section */}
+      <div>
+        <div
+          style={{
+            padding: spacing.md,
+            backgroundColor: colors.warmGray[50],
+            borderRadius: borders.radius.lg,
+          }}
+        >
+          <div style={{ marginBottom: spacing.sm }}>
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
               color: 'var(--framer-color-text)',
-              marginBottom: spacing.xs,
-            }}
-          >
-            No Settings Available
-          </h3>
-          <p
-            style={{
-              fontSize: typography.fontSize.sm,
+              marginBottom: '2px'
+            }}>
+              Bandwidth Check Plugin
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.xs,
               color: 'var(--framer-color-text-secondary)',
-              maxWidth: '400px',
-              margin: '0 auto',
-            }}
-          >
-            Settings will be available in a future update. The plugin currently uses default analysis settings optimized for most projects.
-          </p>
+            }}>
+              Analyze and optimize your Framer site's performance
+            </div>
+          </div>
+
+          <div style={{
+            paddingTop: spacing.sm,
+            borderTop: '1px solid var(--framer-color-divider)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: spacing.xs
+          }}>
+            <a
+              href="https://github.com/anthropics/claude-code/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: typography.fontSize.xs,
+                color: 'var(--framer-color-tint)',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: spacing.xs,
+                padding: spacing.xs,
+                marginLeft: `-${spacing.xs}`,
+                borderRadius: borders.radius.sm,
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+              }}
+            >
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+              Report an issue
+            </a>
+            <a
+              href="https://www.framer.com/learn/"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                fontSize: typography.fontSize.xs,
+                color: 'var(--framer-color-tint)',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: spacing.xs,
+                padding: spacing.xs,
+                marginLeft: `-${spacing.xs}`,
+                borderRadius: borders.radius.sm,
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+              }}
+            >
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+              Framer documentation
+            </a>
+          </div>
         </div>
+      </div>
+
       </div>
     </div>
   )

@@ -1,10 +1,11 @@
 /**
  * Premium Minimal Design System
- * Grayscale-only palette with consistent spacing and typography
+ * Grayscale foundation with warm gray surfaces and light neon yellow accent
+ * Built for focus, clarity, and speed
  */
 
 // ============================================================================
-// COLOR PALETTE - Grayscale Only
+// COLOR PALETTE - Grayscale + Warm Gray + Neon Yellow Accent
 // ============================================================================
 
 export const colors = {
@@ -12,33 +13,46 @@ export const colors = {
   white: '#FFFFFF',
   black: '#000000',
 
-  // Gray scale (8 steps) - works in both light and dark mode
+  // Gray scale - foundation for all surfaces
   gray: {
     50: '#FAFAFA',   // Lightest - subtle backgrounds in light mode
     100: '#F5F5F5',  // Very light - secondary backgrounds
     200: '#E5E5E5',  // Light - borders in light mode
     300: '#D4D4D4',  // Mid-light - disabled states
-    400: '#A3A3A3',  // Mid - secondary text, icons
+    400: '#A3A3A3',  // Mid - secondary text
     500: '#737373',  // Mid-dark - body text secondary
     600: '#525252',  // Dark - body text primary in light mode
     700: '#404040',  // Darker - headings, emphasis
     800: '#262626',  // Very dark - almost black
     900: '#171717',  // Darkest - borders in dark mode
   },
-  // Warm gray for card backgrounds - adds subtle warmth and contrast
+  
+  // Warm gray for card backgrounds - simplified
   warmGray: {
-    50: '#FAF9F8',   // Warm lightest - card backgrounds
-    100: '#F5F4F3',  // Warm very light - secondary card backgrounds
+    50: '#F4F2F0',   // Lightest - filter buttons, subtle backgrounds
+    100: '#F4F2F0',  // Card backgrounds
+    200: '#F4F2F0',  // Menu background
+    300: '#E5E3E1',  // Borders, dividers
+    400: '#A8A5A2',  // Secondary text
+    500: '#787572',  // Tertiary text
+  },
+
+  // Almost black - for primary text and buttons
+  almostBlack: '#1A1919',
+
+  // Yellow accent - for primary actions
+  accent: {
+    light: '#E4F222',   // Yellow accent
   }
 } as const
 
 // Light mode color semantics
 export const lightMode = {
-  // Surfaces
+  // Surfaces - warm gray for cards
   surface: {
     primary: colors.white,
-    secondary: colors.gray[50],
-    tertiary: colors.gray[100],
+    secondary: colors.warmGray[50],      // Card backgrounds
+    tertiary: colors.warmGray[100],       // Secondary cards
   },
 
   // Text
@@ -47,9 +61,10 @@ export const lightMode = {
     secondary: colors.gray[600],
     tertiary: colors.gray[400],
     inverse: colors.white,
+    accent: colors.accent.light,         // Neon yellow for callouts
   },
 
-  // Borders & Dividers
+  // Borders & Dividers - thin and minimal
   border: {
     subtle: colors.gray[200],
     default: colors.gray[300],
@@ -63,21 +78,21 @@ export const lightMode = {
     active: colors.gray[300],
   },
 
-  // Shadows
+  // Shadows - minimal
   shadow: {
-    subtle: 'rgba(0, 0, 0, 0.04)',
-    default: 'rgba(0, 0, 0, 0.08)',
-    strong: 'rgba(0, 0, 0, 0.12)',
+    subtle: 'rgba(0, 0, 0, 0.02)',
+    default: 'rgba(0, 0, 0, 0.04)',
+    strong: 'rgba(0, 0, 0, 0.08)',
   }
 } as const
 
-// Dark mode color semantics
+// Dark mode color semantics - inverted appropriately
 export const darkMode = {
-  // Surfaces
+  // Surfaces - warm gray inverted
   surface: {
     primary: colors.black,
-    secondary: colors.gray[900],
-    tertiary: colors.gray[800],
+    secondary: colors.warmGray[900],     // Card backgrounds
+    tertiary: colors.warmGray[800],       // Secondary cards
   },
 
   // Text
@@ -86,6 +101,7 @@ export const darkMode = {
     secondary: colors.gray[400],
     tertiary: colors.gray[500],
     inverse: colors.black,
+    accent: colors.accent.medium,        // Brighter yellow for dark mode
   },
 
   // Borders & Dividers
@@ -104,9 +120,9 @@ export const darkMode = {
 
   // Glows (instead of shadows in dark mode)
   glow: {
-    subtle: 'rgba(255, 255, 255, 0.03)',
-    default: 'rgba(255, 255, 255, 0.06)',
-    strong: 'rgba(255, 255, 255, 0.09)',
+    subtle: 'rgba(255, 255, 255, 0.02)',
+    default: 'rgba(255, 255, 255, 0.04)',
+    strong: 'rgba(255, 255, 255, 0.06)',
   }
 } as const
 
@@ -150,27 +166,35 @@ export const componentSpacing = {
 
 export const typography = {
   fontFamily: {
-    sans: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif',
+    // Primary sans-serif - Inter
+    sans: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
   },
 
   fontSize: {
-    xs: '10px',    // Very small - labels, badges
-    sm: '12px',    // Small - body text, most UI
-    md: '14px',    // Medium-small - headers in modals, emphasis
-    lg: '16px',    // Values, important numbers
+    xs: '11px',    // Small labels, metadata
+    sm: '13px',    // Body text, buttons
+    md: '15px',    // Section headings
+    lg: '18px',    // Page headings
+    xl: '24px',    // Large headings
   },
 
   fontWeight: {
-    light: 300,
     regular: 400,
     medium: 500,
     semibold: 600,
+    bold: 700,
   },
 
   lineHeight: {
-    tight: 1.2,
-    normal: 1.5,
-    relaxed: 1.6,
+    tight: 1.2,     // Metrics, large numbers
+    normal: 1.5,    // Body text
+    relaxed: 1.7,   // Descriptions, long form
+  },
+
+  letterSpacing: {
+    tight: '-0.02em',   // Large headings
+    normal: '0',        // Body text
+    wide: '0.02em',     // Labels, uppercase
   }
 } as const
 
@@ -180,14 +204,15 @@ export const typography = {
 
 export const borders = {
   width: {
-    thin: '1px',
-    default: '1px',
+    thin: '1px',      // Standard thin borders
+    default: '1px',   // Standard borders
   },
 
   radius: {
-    sm: '4px',   // Small - badges, pills
-    md: '6px',   // Medium - buttons, inputs
-    lg: '8px',   // Large - cards, modals
+    sm: '8px',    // Small - buttons, badges
+    md: '12px',   // Medium - inputs, small cards
+    lg: '20px',   // Large - cards, panels
+    full: '9999px', // Full - pills
   }
 } as const
 

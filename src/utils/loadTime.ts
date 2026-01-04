@@ -9,11 +9,17 @@ const NETWORK_SPEEDS = {
 } as const
 
 export function calculateLoadTime(bytes: number, network: '3g' | '4g'): number {
+  if (!bytes || !isFinite(bytes) || bytes <= 0) {
+    return 0
+  }
   const speed = NETWORK_SPEEDS[network]
   return bytes / speed
 }
 
 export function formatLoadTime(seconds: number): string {
+  if (!isFinite(seconds) || isNaN(seconds) || seconds <= 0) {
+    return '<1ms'
+  }
   if (seconds < 1) {
     return `${(seconds * 1000).toFixed(0)}ms`
   }

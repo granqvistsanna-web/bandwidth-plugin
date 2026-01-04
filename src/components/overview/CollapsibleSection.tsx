@@ -19,8 +19,7 @@ export function CollapsibleSection({
   return (
     <div
       style={{
-        backgroundColor: '#FAF9F8',
-        border: `1px solid var(--framer-color-divider)`,
+        backgroundColor: colors.warmGray[50],
         borderRadius: borders.radius.lg,
         overflow: 'hidden' as const,
       }}
@@ -34,20 +33,20 @@ export function CollapsibleSection({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: isCollapsed ? '#FAF9F8' : '#F5F4F3',
-          borderBottom: isCollapsed ? 'none' : `1px solid var(--framer-color-divider)`,
+          backgroundColor: isCollapsed ? colors.warmGray[50] : colors.warmGray[100],
+          borderBottom: isCollapsed ? 'none' : `${borders.width.thin} solid var(--framer-color-divider)`,
           border: 'none',
           cursor: 'pointer',
           transition: 'background-color 0.15s ease',
         }}
           onMouseEnter={(e) => {
             if (isCollapsed) {
-              e.currentTarget.style.backgroundColor = '#F5F4F3'
+              e.currentTarget.style.backgroundColor = colors.warmGray[100]
             }
           }}
         onMouseLeave={(e) => {
           if (isCollapsed) {
-            e.currentTarget.style.backgroundColor = '#FAF9F8'
+            e.currentTarget.style.backgroundColor = colors.warmGray[50]
           }
         }}
       >
@@ -69,9 +68,9 @@ export function CollapsibleSection({
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          style={{ color: 'var(--framer-color-text-tertiary)' }}
           strokeWidth="2.5"
           style={{
+            color: 'var(--framer-color-text-tertiary)',
             transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
             transition: 'transform 0.15s ease',
           }}

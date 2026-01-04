@@ -39,7 +39,7 @@ export function PageSelector({ analysis, selectedPageId, onPageChange }: PageSel
           padding: `6px ${spacing.md}`,
           fontSize: typography.fontSize.xs,
           fontWeight: typography.fontWeight.medium,
-          color: colors.black,
+          color: colors.almostBlack,
           backgroundColor: colors.white,
           border: `${borders.width.thin} solid ${colors.gray[300]}`,
           borderRadius: borders.radius.md,

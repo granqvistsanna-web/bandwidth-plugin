@@ -1,3 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -20,11 +31,21 @@ body,
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--framer-color-bg);
   color: var(--framer-color-text);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Theme override support - Note: Framer's CSS variables automatically adapt,
+   but we can add data-theme attribute for potential future customizations */
+[data-theme="dark"] {
+  /* Framer handles dark mode automatically via CSS variables */
+}
+
+[data-theme="light"] {
+  /* Framer handles light mode automatically via CSS variables */
 }

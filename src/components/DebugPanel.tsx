@@ -2,12 +2,16 @@ import { useState, useEffect } from 'react'
 import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../types/analysis'
 import { debugLog, type DebugLogEntry } from '../utils/debugLog'
+import { spacing, typography, borders, colors } from '../styles/designTokens'
+import { formatTimestamp } from '../App'
 
 interface DebugPanelProps {
   analysis: ProjectAnalysis
+  lastScanned?: Date | null
+  loading?: boolean
 }
 
-export function DebugPanel({ analysis }: DebugPanelProps) {
+export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) {
   const assets = analysis.overallBreakpoints.desktop.assets
   const [logs, setLogs] = useState<DebugLogEntry[]>([])
   const [autoScroll, setAutoScroll] = useState(true)
@@ -89,15 +93,68 @@ export function DebugPanel({ analysis }: DebugPanelProps) {
   }
 
   return (
-    <div className="p-4 space-y-4" style={{ backgroundColor: 'var(--framer-color-bg-secondary)' }}>
+    <div style={{ 
+      padding: spacing.lg, 
+      backgroundColor: 'var(--framer-color-bg)',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: spacing.md
+    }}>
+      {/* Page Header */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: spacing.sm
+      }}>
+        <h1 style={{
+          fontSize: typography.fontSize.xl,
+          fontWeight: typography.fontWeight.bold,
+          color: 'var(--framer-color-text)',
+          margin: 0,
+          lineHeight: typography.lineHeight.tight
+        }}>
+          Debug
+        </h1>
+        {lastScanned && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.xs,
+            padding: `${spacing.xs} ${spacing.sm}`,
+            backgroundColor: colors.warmGray[100],
+            borderRadius: borders.radius.md,
+            fontSize: typography.fontSize.xs,
+            color: 'var(--framer-color-text-secondary)'
+          }}>
+            <div
+              style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                backgroundColor: loading ? '#3b82f6' : '#22c55e',
+                opacity: loading ? 0.8 : 1,
+                flexShrink: 0
+              }}
+            />
+            <span>{loading ? 'analyzing' : formatTimestamp(lastScanned)}</span>
+          </div>
+        )}
+      </div>
+
       <div 
-        className="rounded-lg p-4 border"
         style={{
-          backgroundColor: 'var(--framer-color-bg)',
-          borderColor: 'var(--framer-color-divider)'
+          backgroundColor: colors.warmGray[100],
+          borderRadius: borders.radius.lg,
+          padding: spacing.md
         }}
       >
-        <h3 className="font-semibold mb-2" style={{ color: 'var(--framer-color-text)' }}>Debug Info</h3>
+        <h3 style={{ 
+          fontSize: typography.fontSize.md,
+          fontWeight: typography.fontWeight.semibold,
+          color: 'var(--framer-color-text)',
+          marginBottom: spacing.sm
+        }}>Debug Info</h3>
 
         <div className="space-y-2 text-xs font-mono">
           <div>
@@ -118,14 +175,23 @@ export function DebugPanel({ analysis }: DebugPanelProps) {
       </div>
 
       <div 
-        className="rounded-lg p-4 border"
         style={{
-          backgroundColor: 'var(--framer-color-bg)',
-          borderColor: 'var(--framer-color-divider)'
+          backgroundColor: colors.warmGray[100],
+          borderRadius: borders.radius.lg,
+          padding: spacing.md
         }}
       >
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="font-semibold" style={{ color: 'var(--framer-color-text)' }}>Debug Logs</h3>
+        <div style={{ 
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: spacing.sm
+        }}>
+          <h3 style={{ 
+            fontSize: typography.fontSize.md,
+            fontWeight: typography.fontWeight.semibold,
+            color: 'var(--framer-color-text)'
+          }}>Debug Logs</h3>
           <div className="flex gap-2 items-center">
             <button
               onClick={inspectSelectedNode}
@@ -215,13 +281,18 @@ export function DebugPanel({ analysis }: DebugPanelProps) {
       </div>
 
       <div 
-        className="rounded-lg p-4 border"
         style={{
-          backgroundColor: 'var(--framer-color-bg)',
-          borderColor: 'var(--framer-color-divider)'
+          backgroundColor: colors.warmGray[100],
+          borderRadius: borders.radius.lg,
+          padding: spacing.md
         }}
       >
-        <h3 className="font-semibold mb-2" style={{ color: 'var(--framer-color-text)' }}>Assets Detail</h3>
+        <h3 style={{ 
+          fontSize: typography.fontSize.md,
+          fontWeight: typography.fontWeight.semibold,
+          color: 'var(--framer-color-text)',
+          marginBottom: spacing.sm
+        }}>Assets Detail</h3>
 
         {assets.length === 0 ? (
           <p className="text-sm" style={{ color: 'var(--framer-color-text-secondary)' }}>No assets found</p>

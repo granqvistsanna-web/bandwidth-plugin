@@ -6,6 +6,7 @@ import { debugLog } from '../utils/debugLog'
 
 const EXCLUDED_PAGES_STORAGE_KEY = 'bandwidth-inspector-excluded-pages'
 const MANUAL_ESTIMATES_STORAGE_KEY = 'bandwidth-inspector-cms-manual-estimates'
+const IGNORED_RECOMMENDATIONS_STORAGE_KEY = 'bandwidth-inspector-ignored-recommendations'
 
 export type ManualCMSEstimate = {
   id: string
@@ -26,6 +27,7 @@ export function useAnalysis() {
   const [lastScanned, setLastScanned] = useState<Date | null>(null)
   const [excludedPageIds, setExcludedPageIds] = useState<Set<string>>(new Set())
   const [manualCMSEstimates, setManualCMSEstimates] = useState<ManualCMSEstimate[]>([])
+  const [ignoredRecommendationIds, setIgnoredRecommendationIds] = useState<Set<string>>(new Set())
 
   // Load excluded pages and manual CMS estimates from localStorage on mount
   useEffect(() => {
@@ -47,6 +49,16 @@ export function useAnalysis() {
       }
     } catch (error) {
       debugLog.warn('Failed to load manual CMS estimates from localStorage:', error)
+    }
+
+    try {
+      const stored = localStorage.getItem(IGNORED_RECOMMENDATIONS_STORAGE_KEY)
+      if (stored) {
+        const ids = JSON.parse(stored) as string[]
+        setIgnoredRecommendationIds(new Set(ids))
+      }
+    } catch (error) {
+      debugLog.warn('Failed to load ignored recommendations from localStorage:', error)
     }
   }, [])
 
@@ -79,6 +91,15 @@ export function useAnalysis() {
       debugLog.warn('Failed to save manual CMS estimates to localStorage:', error)
     }
   }, [manualCMSEstimates])
+
+  // Save ignored recommendations to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(IGNORED_RECOMMENDATIONS_STORAGE_KEY, JSON.stringify(Array.from(ignoredRecommendationIds)))
+    } catch (error) {
+      debugLog.warn('Failed to save ignored recommendations to localStorage:', error)
+    }
+  }, [ignoredRecommendationIds])
 
   const addManualCMSEstimate = useCallback((estimate: Omit<ManualCMSEstimate, 'id' | 'createdAt'>) => {
     const newEstimate: ManualCMSEstimate = {
@@ -125,6 +146,20 @@ export function useAnalysis() {
     }
   }, [])
 
+  const ignoreRecommendation = useCallback((recommendationId: string) => {
+    setIgnoredRecommendationIds(prev => new Set([...prev, recommendationId]))
+    framer.notify('Recommendation ignored', { variant: 'success', durationMs: 2000 })
+  }, [])
+
+  const unignoreRecommendation = useCallback((recommendationId: string) => {
+    setIgnoredRecommendationIds(prev => {
+      const next = new Set(prev)
+      next.delete(recommendationId)
+      return next
+    })
+    framer.notify('Recommendation restored', { variant: 'success', durationMs: 2000 })
+  }, [])
+
   const runAnalysis = useCallback(async () => {
     setLoading(true)
     setError(null)
@@ -160,6 +195,9 @@ export function useAnalysis() {
     manualCMSEstimates,
     addManualCMSEstimate,
     updateManualCMSEstimate,
-    removeManualCMSEstimate
+    removeManualCMSEstimate,
+    ignoredRecommendationIds,
+    ignoreRecommendation,
+    unignoreRecommendation
   }
 }
