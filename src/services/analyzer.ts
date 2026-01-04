@@ -1,32 +1,17 @@
 import type { ProjectAnalysis, PageAnalysis, AnalysisMode, Recommendation } from '../types/analysis'
-import { getAllPages, collectAllAssetsEfficient, collectPageAssets } from './traversal'
+import { getAllPages } from './traversal'
 import { calculateBreakpointData } from './bandwidth'
 import { generateRecommendations } from './recommendations'
 import { getPublishedUrl, analyzePublishedSite } from './publishedAnalysis'
-import { 
-  collectCMSAssets, 
-  convertCMSAssetsToAssetInfo, 
-  extractCMSAssetsFromPublishedSite,
-  extractAssetsFromCMSItems,
-  collectCMSItems,
-  detectCMSCollections,
-  calculateCMSBandwidthImpact
-} from './cmsAssets'
+import { calculateCMSBandwidthImpact } from './cmsAssets'
+import { collectAllAssets, collectPageAssetsForBreakpoint, type ManualCMSEstimate } from './assetCollector'
 import { debugLog } from '../utils/debugLog'
 import { formatBytes } from '../utils/formatBytes'
 
 export async function analyzeProject(
   mode: AnalysisMode = 'canvas', 
   excludedPageIds: string[] = [],
-  manualCMSEstimates: Array<{
-    id: string
-    collectionName: string
-    imageCount: number
-    avgWidth: number
-    avgHeight: number
-    format: string
-    estimatedBytes: number
-  }> = []
+  manualCMSEstimates: ManualCMSEstimate[] = []
 ): Promise<ProjectAnalysis> {
   try {
     debugLog.info('🚀 Starting project analysis...')
@@ -55,207 +40,20 @@ export async function analyzeProject(
       throw new Error('No pages found in project. Try creating a page first.')
     }
 
-    // Collect assets for all breakpoints to handle breakpoint-specific images
-    debugLog.info('📡 Collecting assets for all breakpoints using efficient API...')
-
-    // Collect for each breakpoint
-    const desktopCanvasAssets = await collectAllAssetsEfficient('desktop', true, excludedPageIds)
-    const tabletCanvasAssets = await collectAllAssetsEfficient('tablet', true, excludedPageIds)
-    const mobileCanvasAssets = await collectAllAssetsEfficient('mobile', true, excludedPageIds)
-
-    debugLog.info(`Collected ${desktopCanvasAssets.length} desktop, ${tabletCanvasAssets.length} tablet, ${mobileCanvasAssets.length} mobile assets`)
-
-    // Merge all assets and deduplicate by URL/nodeId (asset may appear on multiple breakpoints)
-    const allCanvasAssets = [...desktopCanvasAssets, ...tabletCanvasAssets, ...mobileCanvasAssets]
-    const uniqueCanvasMap = new Map<string, AssetInfo>()
-    for (const asset of allCanvasAssets) {
-      const key = asset.url || asset.nodeId
-      if (!uniqueCanvasMap.has(key)) {
-        uniqueCanvasMap.set(key, asset)
-      }
-    }
-    const canvasAssets = Array.from(uniqueCanvasMap.values())
-    debugLog.success(`✅ Deduplicated to ${canvasAssets.length} unique canvas assets`)
-
-        // Collect CMS assets using official Framer CMS API
-        debugLog.info('📦 Detecting CMS collections using official Framer API...')
-        const cmsCollections = await detectCMSCollections()
-        debugLog.info(`Found ${cmsCollections.length} CMS collections:`, cmsCollections.map(c => c.name))
-
-        // Try to collect CMS items and extract assets from them using official API
-        const cmsAssets: unknown[] = []
-        if (cmsCollections.length > 0) {
-          debugLog.info('📦 Collecting CMS items and extracting assets from fieldData...')
-          const cmsItems = await collectCMSItems(cmsCollections)
-          const totalItems = cmsItems.reduce((sum, c) => sum + c.items.length, 0)
-          
-          if (totalItems > 0) {
-            const itemAssets = await extractAssetsFromCMSItems(cmsItems)
-            cmsAssets.push(...itemAssets)
-            debugLog.success(`✅ Extracted ${itemAssets.length} assets from ${totalItems} CMS items using official API`)
-          } else {
-            debugLog.warn('⚠️ No CMS items found in collections')
-          }
-        } else {
-          debugLog.warn('⚠️ No CMS collections detected. Make sure your site has CMS collections set up.')
-        }
+    // Collect all assets organized by source and breakpoint
+    const assetCollection = await collectAllAssets(excludedPageIds, manualCMSEstimates)
     
-    // Also try heuristic detection
-    debugLog.info('📦 Collecting CMS assets using heuristic detection...')
-    const heuristicAssets = await collectCMSAssets()
-    cmsAssets.push(...heuristicAssets)
-    
-    const cmsAssetInfos = convertCMSAssetsToAssetInfo(cmsAssets)
+    const { canvas, cms, manual, allUnique } = assetCollection
 
-    // Build set of auto-detected CMS collection names to prevent double-counting
-    const autoDetectedCollections = new Set<string>(
-      cmsAssetInfos
-        .map(asset => asset.cmsCollectionName)
-        .filter((name): name is string => !!name)
-    )
+    debugLog.success(`✅ Collected assets: ${canvas.desktop.length} desktop, ${canvas.tablet.length} tablet, ${canvas.mobile.length} mobile canvas assets`)
+    debugLog.success(`✅ CMS assets: ${cms.length}, Manual estimates: ${manual.length}`)
 
-    // Add manual CMS estimates (filter out collections already auto-detected)
-    const allManualEstimates: AssetInfo[] = manualCMSEstimates.map((estimate, index) => ({
-      nodeId: `manual-cms-${estimate.id}-${index}`,
-      nodeName: `CMS (Manual): ${estimate.collectionName}`,
-      type: 'image' as const, // Changed from 'background' to 'image' for consistency
-      estimatedBytes: estimate.estimatedBytes,
-      dimensions: { width: estimate.avgWidth, height: estimate.avgHeight },
-      format: estimate.format,
-      visible: true,
-      isCMSAsset: true,
-      isManualEstimate: true,
-      manualEstimateNote: `${estimate.imageCount} images estimated`,
-      cmsCollectionName: estimate.collectionName
-    }))
-
-    // Filter out manual estimates for collections that were auto-detected
-    const manualCMSEstimatesInfos = allManualEstimates.filter(estimate => {
-      const isDuplicate = estimate.cmsCollectionName && autoDetectedCollections.has(estimate.cmsCollectionName)
-      if (isDuplicate) {
-        debugLog.info(`⚠️ Skipping manual estimate for "${estimate.cmsCollectionName}" - already auto-detected`)
-      }
-      return !isDuplicate
-    })
-
-    if (manualCMSEstimatesInfos.length < allManualEstimates.length) {
-      debugLog.success(`✅ Prevented ${allManualEstimates.length - manualCMSEstimatesInfos.length} duplicate manual CMS estimates`)
-    }
-
-    // Combine canvas, detected CMS, and manual CMS assets
-    let desktopAssets = [...canvasAssets, ...cmsAssetInfos, ...manualCMSEstimatesInfos]
-    let publishedCMSCount = 0 // Initialize for debug summary
-    
-    // Try to extract CMS assets from published site (more accurate)
-    try {
-      debugLog.info('🌐 Checking if site is published...')
-      const publishedUrl = await getPublishedUrl()
-      
-      if (publishedUrl) {
-        debugLog.info('🌐 Extracting CMS assets from published site...')
-        debugLog.info(`Published URL: ${publishedUrl}`)
-        
-        const publishedData = await analyzePublishedSite(publishedUrl)
-        debugLog.info(`Published site analysis found ${publishedData.resources.length} total resources`)
-        
-        const publishedImages = publishedData.resources
-          .filter(r => r.type === 'image')
-          .map(r => ({ url: r.url, actualBytes: r.actualBytes }))
-        
-        debugLog.info(`Found ${publishedImages.length} images in published site`)
-        
-        // Get all canvas image URLs for comparison
-        const canvasImageUrls = new Set(
-          canvasAssets
-            .filter(a => a.url)
-            .map(a => a.url!)
-        )
-        
-        debugLog.info(`Comparing with ${canvasImageUrls.size} canvas image URLs`)
-        
-        // Extract CMS assets (images in published site but not in canvas)
-        const cmsAssetsFromPublished = await extractCMSAssetsFromPublishedSite(
-          publishedImages,
-          canvasImageUrls
-        )
-        
-        if (cmsAssetsFromPublished.length > 0) {
-          publishedCMSCount = cmsAssetsFromPublished.length
-          const cmsAssetInfosFromPublished = convertCMSAssetsToAssetInfo(cmsAssetsFromPublished)
-          // Merge published CMS assets with previously detected CMS assets (avoid duplicates)
-          // Combine all CMS assets, then deduplicate by URL
-          const allCMSAssetInfos = [...cmsAssetInfos, ...cmsAssetInfosFromPublished]
-          const uniqueCMSAssets = new Map<string, AssetInfo>()
-          for (const asset of allCMSAssetInfos) {
-            const key = asset.url || asset.nodeId
-            if (!uniqueCMSAssets.has(key)) {
-              uniqueCMSAssets.set(key, asset)
-            }
-          }
-
-          // Update auto-detected collections to include published site CMS assets
-          const updatedAutoDetectedCollections = new Set<string>([
-            ...autoDetectedCollections,
-            ...Array.from(uniqueCMSAssets.values())
-              .map(asset => asset.cmsCollectionName)
-              .filter((name): name is string => !!name)
-          ])
-
-          // Re-filter manual estimates against updated auto-detected collections
-          const filteredManualEstimates = allManualEstimates.filter(estimate => {
-            const isDuplicate = estimate.cmsCollectionName && updatedAutoDetectedCollections.has(estimate.cmsCollectionName)
-            if (isDuplicate && !autoDetectedCollections.has(estimate.cmsCollectionName)) {
-              // Only log if newly detected from published site
-              debugLog.info(`⚠️ Skipping manual estimate for "${estimate.cmsCollectionName}" - found in published site`)
-            }
-            return !isDuplicate
-          })
-
-          desktopAssets = [...canvasAssets, ...Array.from(uniqueCMSAssets.values()), ...filteredManualEstimates]
-          debugLog.success(`✅ Extracted ${cmsAssetsFromPublished.length} CMS assets from published site`)
-          debugLog.info('📦 CMS Assets from published site:', cmsAssetInfosFromPublished.map(a => ({
-            name: a.nodeName,
-            bytes: a.estimatedBytes,
-            url: a.url?.substring(0, 60)
-          })))
-        } else {
-          debugLog.info('No CMS assets found in published site (all images are in canvas)')
-        }
-      } else {
-        debugLog.info('ℹ️ Site is not published. CMS assets can only be detected from published sites.')
-        debugLog.info('💡 Tip: Publish your site to automatically detect CMS assets, or add manual estimates.')
-      }
-    } catch (error) {
-      debugLog.warn('Could not extract CMS assets from published site:', error)
-      debugLog.info('💡 This might mean the site is not published or there was a network error.')
-      // Continue with canvas analysis only
-    }
-
-    debugLog.success(`✅ Collected ${canvasAssets.length} canvas assets`)
-    if (cmsAssetInfos.length > 0) {
-      debugLog.success(`✅ Found ${cmsAssetInfos.length} CMS assets from canvas detection`)
-    } else {
-      debugLog.info('ℹ️ No CMS assets detected from canvas (this is normal if site is published - CMS assets will be detected from published site)')
-    }
-    debugLog.success(`Total assets: ${desktopAssets.length}`)
-
-    if (desktopAssets.length > 0) {
-      debugLog.info('Sample assets:', desktopAssets.slice(0, 3).map(a => ({
-        name: a.nodeName,
-        type: a.type,
-        format: a.format,
-        dimensions: `${a.dimensions.width}x${a.dimensions.height}`,
-        url: a.url?.substring(0, 50)
-      })))
-    } else {
-      debugLog.warn('⚠️ No assets found! This might indicate an issue with image detection.')
-    }
-
-    // Calculate bandwidth for desktop (simplified for MVP)
-    debugLog.info('💰 Calculating bandwidth estimates...')
-    const overallDesktop = calculateBreakpointData(desktopAssets, 'desktop')
-    const overallMobile = calculateBreakpointData(desktopAssets, 'mobile')
-    const overallTablet = calculateBreakpointData(desktopAssets, 'tablet')
+    // Calculate bandwidth for each breakpoint using breakpoint-specific assets
+    // CRITICAL: Each breakpoint must use its own assets + CMS + manual (CMS/manual are same across breakpoints)
+    debugLog.info('💰 Calculating bandwidth estimates for each breakpoint...')
+    const overallDesktop = calculateBreakpointData([...canvas.desktop, ...cms, ...manual], 'desktop')
+    const overallTablet = calculateBreakpointData([...canvas.tablet, ...cms, ...manual], 'tablet')
+    const overallMobile = calculateBreakpointData([...canvas.mobile, ...cms, ...manual], 'mobile')
 
     debugLog.success(`Total bandwidth: ${(overallDesktop.totalBytes / 1024 / 1024).toFixed(2)} MB`)
 
@@ -273,13 +71,18 @@ export async function analyzeProject(
         try {
           debugLog.info(`Analyzing page: ${page.name || page.id}`)
           
-          // Collect assets for this specific page
-          const pageDesktopAssets = await collectPageAssets(page.id, 'desktop')
+          // Collect assets for this specific page for each breakpoint
+          const [pageDesktopAssets, pageTabletAssets, pageMobileAssets] = await Promise.all([
+            collectPageAssetsForBreakpoint(page.id, 'desktop'),
+            collectPageAssetsForBreakpoint(page.id, 'tablet'),
+            collectPageAssetsForBreakpoint(page.id, 'mobile')
+          ])
           
-          // Calculate bandwidth for this page
+          // Calculate bandwidth for this page using breakpoint-specific assets
+          // Note: Page-level analysis doesn't include CMS assets (they're project-wide)
           const pageDesktop = calculateBreakpointData(pageDesktopAssets, 'desktop')
-          const pageMobile = calculateBreakpointData(pageDesktopAssets, 'mobile')
-          const pageTablet = calculateBreakpointData(pageDesktopAssets, 'tablet')
+          const pageTablet = calculateBreakpointData(pageTabletAssets, 'tablet')
+          const pageMobile = calculateBreakpointData(pageMobileAssets, 'mobile')
           
           // Generate recommendations for this page with page context
           // Try to get page slug from publish info
@@ -328,7 +131,7 @@ export async function analyzeProject(
               tablet: overallTablet,
               desktop: overallDesktop
             },
-            totalAssets: desktopAssets.length,
+            totalAssets: overallDesktop.assets.length,
             recommendations: []
           }
         }
@@ -388,22 +191,21 @@ export async function analyzeProject(
       })
 
     // Calculate CMS asset statistics
-    const cmsAssetsInAnalysis = desktopAssets.filter(a => a.isCMSAsset)
-    const cmsAssetsBytes = cmsAssetsInAnalysis.reduce((sum, asset) => sum + asset.estimatedBytes, 0)
-    const hasManualCMSEstimates = cmsAssetsInAnalysis.some(a => a.isManualEstimate)
-    const cmsAssetsNotFound = cmsAssetsInAnalysis.filter(a => 
+    const allCMSAssets = [...cms, ...manual]
+    const cmsAssetsBytes = allCMSAssets.reduce((sum, asset) => sum + asset.estimatedBytes, 0)
+    const hasManualCMSEstimates = manual.length > 0
+    const cmsAssetsNotFound = allCMSAssets.filter(a => 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (a as any).cmsStatus === 'not_found'
     ).length
     
     // Debug: Log CMS asset count
     debugLog.info(`📊 CMS Assets Summary:`)
-    debugLog.info(`   - Total CMS assets in analysis: ${cmsAssetsInAnalysis.length}`)
-    debugLog.info(`   - From canvas detection: ${cmsAssetInfos.length}`)
-    debugLog.info(`   - From published site: ${publishedCMSCount || 0}`)
-    debugLog.info(`   - Manual estimates: ${manualCMSEstimates.length}`)
+    debugLog.info(`   - Total CMS assets: ${allCMSAssets.length}`)
+    debugLog.info(`   - Auto-detected: ${cms.length}`)
+    debugLog.info(`   - Manual estimates: ${manual.length}`)
     debugLog.info(`   - Total CMS bytes: ${formatBytes(cmsAssetsBytes)}`)
-    if (cmsAssetsInAnalysis.length === 0) {
+    if (allCMSAssets.length === 0) {
       debugLog.warn(`⚠️ No CMS assets detected! This could mean:`)
       debugLog.warn(`   1. Site is not published (CMS assets only detected from published sites)`)
       debugLog.warn(`   2. All images are also in canvas (not detected as CMS)`)
@@ -413,14 +215,23 @@ export async function analyzeProject(
     
     // Calculate CMS bandwidth impact (combine all CMS assets including manual estimates)
     const allCMSAssetsForImpact = [
-      ...cmsAssets,
-      ...manualCMSEstimates.map((est, idx) => ({
-        id: `manual-${est.id}-${idx}`,
-        collectionId: est.collectionName.toLowerCase().replace(/\s+/g, '-'),
-        collectionName: est.collectionName,
+      ...cms.map((asset, idx) => ({
+        id: asset.nodeId || `cms-${idx}`,
+        collectionId: asset.cmsCollectionName?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
+        collectionName: asset.cmsCollectionName || 'Unknown',
+        estimatedBytes: asset.estimatedBytes,
+        estimatedDimensions: asset.dimensions,
+        format: asset.format || 'unknown',
+        isManualEstimate: false,
+        status: 'found' as const
+      })),
+      ...manual.map((est, idx) => ({
+        id: `manual-${est.nodeId}-${idx}`,
+        collectionId: est.cmsCollectionName?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
+        collectionName: est.cmsCollectionName || 'Unknown',
         estimatedBytes: est.estimatedBytes,
-        estimatedDimensions: { width: est.avgWidth, height: est.avgHeight },
-        format: est.format,
+        estimatedDimensions: est.dimensions,
+        format: est.format || 'unknown',
         isManualEstimate: true,
         status: 'estimated' as const
       }))
@@ -439,7 +250,7 @@ export async function analyzeProject(
         desktop: overallDesktop
       },
       allRecommendations,
-      cmsAssetsCount: cmsAssetsInAnalysis.length,
+      cmsAssetsCount: allCMSAssets.length,
       cmsAssetsBytes,
       hasManualCMSEstimates,
       cmsBandwidthImpact,

@@ -1,59 +1,29 @@
-import { useState, useEffect } from 'react'
-import { findAllNodesUsingAsset } from '../../services/assetReplacer'
-import { debugLog } from '../../utils/debugLog'
+import { useState } from 'react'
 import { spacing, typography, borders, surfaces, framerColors, colors } from '../../styles/designTokens'
+import { formatBytes } from '../../utils/formatBytes'
 
 interface ReplaceImageModalProps {
   isOpen: boolean
   onClose: () => void
-  onConfirm: (replaceScope: 'single' | 'all') => void
+  onConfirm: () => void
   imageAssetId?: string
   nodeName: string
+  optimalWidth?: number
+  optimalHeight?: number
+  potentialSavings?: number
 }
 
 export function ReplaceImageModal({
   isOpen,
   onClose,
   onConfirm,
-  imageAssetId
+  optimalWidth,
+  optimalHeight,
+  potentialSavings
 }: ReplaceImageModalProps) {
-  const [usageCount, setUsageCount] = useState<number | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [selectedOption, setSelectedOption] = useState<'single' | 'all' | null>(null)
-
-  useEffect(() => {
-    if (isOpen && imageAssetId) {
-      setLoading(true)
-      setSelectedOption(null) // Reset selection when modal opens
-      findAllNodesUsingAsset(imageAssetId)
-        .then(nodes => {
-          setUsageCount(nodes.length)
-          // Auto-select "single" as default
-          setSelectedOption('single')
-        })
-        .catch(error => {
-          debugLog.error('Error finding usage count:', error)
-          setUsageCount(1) // Default to 1 if we can't determine
-          setSelectedOption('single')
-        })
-        .finally(() => {
-          setLoading(false)
-        })
-    } else {
-      setUsageCount(null)
-      setSelectedOption(null)
-    }
-  }, [isOpen, imageAssetId])
-
-  const handleConfirm = () => {
-    if (selectedOption) {
-      onConfirm(selectedOption)
-    }
-  }
-
+  const [showOptimizationInstructions, setShowOptimizationInstructions] = useState(false)
+  
   if (!isOpen) return null
-
-  const hasMultipleUsages = usageCount !== null && usageCount > 1
 
   return (
     <div style={{
@@ -108,7 +78,7 @@ export function ReplaceImageModal({
             margin: 0,
             lineHeight: typography.lineHeight.relaxed
           }}>
-            Download an optimized version and choose which elements to update
+            The optimized image will be downloaded. Replace the original image manually in Framer.
           </p>
           <button
             onClick={onClose}
@@ -142,180 +112,114 @@ export function ReplaceImageModal({
           </button>
         </div>
 
-        {/* Content - scrollable */}
+        {/* Content */}
         <div style={{
           padding: spacing.lg,
           flex: 1,
           overflowY: 'auto'
         }}>
-          {loading ? (
-            <div style={{
-              padding: `${spacing.xl} 0`,
-              textAlign: 'center'
-            }}>
-              <svg style={{
-                width: '24px',
-                height: '24px',
-                animation: 'spin 1s linear infinite',
-                margin: '0 auto',
-                marginBottom: spacing.sm,
-                color: framerColors.textSecondary
-              }} fill="none" viewBox="0 0 24 24">
-                <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-              <p style={{
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: framerColors.textSecondary,
+            lineHeight: typography.lineHeight.relaxed,
+            marginBottom: spacing.md
+          }}>
+            <p style={{ margin: 0 }}>
+              The optimized image will be downloaded to your computer. You can then replace the original image in Framer by dragging the downloaded file onto the element.
+            </p>
+          </div>
+
+          {/* What happens when you optimize - Collapsible */}
+          <div style={{
+            marginBottom: spacing.sm
+          }}>
+            <button
+              onClick={() => setShowOptimizationInstructions(!showOptimizationInstructions)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: spacing.sm,
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                borderRadius: borders.radius.md,
+                transition: 'background-color 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = surfaces.tertiary
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+              }}
+            >
+              <div style={{
                 fontSize: typography.fontSize.xs,
                 fontWeight: typography.fontWeight.medium,
-                color: framerColors.textSecondary,
-                margin: 0
-              }}>Checking usage...</p>
-            </div>
-          ) : (
-            <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: spacing.sm
-            }}>
-              {/* Replace only this node option */}
-              <button
-                onClick={() => setSelectedOption('single')}
+                color: framerColors.text
+              }}>
+                What happens when you optimize?
+              </div>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
                 style={{
-                  width: '100%',
-                  padding: spacing.md,
-                  textAlign: 'left',
-                  border: `2px solid ${selectedOption === 'single' ? framerColors.text : 'var(--framer-color-divider)'}`,
-                  borderRadius: borders.radius.md,
-                  backgroundColor: selectedOption === 'single' ? 'var(--framer-color-bg-secondary)' : 'transparent',
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  outline: 'none'
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedOption !== 'single') {
-                    e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (selectedOption !== 'single') {
-                    e.currentTarget.style.backgroundColor = 'transparent'
-                  }
+                  transform: showOptimizationInstructions ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.15s ease',
+                  color: framerColors.textSecondary
                 }}
               >
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+            
+            {showOptimizationInstructions && (
+              <div style={{
+                padding: spacing.md,
+                backgroundColor: surfaces.tertiary,
+                borderRadius: borders.radius.md,
+                marginTop: spacing.xs
+              }}>
                 <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: spacing.sm
+                  fontSize: typography.fontSize.xs,
+                  color: framerColors.textSecondary,
+                  lineHeight: typography.lineHeight.relaxed
                 }}>
-                  <div style={{ flexShrink: 0 }}>
-                    <div
-                      style={{
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '50%',
-                        border: `2px solid ${selectedOption === 'single' ? framerColors.text : framerColors.textSecondary}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: selectedOption === 'single' ? framerColors.text : 'transparent',
-                        transition: 'all 0.15s ease'
-                      }}
-                    >
-                      {selectedOption === 'single' && (
-                        <div style={{
-                          width: '6px',
-                          height: '6px',
-                          borderRadius: '50%',
-                          backgroundColor: 'var(--framer-color-bg)'
-                        }} />
-                      )}
-                    </div>
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{
-                      fontWeight: typography.fontWeight.semibold,
-                      fontSize: typography.fontSize.sm,
-                      color: framerColors.text,
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis'
-                    }}>
-                      Update only this element
-                    </div>
-                  </div>
-                </div>
-              </button>
-
-              {/* Replace everywhere option - only show if multiple usages */}
-              {hasMultipleUsages && (
-                <button
-                  onClick={() => setSelectedOption('all')}
-                  style={{
-                    width: '100%',
-                    padding: spacing.md,
-                    textAlign: 'left',
-                    border: `2px solid ${selectedOption === 'all' ? framerColors.text : 'var(--framer-color-divider)'}`,
-                    borderRadius: borders.radius.md,
-                    backgroundColor: selectedOption === 'all' ? 'var(--framer-color-bg-secondary)' : 'transparent',
-                    cursor: 'pointer',
-                    transition: 'all 0.15s ease',
-                    outline: 'none'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (selectedOption !== 'all') {
-                      e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (selectedOption !== 'all') {
-                      e.currentTarget.style.backgroundColor = 'transparent'
-                    }
-                  }}
-                >
-                  <div style={{
+                  <ul style={{
+                    margin: 0,
+                    paddingLeft: spacing.md,
+                    listStyle: 'disc',
                     display: 'flex',
-                    alignItems: 'center',
-                    gap: spacing.sm
+                    flexDirection: 'column',
+                    gap: spacing.xs,
+                    marginBottom: spacing.xs
                   }}>
-                    <div style={{ flexShrink: 0 }}>
-                      <div
-                        style={{
-                          width: '18px',
-                          height: '18px',
-                          borderRadius: '50%',
-                          border: `2px solid ${selectedOption === 'all' ? framerColors.text : framerColors.textSecondary}`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          backgroundColor: selectedOption === 'all' ? framerColors.text : 'transparent',
-                          transition: 'all 0.15s ease'
-                        }}
-                      >
-                        {selectedOption === 'all' && (
-                          <div style={{
-                            width: '6px',
-                            height: '6px',
-                            borderRadius: '50%',
-                            backgroundColor: 'var(--framer-color-bg)'
-                          }} />
-                        )}
-                      </div>
+                    {optimalWidth && optimalHeight && (
+                      <li><strong style={{ color: framerColors.text }}>Image processing:</strong> The image will be resized to {optimalWidth} × {optimalHeight}px and compressed to reduce file size</li>
+                    )}
+                    <li><strong style={{ color: framerColors.text }}>Format conversion:</strong> The image will be converted to WebP format for better compression (if applicable)</li>
+                    <li><strong style={{ color: framerColors.text }}>Download:</strong> The optimized image will be downloaded to your computer</li>
+                    <li><strong style={{ color: framerColors.text }}>Manual replacement:</strong> Replace the original image in Framer by dragging the downloaded file onto the element</li>
+                    <li><strong style={{ color: framerColors.text }}>Updated totals:</strong> Bandwidth estimates will update after you replace the image and run a new scan</li>
+                  </ul>
+                  {potentialSavings !== undefined && potentialSavings > 0 && (
+                    <div style={{
+                      marginTop: spacing.xs,
+                      paddingTop: spacing.xs,
+                      fontSize: typography.fontSize.xs,
+                      color: framerColors.textTertiary,
+                      fontStyle: 'italic'
+                    }}>
+                      Estimated savings: {formatBytes(potentialSavings)}
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{
-                        fontWeight: typography.fontWeight.semibold,
-                        fontSize: typography.fontSize.sm,
-                        color: framerColors.text,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
-                      }}>
-                        Update everywhere ({usageCount} {usageCount === 1 ? 'place' : 'places'})
-                      </div>
-                    </div>
-                  </div>
-                </button>
-              )}
-            </div>
-          )}
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Sticky footer with action buttons */}
@@ -355,8 +259,7 @@ export function ReplaceImageModal({
             Cancel
           </button>
           <button
-            onClick={handleConfirm}
-            disabled={!selectedOption}
+            onClick={onConfirm}
             style={{
               padding: `6px ${spacing.md}`,
               minHeight: '32px',
@@ -365,30 +268,19 @@ export function ReplaceImageModal({
               borderRadius: borders.radius.md,
               border: 'none',
               transition: 'all 0.15s ease',
-              ...(selectedOption ? {
-                backgroundColor: colors.accent.primary,
-                color: colors.white,
-                cursor: 'pointer',
-                opacity: 1
-              } : {
-                backgroundColor: surfaces.tertiary,
-                color: framerColors.textSecondary,
-                cursor: 'not-allowed',
-                opacity: 0.5
-              })
+              backgroundColor: colors.accent.primary,
+              color: colors.white,
+              cursor: 'pointer',
+              opacity: 1
             }}
             onMouseEnter={(e) => {
-              if (selectedOption) {
-                e.currentTarget.style.backgroundColor = '#0088E6'
-              }
+              e.currentTarget.style.backgroundColor = '#0088E6'
             }}
             onMouseLeave={(e) => {
-              if (selectedOption) {
-                e.currentTarget.style.backgroundColor = colors.accent.primary
-              }
+              e.currentTarget.style.backgroundColor = colors.accent.primary
             }}
           >
-            Download & Update
+            Download Optimized Image
           </button>
         </div>
       </div>

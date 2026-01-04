@@ -199,21 +199,11 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
         borderRadius: borders.radius.lg,
         boxShadow: themeElevation.subtle
       }}>
+        {/* Badge at the top */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: spacing.xs
+          display: 'inline-flex',
+          marginBottom: spacing.sm
         }}>
-          <div style={{
-            fontSize: typography.fontSize['2xl'],
-            fontWeight: typography.fontWeight.bold,
-            color: framerColors.text,
-            lineHeight: typography.lineHeight.tight,
-            letterSpacing: typography.letterSpacing.tighter
-          }}>
-            {monthlyBandwidthGB.toFixed(2)} GB/month
-          </div>
           <div style={{
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
@@ -230,6 +220,20 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             {riskTitle}
           </div>
         </div>
+        
+        {/* Title below badge */}
+        <div style={{
+          fontSize: typography.fontSize['2xl'],
+          fontWeight: typography.fontWeight.bold,
+          color: framerColors.text,
+          lineHeight: typography.lineHeight.tight,
+          letterSpacing: typography.letterSpacing.tighter,
+          marginBottom: spacing.xs
+        }}>
+          {monthlyBandwidthGB.toFixed(2)} GB/month
+        </div>
+        
+        {/* Description at bottom */}
         <div style={{
           fontSize: typography.fontSize.xs,
           color: framerColors.textSecondary

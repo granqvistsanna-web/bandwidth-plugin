@@ -28,12 +28,11 @@ export function CollapsibleSection({
         onClick={() => setIsCollapsed(!isCollapsed)}
         style={{
           width: '100%',
-          padding: spacing.md,
+          padding: `${spacing.sm} ${spacing.md}`,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           backgroundColor: 'transparent',
-          borderBottom: isCollapsed ? 'none' : `1px solid var(--framer-color-divider)`,
           border: 'none',
           cursor: 'pointer',
           transition: 'opacity 0.15s ease',
@@ -78,7 +77,7 @@ export function CollapsibleSection({
 
       {/* Content - Expandable */}
       {!isCollapsed && (
-        <div style={{ padding: `${spacing.sm} ${spacing.md} ${spacing.md} ${spacing.md}` }}>
+        <div style={{ padding: `0 ${spacing.md} ${spacing.md} ${spacing.md}` }}>
           {children}
         </div>
       )}

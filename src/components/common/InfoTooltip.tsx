@@ -48,7 +48,7 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
             backgroundColor: 'var(--tooltip-bg)',
             color: 'var(--tooltip-text)',
             fontSize: typography.fontSize.xs,
-            fontWeight: typography.fontWeight.normal,
+            fontWeight: typography.fontWeight.regular,
             lineHeight: typography.lineHeight.relaxed,
             borderRadius: borders.radius.md,
             whiteSpace: 'normal',

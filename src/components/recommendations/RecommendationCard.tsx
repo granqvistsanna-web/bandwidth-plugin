@@ -4,7 +4,7 @@ import type { Recommendation } from '../../types/analysis'
 import { Button } from '../primitives/Button'
 import { formatBytes } from '../../utils/formatBytes'
 import { optimizeImage } from '../../services/imageOptimizer'
-import { replaceImageOnNode, replaceImageEverywhere, canReplaceImage } from '../../services/assetReplacer'
+import { downloadOptimizedImage } from '../../services/imageDownloader'
 import { ReplaceImageModal } from './ReplaceImageModal'
 import { debugLog } from '../../utils/debugLog'
 import { spacing, typography, borders, surfaces, themeBorders, themeElevation, framerColors, iconSize } from '../../styles/designTokens'
@@ -21,7 +21,6 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
   const [showReplaceModal, setShowReplaceModal] = useState(false)
   const [optimizationProgress, setOptimizationProgress] = useState<string>('')
   const [isExpanded, setIsExpanded] = useState(false)
-  const [showOptimizationInstructions, setShowOptimizationInstructions] = useState(false)
 
   const handleOptimize = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -53,20 +52,11 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
       return
     }
 
-    // Check if we can replace the image
-    if (recommendation.nodeId) {
-      const canReplace = await canReplaceImage(recommendation.nodeId)
-      if (!canReplace.canReplace) {
-        framer.notify(`Cannot replace image: ${canReplace.reason}`, { variant: 'error' })
-        return
-      }
-    }
-
-    // Show modal to choose replace scope
+    // Show modal to confirm download
     setShowReplaceModal(true)
   }
 
-  const handleConfirmOptimize = async (replaceScope: 'single' | 'all') => {
+  const handleConfirmOptimize = async () => {
     setShowReplaceModal(false)
     setIsOptimizing(true)
     setOptimizationProgress('Starting optimization...')
@@ -108,82 +98,27 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
         framer.notify('Warning: Image had transparency which was lost in JPEG conversion. Consider using WebP format.', { variant: 'warning', durationMs: 5000 })
       }
 
-      setOptimizationProgress('Getting dimensions...')
-
-      setOptimizationProgress('Replacing image...')
+      setOptimizationProgress('Preparing download...')
 
       const savings = result.originalSize - result.optimizedSize
       const savingsFormatted = formatBytes(savings)
 
-      // Replace the image
-      if (replaceScope === 'all' && recommendation.imageAssetId) {
-        // Replace everywhere
-        const replacementResult = await replaceImageEverywhere(
-          recommendation.imageAssetId,
-          result.data,
-          result.format,
-          recommendation.nodeName
-        )
-        
-        if (replacementResult.success) {
-          if (replacementResult.method === 'direct') {
-            framer.notify(
-              `${replacementResult.message} Saved ${savingsFormatted}.`,
-              { variant: 'success', durationMs: 4000 }
-            )
-          } else {
-            // Download method
-            framer.notify(
-              `Image optimized! ${replacementResult.message} Saved ${savingsFormatted}.`,
-              { variant: 'success', durationMs: 6000 }
-            )
-            // Also select the node to help user find it
-            if (recommendation.nodeId) {
-              try {
-                await framer.setSelection([recommendation.nodeId])
-              } catch {
-                // Ignore selection errors
-              }
-            }
-          }
-        } else {
-          framer.notify(`Optimization complete but replacement failed: ${replacementResult.message}`, { variant: 'warning', durationMs: 5000 })
+      // Always download - user will replace manually
+      await downloadOptimizedImage(result.data, result.format, recommendation.nodeName)
+      
+      // Select the node to help user find it
+      if (recommendation.nodeId) {
+        try {
+          await framer.setSelection([recommendation.nodeId])
+        } catch {
+          // Ignore selection errors
         }
-      } else if (recommendation.nodeId) {
-        // Replace single node
-        const replacementResult = await replaceImageOnNode(
-          recommendation.nodeId,
-          result.data,
-          result.format,
-          recommendation.nodeName
-        )
-
-        if (replacementResult.success) {
-          if (replacementResult.method === 'direct') {
-            framer.notify(
-              `Image optimized and replaced! Saved ${savingsFormatted}.`,
-              { variant: 'success', durationMs: 3000 }
-            )
-          } else {
-            // Download method
-            framer.notify(
-              `Image optimized and downloaded! ${replacementResult.message} Saved ${savingsFormatted}.`,
-              { variant: 'success', durationMs: 6000 }
-            )
-            // Select the node to help user find it
-            try {
-              await framer.setSelection([recommendation.nodeId])
-              framer.notify('Node selected. Drag the downloaded image onto it to replace.', { variant: 'info', durationMs: 5000 })
-            } catch {
-              // Ignore selection errors
-            }
-          }
-        } else {
-          framer.notify(`Optimization complete but replacement failed: ${replacementResult.message}`, { variant: 'warning', durationMs: 5000 })
-        }
-      } else {
-        throw new Error('No node ID or image asset ID available')
       }
+      
+      framer.notify(
+        `Image optimized and downloaded! Saved ${savingsFormatted}. Replace the original manually by dragging the downloaded file onto the element.`,
+        { variant: 'success', durationMs: 6000 }
+      )
     } catch (error) {
       debugLog.error('Optimization error:', error)
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
@@ -311,6 +246,9 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
         onConfirm={handleConfirmOptimize}
         imageAssetId={recommendation.imageAssetId}
         nodeName={recommendation.nodeName}
+        optimalWidth={recommendation.optimalWidth}
+        optimalHeight={recommendation.optimalHeight}
+        potentialSavings={recommendation.potentialSavings}
       />
     <div
       style={{
@@ -362,7 +300,7 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
             display: 'inline-flex',
             alignItems: 'center',
             padding: `${spacing.xxs} ${spacing.sm}`,
-            backgroundColor: surfaces.tertiary,
+            backgroundColor: 'var(--framer-color-bg-tertiary)',
             color: framerColors.text,
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.bold,
@@ -387,6 +325,20 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
             {recommendation.nodeName || 'Unnamed'}
           </div>
 
+          {/* Page Name - Visible under title */}
+          {(recommendation.pageName || recommendation.pageSlug) && (
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              color: framerColors.textSecondary,
+              lineHeight: typography.lineHeight.normal,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
+            }}>
+              {recommendation.pageName || recommendation.pageSlug}
+            </div>
+          )}
+
           {/* Recommendation Details - Improved Readability */}
           <div style={{
             fontSize: typography.fontSize.xs,
@@ -398,96 +350,6 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
           </div>
         </div>
       </div>
-
-      {/* Optimization Instructions - Collapsible */}
-      {canOptimize && !isOptimizing && (
-        <div style={{
-          marginBottom: spacing.sm
-        }}>
-          <button
-            onClick={() => setShowOptimizationInstructions(!showOptimizationInstructions)}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: spacing.sm,
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              borderRadius: borders.radius.md,
-              transition: 'background-color 0.15s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = surfaces.tertiary
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent'
-            }}
-          >
-            <div style={{
-              fontSize: typography.fontSize.xs,
-              fontWeight: typography.fontWeight.medium,
-              color: framerColors.text
-            }}>
-              What happens when you optimize?
-            </div>
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 12 12"
-              fill="none"
-              style={{
-                transform: showOptimizationInstructions ? 'rotate(180deg)' : 'rotate(0deg)',
-                transition: 'transform 0.15s ease',
-                color: framerColors.textSecondary
-              }}
-            >
-              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-          
-          {showOptimizationInstructions && (
-            <div style={{
-              padding: spacing.md,
-              backgroundColor: surfaces.tertiary,
-              borderRadius: borders.radius.md,
-              marginTop: spacing.xs
-            }}>
-              <div style={{
-                fontSize: typography.fontSize.xs,
-                color: framerColors.textSecondary,
-                lineHeight: typography.lineHeight.relaxed
-              }}>
-                <ul style={{
-                  margin: 0,
-                  paddingLeft: spacing.md,
-                  listStyle: 'disc',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: spacing.xs,
-                  marginBottom: spacing.xs
-                }}>
-                  <li><strong style={{ color: framerColors.text }}>Image processing:</strong> The image will be resized to {recommendation.optimalWidth} × {recommendation.optimalHeight}px and compressed to reduce file size</li>
-                  <li><strong style={{ color: framerColors.text }}>Format conversion:</strong> The image will be converted to WebP format for better compression (if applicable)</li>
-                  <li><strong style={{ color: framerColors.text }}>Replacement scope:</strong> You'll choose to replace only this instance or all usages of this image across your project</li>
-                  <li><strong style={{ color: framerColors.text }}>Project update:</strong> The optimized image will replace the original in your Framer project</li>
-                  <li><strong style={{ color: framerColors.text }}>Automatic totals:</strong> Bandwidth estimates and totals will update automatically after replacement</li>
-                </ul>
-                <div style={{
-                  marginTop: spacing.xs,
-                  paddingTop: spacing.xs,
-                  fontSize: typography.fontSize.xs,
-                  color: framerColors.textTertiary,
-                  fontStyle: 'italic'
-                }}>
-                  Estimated savings: {formatBytes(recommendation.potentialSavings)}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Primary Actions - Optimize/Select and Ignore */}
       <div style={{

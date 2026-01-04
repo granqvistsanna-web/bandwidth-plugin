@@ -23,18 +23,22 @@ function getInitialSettings(): PluginSettings {
   return DEFAULT_SETTINGS
 }
 
-// Initialize settings on module load
-let initialSettings: PluginSettings = DEFAULT_SETTINGS
-try {
-  if (typeof localStorage !== 'undefined') {
-    initialSettings = getInitialSettings()
-  }
-} catch (error) {
-  console.warn('Failed to initialize settings:', error)
-}
-
 export function useSettings() {
-  const [settings, setSettings] = useState<PluginSettings>(initialSettings)
+  const [settings, setSettings] = useState<PluginSettings>(() => {
+    // Initialize from localStorage on first render (lazy initialization)
+    try {
+      if (typeof localStorage !== 'undefined') {
+        const stored = localStorage.getItem(SETTINGS_STORAGE_KEY)
+        if (stored) {
+          const parsed = JSON.parse(stored)
+          return { ...DEFAULT_SETTINGS, ...parsed }
+        }
+      }
+    } catch (error) {
+      console.warn('Failed to load settings from localStorage:', error)
+    }
+    return DEFAULT_SETTINGS
+  })
 
   // Save settings to localStorage whenever they change
   useEffect(() => {

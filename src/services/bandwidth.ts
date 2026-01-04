@@ -169,36 +169,3 @@ export function calculateBreakpointData(
   }
 }
 
-export function aggregateBreakpointData(
-  breakpointDataArray: BreakpointData[]
-): BreakpointData {
-  let totalImages = 0
-  let totalFonts = 0
-  let totalHtmlCss = 0
-  let totalSVG = 0
-  const allAssets: AssetInfo[] = []
-
-  for (const data of breakpointDataArray) {
-    totalImages += data.breakdown.images
-    totalFonts += data.breakdown.fonts
-    totalHtmlCss += data.breakdown.htmlCss
-    totalSVG += data.breakdown.svg
-    allAssets.push(...data.assets)
-  }
-
-  // Deduplicate assets by nodeId
-  const uniqueAssets = Array.from(
-    new Map(allAssets.map(asset => [asset.nodeId, asset])).values()
-  )
-
-  return {
-    totalBytes: totalImages + totalFonts + totalHtmlCss + totalSVG,
-    breakdown: {
-      images: totalImages,
-      fonts: totalFonts,
-      htmlCss: totalHtmlCss,
-      svg: totalSVG
-    },
-    assets: uniqueAssets
-  }
-}

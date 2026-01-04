@@ -20,6 +20,8 @@ export interface AssetInfo {
   usedInPages?: { pageId: string; pageName: string }[] // Pages where this asset is used
   pageId?: string // The page this asset instance belongs to
   pageName?: string // The page name this asset instance belongs to
+  pageSlug?: string // Page slug/route
+  pageUrl?: string // Full published URL of the page
   svgContent?: string // For SVG nodes, store the SVG markup to analyze features
   imageAssetId?: string // ImageAsset.id for tracking and replacement
   isCMSAsset?: boolean // True if this asset comes from CMS
@@ -86,6 +88,12 @@ export interface CostEstimation {
 
 export type AnalysisMode = 'canvas' | 'published'
 
+export interface CMSBandwidthImpact {
+  totalBytes: number
+  byCollection: Record<string, number>
+  estimatedMonthlyBytes: number
+}
+
 export interface ProjectAnalysis {
   mode: AnalysisMode
   pages: PageAnalysis[]
@@ -96,6 +104,11 @@ export interface ProjectAnalysis {
     desktop: BreakpointData
   }
   allRecommendations: Recommendation[]
+  cmsAssetsCount?: number
+  cmsAssetsBytes?: number
+  hasManualCMSEstimates?: boolean
+  cmsBandwidthImpact?: CMSBandwidthImpact
+  cmsAssetsNotFound?: number
   publishedUrl?: string
   publishedData?: {
     totalBytes: number

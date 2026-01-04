@@ -1,6 +1,7 @@
-import { memo } from 'react'
+import { memo, useMemo, useCallback } from 'react'
 import type { AssetInfo } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
+import { getThumbnailUrl } from '../../utils/imageThumbnail'
 import { spacing, typography, borders, surfaces, themeBorders, framerColors } from '../../styles/designTokens'
 
 interface AssetsTableRowProps {
@@ -10,6 +11,7 @@ interface AssetsTableRowProps {
 }
 
 // Calculate potential savings for unoptimized assets
+// Memoized outside component to avoid recalculation
 function calculatePotentialSavings(asset: AssetInfo): number {
   // Don't show savings for CMS assets
   if (asset.isCMSAsset || asset.isManualEstimate) return 0
@@ -37,13 +39,28 @@ export const AssetsTableRow = memo(function AssetsTableRow({
   onClick,
   style
 }: AssetsTableRowProps) {
-  const potentialSavings = calculatePotentialSavings(asset)
+  // Memoize expensive calculations
+  const potentialSavings = useMemo(() => calculatePotentialSavings(asset), [asset])
+  
   const isCMS = asset.isCMSAsset || asset.isManualEstimate || !!asset.cmsItemSlug
   const canClick = !isCMS && asset.nodeId && asset.nodeId.trim() !== ''
+  
+  // Generate thumbnail URL for performance (small, low quality for blurry preview)
+  const thumbnailUrl = useMemo(() => {
+    if (!asset.url) return null
+    return getThumbnailUrl(asset.url, 64) // 64px thumbnail with low quality
+  }, [asset.url])
+  
+  // Memoize click handler
+  const handleClick = useCallback(() => {
+    if (canClick) {
+      onClick(asset.nodeId)
+    }
+  }, [canClick, onClick, asset.nodeId])
 
   return (
     <div
-      onClick={() => canClick && onClick(asset.nodeId)}
+      onClick={handleClick}
       style={{
         ...style,
         display: 'flex',
@@ -105,10 +122,11 @@ export const AssetsTableRow = memo(function AssetsTableRow({
               </svg>
             </div>
           )
-        ) : asset.url ? (
+        ) : asset.url && thumbnailUrl ? (
           <img
-            src={asset.url}
+            src={thumbnailUrl}
             alt={asset.nodeName}
+            loading="lazy"
             style={{
               width: '48px',
               height: '48px',
@@ -116,10 +134,17 @@ export const AssetsTableRow = memo(function AssetsTableRow({
               border: `1px solid ${themeBorders.subtle}`,
               objectFit: 'cover' as const,
               display: 'block',
+              // Add slight blur for very low quality thumbnails
+              imageRendering: 'auto' as const,
             }}
             onError={(e) => {
+              // Fallback to original URL if thumbnail fails
               const target = e.target as HTMLImageElement
-              target.style.display = 'none'
+              if (target.src !== asset.url) {
+                target.src = asset.url
+              } else {
+                target.style.display = 'none'
+              }
             }}
           />
         ) : (
@@ -185,7 +210,17 @@ export const AssetsTableRow = memo(function AssetsTableRow({
           )}
           {asset.format && <span style={{ color: framerColors.textTertiary }}>·</span>}
           <span style={{ fontWeight: typography.fontWeight.medium, whiteSpace: 'nowrap' }}>
-            {Math.round(asset.dimensions.width)} × {Math.round(asset.dimensions.height)}
+            {asset.actualDimensions ? (
+              <>
+                {Math.round(asset.actualDimensions.width)} × {Math.round(asset.actualDimensions.height)}
+                <span style={{ color: framerColors.textTertiary, margin: '0 4px' }}>→</span>
+                {Math.round(asset.dimensions.width)} × {Math.round(asset.dimensions.height)}
+              </>
+            ) : (
+              <>
+                {Math.round(asset.dimensions.width)} × {Math.round(asset.dimensions.height)}
+              </>
+            )}
           </span>
         </div>
       </div>

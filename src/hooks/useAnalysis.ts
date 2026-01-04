@@ -2,22 +2,15 @@ import { useState, useCallback, useEffect } from 'react'
 import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../types/analysis'
 import { analyzeProject } from '../services/analyzer'
+import type { ManualCMSEstimate } from '../services/assetCollector'
 import { debugLog } from '../utils/debugLog'
 
 const EXCLUDED_PAGES_STORAGE_KEY = 'bandwidth-inspector-excluded-pages'
 const MANUAL_ESTIMATES_STORAGE_KEY = 'bandwidth-inspector-cms-manual-estimates'
 const IGNORED_RECOMMENDATIONS_STORAGE_KEY = 'bandwidth-inspector-ignored-recommendations'
 
-export type ManualCMSEstimate = {
-  id: string
-  collectionName: string
-  imageCount: number
-  avgWidth: number
-  avgHeight: number
-  format: string
-  estimatedBytes: number
-  createdAt?: string
-}
+// Re-export for backward compatibility
+export type { ManualCMSEstimate } from '../services/assetCollector'
 
 export function useAnalysis() {
   const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null)

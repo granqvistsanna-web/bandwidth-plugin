@@ -11,9 +11,12 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ lastScanned, loading, onSettingsChange }: SettingsPanelProps) {
   const { theme, resolvedTheme, setTheme } = useTheme()
-  const { includeFramerOptimization, toggleFramerOptimization } = useSettings()
+  const { includeFramerOptimization, toggleFramerOptimization, updateSetting } = useSettings()
 
-  const handleOptimizationToggle = () => {
+  const handleOptimizationToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Toggle the setting
     toggleFramerOptimization()
     // Notify parent to trigger rescan
     onSettingsChange?.()
@@ -202,7 +205,7 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange }: Settin
             borderRadius: borders.radius.lg,
           }}
         >
-          <div style={{ marginBottom: spacing.sm }}>
+          <div style={{ marginBottom: spacing.md }}>
             <div style={{
               fontSize: typography.fontSize.xs,
               fontWeight: typography.fontWeight.medium,
@@ -223,56 +226,16 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange }: Settin
             </p>
           </div>
 
-          <button
-            onClick={handleOptimizationToggle}
+          {/* Toggle Row */}
+          <div
             style={{
               display: 'flex',
-              alignItems: 'flex-start',
-              gap: spacing.sm,
-              padding: `${spacing.md} ${spacing.sm}`,
-              width: '100%',
-              backgroundColor: includeFramerOptimization ? 'var(--surface-tertiary)' : 'transparent',
-              border: `1px solid ${includeFramerOptimization ? 'var(--border-strong)' : 'var(--border-subtle)'}`,
-              borderRadius: borders.radius.sm,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              textAlign: 'left' as const,
-            }}
-            onMouseEnter={(e) => {
-              if (!includeFramerOptimization) {
-                e.currentTarget.style.backgroundColor = 'var(--surface-tertiary)'
-                e.currentTarget.style.borderColor = 'var(--border-default)'
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!includeFramerOptimization) {
-                e.currentTarget.style.backgroundColor = 'transparent'
-                e.currentTarget.style.borderColor = 'var(--border-subtle)'
-              }
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: spacing.md,
             }}
           >
-            {/* Checkbox */}
-            <div
-              style={{
-                width: '16px',
-                height: '16px',
-                borderRadius: '4px',
-                border: `1.5px solid ${includeFramerOptimization ? 'var(--framer-color-tint)' : 'var(--border-default)'}`,
-                backgroundColor: includeFramerOptimization ? 'var(--framer-color-tint)' : 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0,
-                marginTop: '1px'
-              }}
-            >
-              {includeFramerOptimization && (
-                <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              )}
-            </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
                   fontSize: typography.fontSize.xs,
@@ -281,7 +244,7 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange }: Settin
                   marginBottom: '4px',
                 }}
               >
-                Include Framer image optimization
+                Framer image optimization
               </div>
               <div
                 style={{
@@ -290,10 +253,59 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange }: Settin
                   lineHeight: '1.4'
                 }}
               >
-                Framer automatically converts images to WebP/AVIF when publishing. Enable for realistic estimates, disable to see source file sizes.
+                Framer converts images to WebP/AVIF on publish
               </div>
             </div>
-          </button>
+
+            {/* Toggle Switch */}
+            <button
+              type="button"
+              key={`toggle-${includeFramerOptimization}`}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                const newValue = !includeFramerOptimization
+                console.log('Toggle clicked - changing from', includeFramerOptimization, 'to', newValue)
+                toggleFramerOptimization()
+                onSettingsChange?.()
+              }}
+              style={{
+                position: 'relative',
+                width: '44px',
+                height: '24px',
+                backgroundColor: includeFramerOptimization
+                  ? 'var(--framer-color-tint)'
+                  : 'var(--border-default)',
+                borderRadius: '12px',
+                border: 'none',
+                cursor: 'pointer',
+                transition: 'background-color 0.2s ease',
+                flexShrink: 0,
+                padding: 0,
+                outline: 'none',
+                WebkitTapHighlightColor: 'transparent',
+                userSelect: 'none',
+              }}
+              aria-checked={includeFramerOptimization}
+              role="switch"
+              aria-label={includeFramerOptimization ? 'Framer optimization enabled' : 'Framer optimization disabled'}
+            >
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '2px',
+                  left: includeFramerOptimization ? '22px' : '2px',
+                  width: '20px',
+                  height: '20px',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '50%',
+                  transition: 'left 0.2s ease',
+                  boxShadow: '0 1px 3px rgba(0, 0, 0, 0.2)',
+                  pointerEvents: 'none',
+                }}
+              />
+            </button>
+          </div>
         </div>
       </div>
 

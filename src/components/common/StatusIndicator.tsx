@@ -23,7 +23,7 @@ function getStatusColor(lastScanned: Date | null, error?: string | null): string
 }
 
 export function StatusIndicator({ lastScanned, loading, error }: StatusIndicatorProps) {
-  const statusColor = getStatusColor(lastScanned, error)
+  const statusColor = getStatusColor(lastScanned ?? null, error)
 
   let statusText = ''
   if (error) {
@@ -74,7 +74,7 @@ export function StatusIndicator({ lastScanned, loading, error }: StatusIndicator
       <div style={{
         fontSize: typography.fontSize.xs,
         color: error ? statusColor : framerColors.textSecondary,
-        fontWeight: error ? typography.fontWeight.medium : typography.fontWeight.normal
+        fontWeight: error ? typography.fontWeight.medium : typography.fontWeight.regular
       }}>
         {statusText}
       </div>

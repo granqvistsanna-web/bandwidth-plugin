@@ -804,12 +804,24 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
         
         const dimensions = getNodeDimensions(node)
         
+        // Get intrinsic dimensions using ImageAsset.measure()
+        let actualDimensions: { width: number; height: number } | undefined
+        try {
+          const size = await image.measure()
+          actualDimensions = { width: size.width, height: size.height }
+          debugLog.info(`Measured image: ${node.name}`, actualDimensions)
+        } catch (error) {
+          debugLog.warn(`Failed to measure image: ${node.name}`, error)
+          // Continue without actual dimensions
+        }
+        
         const asset: AssetInfo = {
           nodeId: node.id,
           nodeName: node.name || 'Unnamed',
           type: 'image', // Changed from 'background' to 'image' for consistency
           estimatedBytes: 0,
           dimensions,
+          actualDimensions,
           format: detectImageFormat(image.url),
           visible: node.visible !== false,
           url: image.url,

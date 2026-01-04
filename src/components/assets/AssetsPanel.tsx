@@ -216,7 +216,7 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
       )}
 
       {/* Assets Table or Empty State */}
-      <div className="flex-1 min-h-0">
+      <div style={{ flex: 1, minHeight: 0 }}>
         {sortedAssets.length > 0 ? (
           <AssetsTable
             assets={sortedAssets}
@@ -225,27 +225,54 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
             onAssetClick={handleAssetClick}
           />
         ) : (
-          <div className="h-full flex items-center justify-center">
-            <div className="text-center py-12 px-4 max-w-sm mx-auto">
-              <div className="text-4xl mb-4">
+          <div style={{ 
+            height: '100%', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center' 
+          }}>
+            <div style={{ 
+              textAlign: 'center', 
+              padding: `${spacing.xl} ${spacing.md}`, 
+              maxWidth: '384px', 
+              margin: '0 auto' 
+            }}>
+              <div style={{ fontSize: '2.25rem', marginBottom: spacing.md }}>
                 {baseAssets.length === 0 ? '📦' : '🔍'}
-                </div>
-              <div className="font-semibold text-lg mb-2" style={{ color: framerColors.text }}>
+              </div>
+              <div style={{ 
+                fontWeight: typography.fontWeight.semibold, 
+                fontSize: typography.fontSize.lg, 
+                marginBottom: spacing.sm,
+                color: framerColors.text 
+              }}>
                 {baseAssets.length === 0 ? 'No Assets Found' : 'No Matching Assets'}
               </div>
-              <div className="text-sm mb-4 leading-relaxed" style={{ color: framerColors.textSecondary }}>
+              <div style={{ 
+                fontSize: typography.fontSize.sm, 
+                marginBottom: spacing.md, 
+                lineHeight: typography.lineHeight.relaxed,
+                color: framerColors.textSecondary 
+              }}>
                 {baseAssets.length === 0 ? (
                   <>
-                    <p className="mb-2">No images or SVGs were detected in your project.</p>
-                    <p className="text-xs mb-3" style={{ color: framerColors.textTertiary }}>
+                    <p style={{ marginBottom: spacing.sm }}>No images or SVGs were detected in your project.</p>
+                    <p style={{ 
+                      fontSize: typography.fontSize.xs, 
+                      marginBottom: spacing.sm,
+                      color: framerColors.textTertiary 
+                    }}>
                       Make sure your pages contain frames with background images or SVG elements. 
                       Images need to be set as background images on frames to be detected. 
                       <a 
                         href="https://www.framer.com/learn/design/images/" 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="underline ml-1"
-                        style={{ color: 'var(--framer-color-tint)' }}
+                        style={{ 
+                          textDecoration: 'underline',
+                          marginLeft: spacing.xs,
+                          color: 'var(--framer-color-tint)' 
+                        }}
                       >
                         Learn about adding images in Framer
                       </a>
@@ -253,8 +280,11 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
                   </>
                 ) : (
                   <>
-                    <p className="mb-2">No assets match your current filters.</p>
-                    <p className="text-xs" style={{ color: framerColors.textTertiary }}>
+                    <p style={{ marginBottom: spacing.sm }}>No assets match your current filters.</p>
+                    <p style={{ 
+                      fontSize: typography.fontSize.xs,
+                      color: framerColors.textTertiary 
+                    }}>
                       Try adjusting your filters or selecting a different page.
                     </p>
                   </>
