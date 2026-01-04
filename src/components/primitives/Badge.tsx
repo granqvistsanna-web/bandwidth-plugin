@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, themeBorders, framerColors } from '../../styles/designTokens'
 
 type BadgeVariant = 'default' | 'subtle' | 'outline' | 'image' | 'svg' | 'high' | 'medium' | 'low'
 
@@ -11,44 +11,44 @@ interface BadgeProps {
 export function Badge({ children, variant = 'default' }: BadgeProps) {
   const variantStyles = {
     default: {
-      backgroundColor: colors.gray[100],
+      backgroundColor: surfaces.tertiary,
       border: 'none',
-      color: colors.gray[700],
+      color: framerColors.text,
     },
     subtle: {
-      backgroundColor: colors.gray[50],
-      border: `${borders.width.thin} solid ${colors.gray[200]}`,
-      color: colors.gray[600],
+      backgroundColor: surfaces.secondary,
+      border: `${borders.width.thin} solid ${themeBorders.subtle}`,
+      color: framerColors.textSecondary,
     },
     outline: {
       backgroundColor: 'transparent',
-      border: `${borders.width.thin} solid ${colors.gray[300]}`,
-      color: colors.gray[600],
+      border: `${borders.width.thin} solid ${themeBorders.default}`,
+      color: framerColors.textSecondary,
     },
     image: {
-      backgroundColor: '#dcfce7',
+      backgroundColor: 'var(--status-success-bg)',
       border: 'none',
-      color: '#166534',
+      color: 'var(--status-success-text)',
     },
     svg: {
-      backgroundColor: '#f3e8ff',
+      backgroundColor: 'var(--status-purple-bg)',
       border: 'none',
-      color: '#7c3aed',
+      color: 'var(--status-purple-text)',
     },
     high: {
-      backgroundColor: '#fee2e2',
+      backgroundColor: 'var(--status-error-bg)',
       border: 'none',
-      color: '#991b1b',
+      color: 'var(--status-error-text)',
     },
     medium: {
-      backgroundColor: '#fef3c7',
+      backgroundColor: 'var(--status-warning-bg)',
       border: 'none',
-      color: '#92400e',
+      color: 'var(--status-warning-text)',
     },
     low: {
-      backgroundColor: '#dcfce7',
+      backgroundColor: 'var(--status-success-bg)',
       border: 'none',
-      color: '#166534',
+      color: 'var(--status-success-text)',
     }
   }
 

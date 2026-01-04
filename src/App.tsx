@@ -79,6 +79,7 @@ export function App() {
                                 <OverviewPanel
                                     analysis={analysis}
                                     onNavigateToRecommendations={() => setActiveTab('recommendations')}
+                                    onNavigateToBandwidth={() => setActiveTab('bandwidth')}
                                     manualCMSEstimates={manualCMSEstimates}
                                     addManualCMSEstimate={addManualCMSEstimate}
                                     updateManualCMSEstimate={updateManualCMSEstimate}

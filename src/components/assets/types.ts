@@ -28,8 +28,6 @@ export interface AssetCounts {
 export interface AssetFiltersProps {
   filters: FilterState
   onFiltersChange: (filters: FilterState) => void
-  searchQuery: string
-  onSearchChange: (query: string) => void
   assetCounts: AssetCounts
   sortConfig?: SortConfig
   onSortChange?: (config: SortConfig) => void

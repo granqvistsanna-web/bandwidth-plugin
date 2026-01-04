@@ -5,57 +5,62 @@ export type ThemeMode = 'light' | 'dark' | 'system'
 
 const THEME_STORAGE_KEY = 'bandwidth-inspector-theme'
 
+// Set initial theme immediately (synchronously) before any rendering
+function getInitialTheme(): ThemeMode {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY)
+    if (stored && (stored === 'light' || stored === 'dark' || stored === 'system')) {
+      return stored as ThemeMode
+    }
+  } catch (error) {
+    console.warn('Failed to load theme from localStorage:', error)
+  }
+  return 'light' // Default to light mode for immediate rendering
+}
+
+// Apply data-theme attribute immediately
+function applyTheme(theme: 'light' | 'dark') {
+  try {
+    document.documentElement.setAttribute('data-theme', theme)
+    console.log('✅ Set data-theme to:', theme)
+  } catch (error) {
+    console.error('❌ Failed to set data-theme:', error)
+  }
+}
+
+// Initialize theme immediately on module load
+const initialTheme = getInitialTheme()
+const initialResolved = initialTheme === 'system' ? 'light' : initialTheme
+applyTheme(initialResolved)
+
 export function useTheme() {
-  const [theme, setTheme] = useState<ThemeMode>(() => {
-    try {
-      const stored = localStorage.getItem(THEME_STORAGE_KEY)
-      if (stored && (stored === 'light' || stored === 'dark' || stored === 'system')) {
-        return stored as ThemeMode
-      }
-    } catch (error) {
-      debugLog.warn('Failed to load theme from localStorage:', error)
-    }
-    return 'system'
-  })
+  const [theme, setTheme] = useState<ThemeMode>(initialTheme)
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(initialResolved)
 
-  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light')
-
-  // Detect system preference
+  // Update theme when user changes setting
   useEffect(() => {
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-    
-    const updateResolvedTheme = () => {
-      if (theme === 'system') {
-        setResolvedTheme(mediaQuery.matches ? 'dark' : 'light')
-      } else {
-        setResolvedTheme(theme)
-      }
-    }
+    console.log('🎨 Theme effect running - theme:', theme)
 
-    updateResolvedTheme()
+    const newResolvedTheme = theme === 'system' ? 'light' : theme
+    console.log('🎨 Resolved theme:', newResolvedTheme)
 
-    if (theme === 'system') {
-      mediaQuery.addEventListener('change', updateResolvedTheme)
-      return () => mediaQuery.removeEventListener('change', updateResolvedTheme)
-    }
+    applyTheme(newResolvedTheme)
+    setResolvedTheme(newResolvedTheme)
+
+    // Log CSS variable values for debugging
+    const surfacePrimary = getComputedStyle(document.documentElement).getPropertyValue('--surface-primary').trim()
+    const textPrimary = getComputedStyle(document.documentElement).getPropertyValue('--text-primary').trim()
+    console.log('🎨 CSS Variables - surface:', surfacePrimary, 'text:', textPrimary)
   }, [theme])
 
-  // Apply theme to document
-  useEffect(() => {
-    const root = document.documentElement
-    if (resolvedTheme === 'dark') {
-      root.setAttribute('data-theme', 'dark')
-    } else {
-      root.setAttribute('data-theme', 'light')
-    }
-  }, [resolvedTheme])
-
   const updateTheme = (newTheme: ThemeMode) => {
+    console.log('🎨 Updating theme to:', newTheme)
     setTheme(newTheme)
     try {
       localStorage.setItem(THEME_STORAGE_KEY, newTheme)
+      console.log('✅ Saved theme to localStorage')
     } catch (error) {
-      debugLog.warn('Failed to save theme to localStorage:', error)
+      console.warn('Failed to save theme to localStorage:', error)
     }
   }
 

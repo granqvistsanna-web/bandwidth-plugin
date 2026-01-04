@@ -128,13 +128,13 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between mb-4">
-          <h3 className="text-lg font-semibold" style={{ color: 'var(--framer-color-text)' }}>
+          <h3 className="text-lg font-semibold" style={{ color: framerColors.text }}>
             {isEditMode ? 'Edit CMS Manual Estimate' : 'Add CMS Manual Estimate'}
           </h3>
           <button
             onClick={onClose}
             className="w-6 h-6 flex items-center justify-center rounded transition-colors"
-            style={{ color: 'var(--framer-color-text-secondary)' }}
+            style={{ color: framerColors.textSecondary }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
             }}
@@ -148,13 +148,13 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
           </button>
         </div>
 
-        <p className="text-sm mb-4" style={{ color: 'var(--framer-color-text-secondary)' }}>
+        <p className="text-sm mb-4" style={{ color: framerColors.textSecondary }}>
           Add a manual estimate for CMS assets that couldn't be detected automatically. This will be included in your bandwidth totals.
         </p>
 
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--framer-color-text)' }}>
+            <label className="block text-sm font-medium mb-1.5" style={{ color: framerColors.text }}>
               Collection Name
             </label>
             <input
@@ -164,12 +164,12 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
               placeholder="e.g., Blog Posts, Products"
               className="w-full px-3 py-2 rounded-md border text-sm transition-colors"
               style={{
-                backgroundColor: 'var(--framer-color-bg)',
+                backgroundColor: backgrounds.page,
                 borderColor: 'var(--framer-color-divider)',
-                color: 'var(--framer-color-text)'
+                color: framerColors.text
               }}
               onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                e.currentTarget.style.borderColor = framerColors.textSecondary
                 e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
               }}
               onBlur={(e) => {
@@ -181,7 +181,7 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--framer-color-text)' }}>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: framerColors.text }}>
                 Image Count
               </label>
               <input
@@ -193,13 +193,13 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                 style={{
                   backgroundColor: 'var(--framer-color-bg-secondary)',
                   borderColor: 'var(--framer-color-divider)',
-                  color: 'var(--framer-color-text)'
+                  color: framerColors.text
                 }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--framer-color-text)' }}>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: framerColors.text }}>
                 Format
               </label>
               <select
@@ -209,7 +209,7 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                 style={{
                   backgroundColor: 'var(--framer-color-bg-secondary)',
                   borderColor: 'var(--framer-color-divider)',
-                  color: 'var(--framer-color-text)'
+                  color: framerColors.text
                 }}
               >
                 <option value="jpeg">JPEG</option>
@@ -221,7 +221,7 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--framer-color-text)' }}>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: framerColors.text }}>
                 Avg Width (px)
               </label>
               <input
@@ -233,13 +233,13 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                 style={{
                   backgroundColor: 'var(--framer-color-bg-secondary)',
                   borderColor: 'var(--framer-color-divider)',
-                  color: 'var(--framer-color-text)'
+                  color: framerColors.text
                 }}
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--framer-color-text)' }}>
+              <label className="block text-sm font-medium mb-1.5" style={{ color: framerColors.text }}>
                 Avg Height (px)
               </label>
               <input
@@ -251,7 +251,7 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                 style={{
                   backgroundColor: 'var(--framer-color-bg-secondary)',
                   borderColor: 'var(--framer-color-divider)',
-                  color: 'var(--framer-color-text)'
+                  color: framerColors.text
                 }}
               />
             </div>
@@ -264,13 +264,13 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
               border: '1px solid var(--framer-color-divider)'
             }}
           >
-            <div className="text-xs mb-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
+            <div className="text-xs mb-1" style={{ color: framerColors.textSecondary }}>
               Estimated Total
             </div>
-            <div className="text-lg font-semibold" style={{ color: 'var(--framer-color-text)' }}>
+            <div className="text-lg font-semibold" style={{ color: framerColors.text }}>
               {formatBytes(totalEstimatedBytes)}
             </div>
-            <div className="text-xs mt-1" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+            <div className="text-xs mt-1" style={{ color: framerColors.textTertiary }}>
               {imageCount} image{imageCount !== 1 ? 's' : ''} × {formatBytes(estimatedBytesPerImage)} each
             </div>
           </div>
@@ -280,7 +280,7 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
           {isEditMode && estimateToEdit && (
             <>
               {deleteError && (
-                <div className="p-3 rounded text-xs" style={{ backgroundColor: 'var(--framer-color-bg-secondary)', color: 'var(--framer-color-text)', border: '1px solid var(--framer-color-divider)' }}>
+                <div className="p-3 rounded text-xs" style={{ backgroundColor: 'var(--framer-color-bg-secondary)', color: framerColors.text, border: '1px solid var(--framer-color-divider)' }}>
                   {deleteError}
                 </div>
               )}
@@ -315,14 +315,14 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                   className="w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               style={{
                 backgroundColor: onRemoveEstimate ? 'transparent' : 'var(--framer-color-bg-secondary)',
-                color: onRemoveEstimate ? 'var(--framer-color-text)' : 'var(--framer-color-text-tertiary)',
+                color: onRemoveEstimate ? framerColors.text : framerColors.textTertiary,
                 border: `1px solid ${onRemoveEstimate ? 'var(--framer-color-divider)' : 'var(--framer-color-divider)'}`,
                 cursor: onRemoveEstimate && !isDeleting ? 'pointer' : 'not-allowed'
               }}
               onMouseEnter={(e) => {
                 if (!isDeleting && onRemoveEstimate) {
                   e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                  e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                  e.currentTarget.style.borderColor = framerColors.textSecondary
                 }
               }}
               onMouseLeave={(e) => {
@@ -334,7 +334,7 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                 </button>
               ) : (
                 <div className="flex flex-col gap-2">
-                  <div className="p-3 rounded text-sm" style={{ backgroundColor: 'var(--framer-color-bg-secondary)', color: 'var(--framer-color-text)' }}>
+                  <div className="p-3 rounded text-sm" style={{ backgroundColor: 'var(--framer-color-bg-secondary)', color: framerColors.text }}>
                     Delete "{estimateToEdit?.collectionName}"? This cannot be undone.
                   </div>
                   <div className="flex gap-2">
@@ -348,7 +348,7 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                       className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                       style={{
                         backgroundColor: 'var(--framer-color-bg-tertiary)',
-                        color: 'var(--framer-color-text)'
+                        color: framerColors.text
                       }}
                     >
                       Cancel
@@ -394,15 +394,15 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                       }}
                       className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       style={{
-                        backgroundColor: 'var(--framer-color-bg)',
-                        color: 'var(--framer-color-text)',
+                        backgroundColor: backgrounds.page,
+                        color: framerColors.text,
                         border: '1px solid var(--framer-color-divider)',
                         cursor: isDeleting ? 'not-allowed' : 'pointer'
                       }}
                       onMouseEnter={(e) => {
                         if (!isDeleting) {
                           e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                          e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                          e.currentTarget.style.borderColor = framerColors.textSecondary
                         }
                       }}
                       onMouseLeave={(e) => {
@@ -425,7 +425,7 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
               className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               style={{
                 backgroundColor: 'var(--framer-color-bg-tertiary)',
-                color: 'var(--framer-color-text)'
+                color: framerColors.text
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
@@ -445,14 +445,14 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                   ? 'var(--framer-color-bg-tertiary)'
                   : 'var(--framer-color-bg)',
                 color: isSubmitting || !collectionName.trim()
-                  ? 'var(--framer-color-text-tertiary)'
-                  : 'var(--framer-color-text)',
+                  ? framerColors.textTertiary
+                  : framerColors.text,
                 border: '1px solid var(--framer-color-divider)'
               }}
               onMouseEnter={(e) => {
                 if (!isSubmitting && collectionName.trim()) {
                   e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                  e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                  e.currentTarget.style.borderColor = framerColors.textSecondary
                 }
               }}
               onMouseLeave={(e) => {

@@ -55,13 +55,13 @@ export function ReplaceImageModal({
   const hasMultipleUsages = usageCount !== null && usageCount > 1
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
-      <div 
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ backgroundColor: 'var(--overlay-modal)' }}>
+      <div
         className="rounded-lg max-w-lg w-full border overflow-hidden flex flex-col max-h-[90vh]"
         style={{
-          backgroundColor: '#FAF9F8',
+          backgroundColor: 'var(--surface-secondary)',
           borderColor: 'var(--framer-color-divider)',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+          boxShadow: 'var(--elevation-strong)'
         }}
       >
         {/* Header with close button */}
@@ -69,14 +69,14 @@ export function ReplaceImageModal({
           className="relative px-6 pt-6 pb-4 border-b flex-shrink-0"
           style={{ borderColor: 'var(--framer-color-divider)' }}
         >
-          <h3 className="text-lg font-semibold pr-10" style={{ color: 'var(--framer-color-text)' }}>
+          <h3 className="text-lg font-semibold pr-10" style={{ color: framerColors.text }}>
             Replace Image
           </h3>
           <button
             onClick={onClose}
             className="absolute top-5 right-5 w-8 h-8 flex items-center justify-center rounded transition-colors"
             style={{
-              color: 'var(--framer-color-text-secondary)'
+              color: framerColors.textSecondary
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
@@ -96,11 +96,11 @@ export function ReplaceImageModal({
         <div className="px-6 py-6 flex-1 overflow-y-auto">
           {loading ? (
             <div className="py-12 text-center">
-              <svg className="w-8 h-8 animate-spin mx-auto mb-3" fill="none" viewBox="0 0 24 24" style={{ color: 'var(--framer-color-text-secondary)' }}>
+              <svg className="w-8 h-8 animate-spin mx-auto mb-3" fill="none" viewBox="0 0 24 24" style={{ color: framerColors.textSecondary }}>
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              <p className="text-sm font-medium" style={{ color: 'var(--framer-color-text-secondary)' }}>Checking usage...</p>
+              <p className="text-sm font-medium" style={{ color: framerColors.textSecondary }}>Checking usage...</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -109,12 +109,12 @@ export function ReplaceImageModal({
                 onClick={() => setSelectedOption('single')}
                 className="w-full px-6 py-5 text-left border-2 rounded-xl transition-all duration-200 group focus:outline-none focus:ring-2 focus:ring-offset-2"
                 style={selectedOption === 'single' ? {
-                  borderColor: 'var(--framer-color-text)',
+                  borderColor: framerColors.text,
                   backgroundColor: 'var(--framer-color-bg-secondary)',
                   boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
                 } : {
                   borderColor: 'var(--framer-color-divider)',
-                  backgroundColor: 'var(--framer-color-bg)'
+                  backgroundColor: backgrounds.page
                 }}
                 onMouseEnter={(e) => {
                   if (selectedOption !== 'single') {
@@ -134,11 +134,11 @@ export function ReplaceImageModal({
                     <div 
                       className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
                       style={selectedOption === 'single' ? {
-                        borderColor: 'var(--framer-color-text)',
-                        backgroundColor: 'var(--framer-color-text)'
+                        borderColor: framerColors.text,
+                        backgroundColor: framerColors.text
                       } : {
-                        borderColor: 'var(--framer-color-text-tertiary)',
-                        backgroundColor: 'var(--framer-color-bg)'
+                        borderColor: framerColors.textTertiary,
+                        backgroundColor: backgrounds.page
                       }}
                     >
                       {selectedOption === 'single' && (
@@ -149,7 +149,7 @@ export function ReplaceImageModal({
                     </div>
                   </div>
                   <div className="flex-1 min-w-0 text-left">
-                    <div className="font-semibold text-base break-words" style={{ color: 'var(--framer-color-text)' }}>
+                    <div className="font-semibold text-base break-words" style={{ color: framerColors.text }}>
                       Replace only this element
                     </div>
                   </div>
@@ -162,12 +162,12 @@ export function ReplaceImageModal({
                   onClick={() => setSelectedOption('all')}
                   className="w-full px-5 py-4 text-left border rounded-lg transition-all duration-200 group"
                   style={selectedOption === 'all' ? {
-                    borderColor: 'var(--framer-color-text)',
+                    borderColor: framerColors.text,
                     backgroundColor: 'var(--framer-color-bg-secondary)',
                     boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)'
                   } : {
                     borderColor: 'var(--framer-color-divider)',
-                    backgroundColor: 'var(--framer-color-bg)'
+                    backgroundColor: backgrounds.page
                   }}
                   onMouseEnter={(e) => {
                     if (selectedOption !== 'all') {
@@ -187,11 +187,11 @@ export function ReplaceImageModal({
                       <div 
                         className="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
                         style={selectedOption === 'all' ? {
-                          borderColor: 'var(--framer-color-text)',
-                          backgroundColor: 'var(--framer-color-text)'
+                          borderColor: framerColors.text,
+                          backgroundColor: framerColors.text
                         } : {
-                          borderColor: 'var(--framer-color-text-tertiary)',
-                          backgroundColor: 'var(--framer-color-bg)'
+                          borderColor: framerColors.textTertiary,
+                          backgroundColor: backgrounds.page
                         }}
                       >
                         {selectedOption === 'all' && (
@@ -202,7 +202,7 @@ export function ReplaceImageModal({
                       </div>
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                    <div className="font-medium text-sm break-words" style={{ color: 'var(--framer-color-text)' }}>
+                    <div className="font-medium text-sm break-words" style={{ color: framerColors.text }}>
                       Replace everywhere ({usageCount} places)
                     </div>
                     </div>
@@ -221,13 +221,13 @@ export function ReplaceImageModal({
                       <div 
                         className="w-5 h-5 rounded-full border-2"
                         style={{
-                          borderColor: 'var(--framer-color-text-tertiary)',
+                          borderColor: framerColors.textTertiary,
                           backgroundColor: 'var(--framer-color-bg-secondary)'
                         }}
                       ></div>
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <div className="font-medium text-sm break-words" style={{ color: 'var(--framer-color-text-tertiary)' }}>Replace everywhere (not available)</div>
+                      <div className="font-medium text-sm break-words" style={{ color: framerColors.textTertiary }}>Replace everywhere (not available)</div>
                     </div>
                   </div>
                 </div>
@@ -240,7 +240,7 @@ export function ReplaceImageModal({
         <div 
           className="px-6 py-5 border-t flex items-center justify-end gap-3 flex-shrink-0"
           style={{
-            backgroundColor: 'var(--framer-color-bg)',
+            backgroundColor: backgrounds.page,
             borderColor: 'var(--framer-color-divider)'
           }}
         >
@@ -248,7 +248,7 @@ export function ReplaceImageModal({
             onClick={onClose}
             className="px-5 py-2.5 text-sm font-medium rounded-md transition-all"
             style={{
-              color: 'var(--framer-color-text)',
+              color: framerColors.text,
               backgroundColor: 'var(--framer-color-bg-secondary)',
               border: '1px solid var(--framer-color-divider)'
             }}
@@ -266,20 +266,20 @@ export function ReplaceImageModal({
             disabled={!selectedOption}
             className="px-5 py-2.5 text-sm font-semibold rounded-md transition-all"
             style={selectedOption ? {
-              backgroundColor: 'var(--framer-color-bg)',
-              color: 'var(--framer-color-text)',
+              backgroundColor: backgrounds.page,
+              color: framerColors.text,
               border: '1px solid var(--framer-color-divider)',
               cursor: 'pointer'
             } : {
               backgroundColor: 'var(--framer-color-bg-tertiary)',
-              color: 'var(--framer-color-text-tertiary)',
+              color: framerColors.textTertiary,
               border: '1px solid var(--framer-color-divider)',
               cursor: 'not-allowed'
             }}
             onMouseEnter={(e) => {
               if (selectedOption) {
                 e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                e.currentTarget.style.borderColor = framerColors.textSecondary
               }
             }}
             onMouseLeave={(e) => {

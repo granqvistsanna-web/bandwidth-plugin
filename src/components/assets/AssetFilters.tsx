@@ -1,17 +1,38 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import type { AssetFiltersProps, FilterState } from './types'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, colors, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 
 export function AssetFilters({
   filters,
   onFiltersChange,
-  searchQuery,
-  onSearchChange,
   assetCounts,
   sortConfig,
   onSortChange
 }: AssetFiltersProps) {
   const [showFiltersPopover, setShowFiltersPopover] = useState(false)
+  const popoverRef = useRef<HTMLDivElement>(null)
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
+  // Close popover when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        popoverRef.current &&
+        buttonRef.current &&
+        !popoverRef.current.contains(event.target as Node) &&
+        !buttonRef.current.contains(event.target as Node)
+      ) {
+        setShowFiltersPopover(false)
+      }
+    }
+
+    if (showFiltersPopover) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }
+  }, [showFiltersPopover])
 
   const handleTypeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const type = e.target.value as FilterState['type']
@@ -45,97 +66,52 @@ export function AssetFilters({
       format: 'all',
       pageUsage: 'all'
     })
-    onSearchChange('')
   }
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: spacing.sm, alignItems: 'center' }}>
-      {/* Search Input */}
-      <div className="relative" style={{ flex: '1 1 180px', minWidth: '180px' }}>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          placeholder="Search assets..."
-          style={{
-            width: '100%',
-            padding: `6px ${spacing.sm}`,
-            paddingRight: searchQuery ? '28px' : spacing.sm,
-            fontSize: typography.fontSize.xs,
-            color: colors.almostBlack,
-            backgroundColor: colors.white,
-            border: `1px solid ${colors.warmGray[200]}`,
-            borderRadius: borders.radius.md,
-            transition: 'all 0.15s ease',
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = colors.warmGray[400]
-            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.05)'
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = colors.warmGray[200]
-            e.currentTarget.style.boxShadow = 'none'
-          }}
-        />
-        {searchQuery && (
-          <button
-            onClick={() => onSearchChange('')}
-            className="absolute right-1.5 top-1/2 transform -translate-y-1/2"
-            style={{
-              color: colors.warmGray[400],
-              padding: '2px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.color = colors.almostBlack
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = colors.warmGray[400]
-            }}
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-        </svg>
-          </button>
-        )}
-      </div>
-
+    <div style={{ 
+      display: 'flex', 
+      flexWrap: 'wrap', 
+      gap: spacing.sm, 
+      alignItems: 'center',
+      width: '100%',
+      maxWidth: '100%'
+    }}>
       {/* Type + Sort combined */}
       <select
         value={filters.type}
         onChange={handleTypeChange}
         style={{
-          padding: `6px ${spacing.sm}`,
-          paddingRight: spacing.lg,
+          padding: `4px 24px 4px ${spacing.xs}`,
           fontSize: typography.fontSize.xs,
           fontWeight: typography.fontWeight.medium,
-          color: colors.almostBlack,
-          backgroundColor: colors.white,
-          border: `1px solid ${colors.warmGray[200]}`,
+          color: framerColors.text,
+          backgroundColor: surfaces.primary,
+          border: `1px solid ${themeBorders.subtle}`,
           borderRadius: borders.radius.md,
           cursor: 'pointer',
           flex: '0 0 auto',
+          minWidth: '90px',
+          maxWidth: '100%',
           transition: 'all 0.15s ease',
           appearance: 'none',
           backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
           backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 8px center',
+          backgroundPosition: 'right 6px center',
         }}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = colors.warmGray[400]
-          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.05)'
+          e.currentTarget.style.borderColor = framerColors.text
+          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = colors.warmGray[200]
+          e.currentTarget.style.borderColor = themeBorders.subtle
           e.currentTarget.style.boxShadow = 'none'
         }}
       >
-        <option value="all">All ({assetCounts.all})</option>
-        <option value="image">Images ({assetCounts.images})</option>
-        <option value="svg">SVGs ({assetCounts.svgs})</option>
-        <option value="cms">CMS ({assetCounts.cms})</option>
+        <option value="all">All</option>
+        <option value="image">Images</option>
+        <option value="svg">SVGs</option>
+        <option value="cms">CMS</option>
       </select>
 
       {/* Sort dropdown */}
@@ -147,83 +123,105 @@ export function AssetFilters({
             onSortChange({ column, direction })
           }}
           style={{
-            padding: `6px ${spacing.sm}`,
-            paddingRight: spacing.lg,
+            padding: `4px 24px 4px ${spacing.xs}`,
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
-            color: colors.almostBlack,
-            backgroundColor: colors.white,
-            border: `1px solid ${colors.warmGray[200]}`,
+            color: framerColors.text,
+            backgroundColor: surfaces.primary,
+            border: `1px solid ${themeBorders.subtle}`,
             borderRadius: borders.radius.md,
             cursor: 'pointer',
             flex: '0 0 auto',
+            minWidth: '85px',
+            maxWidth: '100%',
             transition: 'all 0.15s ease',
             appearance: 'none',
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
             backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 8px center',
+            backgroundPosition: 'right 6px center',
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = colors.warmGray[400]
-            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.05)'
+            e.currentTarget.style.borderColor = framerColors.text
+            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = colors.warmGray[200]
+            e.currentTarget.style.borderColor = themeBorders.subtle
             e.currentTarget.style.boxShadow = 'none'
           }}
         >
           <option value="size-desc">Size ↓</option>
           <option value="size-asc">Size ↑</option>
-          <option value="name-asc">Name A→Z</option>
-          <option value="name-desc">Name Z→A</option>
+          <option value="name-asc">Name A-Z</option>
+          <option value="name-desc">Name Z-A</option>
         </select>
       )}
 
       {/* Filters Button with Popover */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', flex: '0 0 auto', maxWidth: '100%' }}>
         <button
-          onClick={() => setShowFiltersPopover(!showFiltersPopover)}
+          ref={buttonRef}
+          onClick={(e) => {
+            e.stopPropagation()
+            setShowFiltersPopover(!showFiltersPopover)
+          }}
           style={{
-            padding: `6px ${spacing.sm}`,
+            padding: `4px ${spacing.xs}`,
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
-            color: activeFilterCount > 0 ? colors.white : colors.almostBlack,
-            backgroundColor: activeFilterCount > 0 ? colors.almostBlack : colors.white,
-            border: `1px solid ${activeFilterCount > 0 ? colors.almostBlack : colors.warmGray[200]}`,
+            color: activeFilterCount > 0 ? surfaces.primary : framerColors.text,
+            backgroundColor: activeFilterCount > 0 ? framerColors.text : surfaces.primary,
+            border: `1px solid ${activeFilterCount > 0 ? framerColors.text : themeBorders.subtle}`,
             borderRadius: borders.radius.md,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '4px',
             whiteSpace: 'nowrap',
-            transition: 'all 0.15s ease'
+            transition: 'all 0.15s ease',
+            minWidth: '32px',
+            height: '28px',
+            maxWidth: '100%',
           }}
           onMouseEnter={(e) => {
             if (activeFilterCount === 0) {
-              e.currentTarget.style.backgroundColor = colors.warmGray[50]
+              e.currentTarget.style.backgroundColor = surfaces.tertiary
             }
           }}
           onMouseLeave={(e) => {
             if (activeFilterCount === 0) {
-              e.currentTarget.style.backgroundColor = colors.white
+              e.currentTarget.style.backgroundColor = surfaces.primary
             }
           }}
         >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg 
+            style={{
+              width: '16px',
+              height: '16px',
+              flexShrink: 0,
+              display: 'block',
+            }}
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor" 
+            strokeWidth={2}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
           </svg>
           {activeFilterCount > 0 && (
             <span style={{
-              fontSize: '10px',
+              fontSize: '11px',
               fontWeight: typography.fontWeight.bold,
-              minWidth: '16px',
-              height: '16px',
+              minWidth: '18px',
+              height: '18px',
               borderRadius: borders.radius.full,
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: colors.white,
-              color: colors.almostBlack,
+              backgroundColor: activeFilterCount > 0 ? surfaces.primary : 'transparent',
+              color: activeFilterCount > 0 ? framerColors.text : 'inherit',
+              padding: '0 4px',
+              lineHeight: 1,
             }}>
               {activeFilterCount}
             </span>
@@ -233,17 +231,18 @@ export function AssetFilters({
         {/* Filters Popover */}
         {showFiltersPopover && (
           <div
+            ref={popoverRef}
             style={{
               position: 'absolute',
               top: 'calc(100% + 8px)',
               right: 0,
-              zIndex: 50,
+              zIndex: 1000,
               minWidth: '220px',
               padding: spacing.md,
-              backgroundColor: colors.white,
-              border: `1px solid ${colors.warmGray[200]}`,
+              backgroundColor: surfaces.secondary,
+              border: `1px solid ${themeBorders.subtle}`,
               borderRadius: borders.radius.lg,
-              boxShadow: '0 4px 16px rgba(0, 0, 0, 0.12)',
+              boxShadow: themeElevation.strong,
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
@@ -275,7 +274,7 @@ export function AssetFilters({
                     style={{
                       fontSize: typography.fontSize.xs,
                       fontWeight: typography.fontWeight.medium,
-                      color: 'var(--framer-color-text)',
+                      color: framerColors.text,
                       flex: 1,
                     }}
                   >
@@ -311,7 +310,7 @@ export function AssetFilters({
                     style={{
                       fontSize: typography.fontSize.xs,
                       fontWeight: typography.fontWeight.medium,
-                      color: 'var(--framer-color-text)',
+                      color: framerColors.text,
                       flex: 1,
                     }}
                   >
@@ -322,7 +321,7 @@ export function AssetFilters({
               {/* Clear Filters */}
               {activeFilterCount > 0 && (
                 <>
-                  <div style={{ height: '1px', backgroundColor: colors.warmGray[200], margin: `${spacing.sm} 0` }} />
+                  <div style={{ height: '1px', backgroundColor: themeBorders.subtle, margin: `${spacing.sm} 0` }} />
             <button
                     onClick={() => {
                       onFiltersChange({ ...filters, sizeRange: { min: 0, max: Infinity }, format: 'all' })
@@ -332,7 +331,7 @@ export function AssetFilters({
                       padding: `${spacing.xs} ${spacing.sm}`,
                       fontSize: typography.fontSize.xs,
                       fontWeight: typography.fontWeight.medium,
-                      color: colors.warmGray[600],
+                      color: framerColors.textSecondary,
                       textAlign: 'left',
                       backgroundColor: 'transparent',
                       border: 'none',
@@ -340,12 +339,12 @@ export function AssetFilters({
                       borderRadius: borders.radius.sm,
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = colors.warmGray[50]
-                      e.currentTarget.style.color = colors.almostBlack
+                      e.currentTarget.style.backgroundColor = surfaces.tertiary
+                      e.currentTarget.style.color = framerColors.text
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent'
-                      e.currentTarget.style.color = colors.warmGray[600]
+                      e.currentTarget.style.color = framerColors.textSecondary
                     }}
                   >
                     Clear filters
@@ -357,31 +356,6 @@ export function AssetFilters({
         )}
       </div>
 
-      {/* Clear All Button (only if search or type filter active) */}
-      {(searchQuery || filters.type !== 'all') && (
-          <button
-            onClick={clearAllFilters}
-          style={{
-            padding: `6px ${spacing.sm}`,
-            fontSize: typography.fontSize.xs,
-            fontWeight: typography.fontWeight.medium,
-            color: colors.warmGray[500],
-            backgroundColor: 'transparent',
-            border: 'none',
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            transition: 'color 0.15s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.color = colors.almostBlack
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.color = colors.warmGray[500]
-          }}
-        >
-          Clear all
-          </button>
-        )}
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { ReactNode, HTMLAttributes } from 'react'
-import { spacing, borders, colors } from '../../styles/designTokens'
+import { spacing, borders, surfaces, themeBorders, themeElevation, hoverStates } from '../../styles/designTokens'
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode
@@ -17,8 +17,8 @@ export function Card({
   ...props
 }: CardProps) {
   const baseStyles = {
-    backgroundColor: colors.white,
-    border: `${borders.width.thin} solid ${colors.gray[200]}`,
+    backgroundColor: surfaces.secondary,
+    border: `${borders.width.thin} solid ${themeBorders.subtle}`,
     borderRadius: borders.radius.lg,
     padding: spacing[padding],
     transition: 'all 0.15s ease',
@@ -26,21 +26,21 @@ export function Card({
   }
 
   const shadowStyle = {
-    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.04)',
+    boxShadow: themeElevation.subtle,
   }
 
   const hoverStyles = hover ? {
     onMouseEnter: (e: React.MouseEvent<HTMLDivElement>) => {
-      e.currentTarget.style.borderColor = colors.gray[300]
-      e.currentTarget.style.backgroundColor = colors.gray[50]
+      e.currentTarget.style.borderColor = hoverStates.border
+      e.currentTarget.style.backgroundColor = hoverStates.surface
       if (onClick) {
-        e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.08)'
+        e.currentTarget.style.boxShadow = themeElevation.medium
       }
     },
     onMouseLeave: (e: React.MouseEvent<HTMLDivElement>) => {
-      e.currentTarget.style.borderColor = colors.gray[200]
-      e.currentTarget.style.backgroundColor = colors.white
-      e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.04)'
+      e.currentTarget.style.borderColor = themeBorders.subtle
+      e.currentTarget.style.backgroundColor = surfaces.secondary
+      e.currentTarget.style.boxShadow = themeElevation.subtle
     }
   } : {}
 

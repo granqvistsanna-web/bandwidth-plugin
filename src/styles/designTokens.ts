@@ -35,6 +35,8 @@ export const colors = {
     300: '#E0E0DE',  // Borders, dividers
     400: '#A8A8A6',  // Secondary text
     500: '#787876',  // Tertiary text
+    800: '#2A2A28',  // Dark mode secondary cards
+    900: '#1A1A18',  // Dark mode card backgrounds
   },
 
   // Almost black - for primary text and buttons
@@ -45,6 +47,95 @@ export const colors = {
     primary: '#0099FF',   // Primary blue accent
     light: '#0099FF',    // Same as primary for consistency
   }
+} as const
+
+// Semantic status colors - reference CSS custom properties for theme support
+export const status = {
+  success: {
+    bg: 'var(--status-success-bg)',
+    text: 'var(--status-success-text)',
+    solid: 'var(--status-success-solid)',
+    hover: 'var(--status-success-hover)',
+  },
+  warning: {
+    bg: 'var(--status-warning-bg)',
+    text: 'var(--status-warning-text)',
+    solid: 'var(--status-warning-solid)',
+  },
+  error: {
+    bg: 'var(--status-error-bg)',
+    text: 'var(--status-error-text)',
+    solid: 'var(--status-error-solid)',
+  },
+  info: {
+    bg: 'var(--status-info-bg)',
+    text: 'var(--status-info-text)',
+    solid: 'var(--status-info-solid)',
+  },
+  purple: {
+    bg: 'var(--status-purple-bg)',
+    text: 'var(--status-purple-text)',
+  },
+} as const
+
+// Theme-aware backgrounds - reference CSS custom properties
+export const backgrounds = {
+  primary: 'var(--bg-primary)',
+  page: 'var(--bg-page)',
+} as const
+
+// Theme-aware surfaces - reference CSS custom properties
+export const surfaces = {
+  primary: 'var(--surface-primary)',
+  secondary: 'var(--surface-secondary)',
+  tertiary: 'var(--surface-tertiary)',
+} as const
+
+// Theme-aware borders - reference CSS custom properties
+export const themeBorders = {
+  subtle: 'var(--border-subtle)',
+  default: 'var(--border-default)',
+  strong: 'var(--border-strong)',
+} as const
+
+// Theme-aware elevation - reference CSS custom properties
+export const themeElevation = {
+  subtle: 'var(--elevation-subtle)',
+  default: 'var(--elevation-default)',
+  medium: 'var(--elevation-medium)',
+  strong: 'var(--elevation-strong)',
+} as const
+
+// Overlays - reference CSS custom properties
+export const overlays = {
+  modal: 'var(--overlay-modal)',
+  backdrop: 'var(--overlay-backdrop)',
+} as const
+
+// Hover states - reference CSS custom properties
+export const hoverStates = {
+  surface: 'var(--hover-surface)',
+  border: 'var(--hover-border)',
+} as const
+
+// Theme-aware text colors - reference our custom CSS properties that adapt to data-theme
+export const framerColors = {
+  // Use Framer's background colors (these work correctly)
+  bg: 'var(--framer-color-bg)',
+  bgSecondary: 'var(--framer-color-bg-secondary)',
+  bgTertiary: 'var(--framer-color-bg-tertiary)',
+
+  // Use our custom text colors that adapt to data-theme attribute
+  text: 'var(--text-primary)',
+  textSecondary: 'var(--text-secondary)',
+  textTertiary: 'var(--text-tertiary)',
+  textReversed: 'var(--framer-color-text-reversed)',
+
+  // Keep Framer's UI colors
+  divider: 'var(--framer-color-divider)',
+  tint: 'var(--framer-color-tint)',
+  tintDark: 'var(--framer-color-tint-dark)',
+  tintDimmed: 'var(--framer-color-tint-dimmed)',
 } as const
 
 // Light mode color semantics

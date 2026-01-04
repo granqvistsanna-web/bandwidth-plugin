@@ -1,5 +1,5 @@
 import { useState, ReactNode } from 'react'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, colors, surfaces, framerColors } from '../../styles/designTokens'
 
 interface CollapsibleSectionProps {
   title: string
@@ -19,7 +19,7 @@ export function CollapsibleSection({
   return (
     <div
       style={{
-        backgroundColor: colors.warmGray[50],
+        backgroundColor: surfaces.tertiary,
         borderRadius: borders.radius.lg,
         overflow: 'hidden' as const,
       }}
@@ -33,7 +33,7 @@ export function CollapsibleSection({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: isCollapsed ? colors.warmGray[50] : colors.warmGray[100],
+          backgroundColor: isCollapsed ? surfaces.tertiary : framerColors.bgSecondary,
           borderBottom: isCollapsed ? 'none' : `${borders.width.thin} solid var(--framer-color-divider)`,
           border: 'none',
           cursor: 'pointer',
@@ -41,12 +41,12 @@ export function CollapsibleSection({
         }}
           onMouseEnter={(e) => {
             if (isCollapsed) {
-              e.currentTarget.style.backgroundColor = colors.warmGray[100]
+              e.currentTarget.style.backgroundColor = framerColors.bgSecondary
             }
           }}
         onMouseLeave={(e) => {
           if (isCollapsed) {
-            e.currentTarget.style.backgroundColor = colors.warmGray[50]
+            e.currentTarget.style.backgroundColor = surfaces.tertiary
           }
         }}
       >
@@ -55,7 +55,7 @@ export function CollapsibleSection({
             style={{
               fontSize: typography.fontSize.sm,
               fontWeight: typography.fontWeight.semibold,
-              color: 'var(--framer-color-text)',
+              color: framerColors.text,
             }}
           >
             {title}
@@ -70,7 +70,7 @@ export function CollapsibleSection({
           stroke="currentColor"
           strokeWidth="2.5"
           style={{
-            color: 'var(--framer-color-text-tertiary)',
+            color: framerColors.textTertiary,
             transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
             transition: 'transform 0.15s ease',
           }}

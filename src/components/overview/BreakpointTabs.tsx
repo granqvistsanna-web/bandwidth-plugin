@@ -21,10 +21,10 @@ export function BreakpointTabs({ selectedBreakpoint, onBreakpointChange }: Break
           className="flex-1 px-3 py-3 rounded-lg text-sm font-medium transition-colors"
           style={selectedBreakpoint === bp.id ? {
             backgroundColor: 'var(--framer-color-tint)',
-            color: 'var(--framer-color-text-reversed)'
+            color: framerColors.textReversed
           } : {
             backgroundColor: 'var(--framer-color-bg-tertiary)',
-            color: 'var(--framer-color-text)'
+            color: framerColors.text
           }}
           onMouseEnter={(e) => {
             if (selectedBreakpoint !== bp.id) {

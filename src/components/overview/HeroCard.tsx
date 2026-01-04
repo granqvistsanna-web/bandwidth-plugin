@@ -1,6 +1,6 @@
 import { formatBytes } from '../../utils/formatBytes'
 import { Button } from '../primitives/Button'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces } from '../../styles/designTokens'
 import { calculateLoadTime, formatLoadTime } from '../../utils/loadTime'
 
 interface HeroCardProps {
@@ -31,10 +31,10 @@ export function HeroCard({
   
   // Determine health status
   const getHealthStatus = (score: number) => {
-    if (score >= 85) return { label: 'Excellent', color: '#22c55e' }
-    if (score >= 70) return { label: 'Good', color: '#3b82f6' }
-    if (score >= 50) return { label: 'Fair', color: '#eab308' }
-    return { label: 'Needs Work', color: '#ef4444' }
+    if (score >= 85) return { label: 'Excellent', color: 'var(--status-success-solid)' }
+    if (score >= 70) return { label: 'Good', color: 'var(--status-info-solid)' }
+    if (score >= 50) return { label: 'Fair', color: 'var(--status-warning-solid)' }
+    return { label: 'Needs Work', color: 'var(--status-error-solid)' }
   }
   
   const healthStatus = getHealthStatus(healthScore)
@@ -52,7 +52,7 @@ export function HeroCard({
   return (
     <div
       style={{
-        backgroundColor: colors.warmGray[50],
+        backgroundColor: surfaces.secondary,
         border: `1px solid var(--framer-color-divider)`,
         borderRadius: borders.radius.lg,
         padding: spacing.lg,
@@ -65,7 +65,7 @@ export function HeroCard({
             style={{
               fontSize: typography.fontSize.xs,
               fontWeight: typography.fontWeight.medium,
-              color: 'var(--framer-color-text-secondary)',
+              color: framerColors.textSecondary,
               textTransform: 'uppercase' as const,
               letterSpacing: '0.05em',
             }}
@@ -73,7 +73,7 @@ export function HeroCard({
             Total Page Weight
           </div>
           {showWarning && (
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: showCritical ? '#ef4444' : '#f59e0b' }}>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: showCritical ? 'var(--status-error-solid)' : 'var(--status-warning-solid)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>
           )}
@@ -82,7 +82,7 @@ export function HeroCard({
           style={{
             fontSize: '36px',
             fontWeight: typography.fontWeight.bold,
-            color: showCritical ? '#ef4444' : showWarning ? '#f59e0b' : 'var(--framer-color-text)',
+            color: showCritical ? 'var(--status-error-solid)' : showWarning ? 'var(--status-warning-solid)' : framerColors.text,
             lineHeight: typography.lineHeight.tight,
             marginBottom: spacing.sm,
           }}
@@ -96,7 +96,7 @@ export function HeroCard({
             <div
               style={{
                 fontSize: typography.fontSize.xs,
-                color: 'var(--framer-color-text-tertiary)',
+                color: framerColors.textTertiary,
                 marginBottom: '2px',
               }}
             >
@@ -106,7 +106,7 @@ export function HeroCard({
               style={{
                 fontSize: typography.fontSize.sm,
                 fontWeight: typography.fontWeight.semibold,
-                color: loadTime3G > 10 ? '#f59e0b' : 'var(--framer-color-text)',
+                color: loadTime3G > 10 ? 'var(--status-warning-solid)' : framerColors.text,
               }}
             >
               {formatLoadTime(loadTime3G)}
@@ -116,7 +116,7 @@ export function HeroCard({
             <div
               style={{
                 fontSize: typography.fontSize.xs,
-                color: 'var(--framer-color-text-tertiary)',
+                color: framerColors.textTertiary,
                 marginBottom: '2px',
               }}
             >
@@ -126,7 +126,7 @@ export function HeroCard({
               style={{
                 fontSize: typography.fontSize.sm,
                 fontWeight: typography.fontWeight.semibold,
-                color: loadTime4G > 5 ? '#f59e0b' : 'var(--framer-color-text)',
+                color: loadTime4G > 5 ? 'var(--status-warning-solid)' : framerColors.text,
               }}
             >
               {formatLoadTime(loadTime4G)}
@@ -156,7 +156,7 @@ export function HeroCard({
                 style={{
                   fontSize: typography.fontSize.xs,
                   fontWeight: typography.fontWeight.medium,
-                  color: 'var(--framer-color-text-secondary)',
+                  color: framerColors.textSecondary,
                   textTransform: 'uppercase' as const,
                   letterSpacing: '0.05em',
                 }}
@@ -224,7 +224,7 @@ export function HeroCard({
               alignItems: 'center',
               gap: spacing.sm,
               fontSize: typography.fontSize.sm,
-              color: 'var(--framer-color-text-secondary)',
+              color: framerColors.textSecondary,
             }}
           >
             <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

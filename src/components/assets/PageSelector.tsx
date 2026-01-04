@@ -1,5 +1,5 @@
 import type { ProjectAnalysis } from '../../types/analysis'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, colors, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 
 interface PageSelectorProps {
   analysis: ProjectAnalysis
@@ -14,8 +14,8 @@ export function PageSelector({ analysis, selectedPageId, onPageChange }: PageSel
     <div
       style={{
         padding: `${spacing.sm} ${spacing.lg}`,
-        borderBottom: `${borders.width.thin} solid ${colors.gray[200]}`,
-        backgroundColor: colors.white,
+        borderBottom: `${borders.width.thin} solid ${themeBorders.subtle}`,
+        backgroundColor: surfaces.secondary,
         display: 'flex',
         alignItems: 'center',
         gap: spacing.md,
@@ -25,7 +25,7 @@ export function PageSelector({ analysis, selectedPageId, onPageChange }: PageSel
         style={{
           fontSize: typography.fontSize.xs,
           fontWeight: typography.fontWeight.medium,
-          color: colors.gray[500],
+          color: framerColors.textSecondary,
           whiteSpace: 'nowrap' as const,
         }}
       >
@@ -39,19 +39,19 @@ export function PageSelector({ analysis, selectedPageId, onPageChange }: PageSel
           padding: `6px ${spacing.md}`,
           fontSize: typography.fontSize.xs,
           fontWeight: typography.fontWeight.medium,
-          color: colors.almostBlack,
-          backgroundColor: colors.white,
-          border: `${borders.width.thin} solid ${colors.gray[300]}`,
+          color: framerColors.text,
+          backgroundColor: surfaces.primary,
+          border: `${borders.width.thin} solid ${themeBorders.default}`,
           borderRadius: borders.radius.md,
           cursor: 'pointer',
           transition: 'border-color 0.15s ease',
         }}
         onFocus={(e) => {
-          e.currentTarget.style.borderColor = colors.black
-          e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.gray[200]}`
+          e.currentTarget.style.borderColor = framerColors.text
+          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
         }}
         onBlur={(e) => {
-          e.currentTarget.style.borderColor = colors.gray[300]
+          e.currentTarget.style.borderColor = themeBorders.default
           e.currentTarget.style.boxShadow = 'none'
         }}
       >

@@ -21,7 +21,7 @@ export function QuickStatsBar({
         gap: spacing.lg,
         alignItems: 'center',
         padding: `${spacing.lg} ${spacing.xl}`,
-        backgroundColor: 'var(--framer-color-bg)',
+        backgroundColor: backgrounds.page,
         border: `1px solid var(--framer-color-divider)`,
         borderRadius: borders.radius.lg,
       }}
@@ -31,7 +31,7 @@ export function QuickStatsBar({
         <div
           style={{
             fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-tertiary)',
+            color: framerColors.textTertiary,
             marginBottom: '6px',
             fontWeight: typography.fontWeight.medium,
             textTransform: 'uppercase' as const,
@@ -44,7 +44,7 @@ export function QuickStatsBar({
           style={{
             fontSize: '28px',
             fontWeight: typography.fontWeight.semibold,
-            color: 'var(--framer-color-text)',
+            color: framerColors.text,
             lineHeight: typography.lineHeight.tight,
           }}
         >
@@ -93,7 +93,7 @@ export function QuickStatsBar({
         <div
           style={{
             fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-tertiary)',
+            color: framerColors.textTertiary,
             marginBottom: '6px',
             fontWeight: typography.fontWeight.medium,
             textTransform: 'uppercase' as const,
@@ -114,7 +114,7 @@ export function QuickStatsBar({
             style={{
               fontSize: '28px',
               fontWeight: typography.fontWeight.semibold,
-              color: 'var(--framer-color-text)',
+              color: framerColors.text,
               lineHeight: typography.lineHeight.tight,
               transition: 'transform 0.15s ease',
             }}
@@ -122,7 +122,7 @@ export function QuickStatsBar({
             {recommendationsCount}
           </div>
           {onRecommendationsClick && recommendationsCount > 0 && (
-            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--framer-color-text-tertiary)' }}>
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: framerColors.textTertiary }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
           )}
@@ -143,7 +143,7 @@ export function QuickStatsBar({
         <div
           style={{
             fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-tertiary)',
+            color: framerColors.textTertiary,
             marginBottom: '6px',
             fontWeight: typography.fontWeight.medium,
             textTransform: 'uppercase' as const,
@@ -156,7 +156,7 @@ export function QuickStatsBar({
           style={{
             fontSize: '28px',
             fontWeight: typography.fontWeight.semibold,
-            color: 'var(--framer-color-text)',
+            color: framerColors.text,
             lineHeight: typography.lineHeight.tight,
           }}
         >

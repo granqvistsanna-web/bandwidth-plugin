@@ -3,9 +3,10 @@ import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
 import { CMSManualEstimateModal } from './CMSManualEstimateModal'
+import { Button } from '../primitives/Button'
 import type { ManualCMSEstimate } from '../../hooks/useAnalysis'
 import { debugLog } from '../../utils/debugLog'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, colors, surfaces, themeBorders, framerColors } from '../../styles/designTokens'
 
 interface CMSAssetsNoticeProps {
   analysis: ProjectAnalysis
@@ -39,61 +40,58 @@ export function CMSAssetsNotice({
     <>
       <div
         style={{
-          padding: spacing.md,
-          backgroundColor: colors.warmGray[100],
+          padding: spacing.lg,
+          backgroundColor: surfaces.secondary,
           borderRadius: borders.radius.lg,
+          border: `1px solid ${themeBorders.subtle}`,
         }}
       >
         {/* Header */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: spacing.sm,
+          marginBottom: spacing.md,
         }}>
-          <div>
-            <h3 style={{
-              fontSize: typography.fontSize.md,
-              fontWeight: typography.fontWeight.semibold,
-              color: 'var(--framer-color-text)',
-              margin: 0,
-              marginBottom: spacing.xs,
-            }}>
-              CMS Assets
-            </h3>
-            <div style={{
-              fontSize: typography.fontSize.xs,
-              color: 'var(--framer-color-text-secondary)',
-              fontFamily: typography.fontFamily.sans,
-            }}>
-              {cmsCount > 0 ? (
-                <>
-                  {cmsCount} detected • {formatBytes(cmsBytes)}
-                  {cmsNotFound > 0 && ` • ${cmsNotFound} estimated`}
-                </>
-              ) : (
-                'Not detected'
-              )}
-            </div>
+          <h3 style={{
+            fontSize: typography.fontSize.md,
+            fontWeight: typography.fontWeight.semibold,
+            color: framerColors.text,
+            margin: 0,
+            marginBottom: spacing.xs,
+          }}>
+            CMS Assets
+          </h3>
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: framerColors.textSecondary,
+            fontFamily: typography.fontFamily.sans,
+          }}>
+            {cmsCount > 0 ? (
+              <>
+                {cmsCount} detected • {formatBytes(cmsBytes)}
+                {cmsNotFound > 0 && ` • ${cmsNotFound} estimated`}
+              </>
+            ) : (
+              'Not detected'
+            )}
           </div>
         </div>
 
         {/* Manual Estimates List */}
         {hasManualEstimates && manualCMSEstimates.length > 0 && (
           <div style={{
-            marginBottom: spacing.md,
+            marginBottom: spacing.lg,
             paddingTop: spacing.md,
-            borderTop: `${borders.width.thin} solid var(--framer-color-divider)`,
+            borderTop: `1px solid ${themeBorders.subtle}`,
           }}>
             <div style={{
               fontSize: typography.fontSize.xs,
-              color: 'var(--framer-color-text-secondary)',
+              fontWeight: typography.fontWeight.medium,
+              color: framerColors.textSecondary,
               marginBottom: spacing.sm,
               fontFamily: typography.fontFamily.sans,
             }}>
               Manual Estimates ({manualCMSEstimates.length})
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.xs }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
               {manualCMSEstimates.map((estimate) => (
                 <div
                   key={estimate.id}
@@ -101,25 +99,32 @@ export function CMSAssetsNotice({
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: spacing.sm,
-                    backgroundColor: 'var(--framer-color-bg)',
-                    borderRadius: borders.radius.sm,
-                    border: `${borders.width.thin} solid var(--framer-color-divider)`,
-                  }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (onEditEstimate) {
-                      setEditingEstimate(estimate)
-                      setShowManualEstimateModal(true)
-                    }
+                    gap: spacing.sm,
+                    padding: spacing.md,
+                    backgroundColor: surfaces.primary,
+                    borderRadius: borders.radius.md,
+                    border: `1px solid ${themeBorders.subtle}`,
                   }}
                 >
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <div 
+                    style={{ 
+                      flex: 1, 
+                      minWidth: 0,
+                      cursor: onEditEstimate ? 'pointer' : 'default'
+                    }}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (onEditEstimate) {
+                        setEditingEstimate(estimate)
+                        setShowManualEstimateModal(true)
+                      }
+                    }}
+                  >
                     <div style={{
                       fontSize: typography.fontSize.sm,
                       fontWeight: typography.fontWeight.medium,
-                      color: 'var(--framer-color-text)',
-                      marginBottom: '2px',
+                      color: framerColors.text,
+                      marginBottom: spacing.xs,
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
@@ -128,43 +133,26 @@ export function CMSAssetsNotice({
                     </div>
                     <div style={{
                       fontSize: typography.fontSize.xs,
-                      color: 'var(--framer-color-text-secondary)',
+                      color: framerColors.textSecondary,
                       fontFamily: typography.fontFamily.sans,
                     }}>
                       {estimate.imageCount} image{estimate.imageCount !== 1 ? 's' : ''} • {formatBytes(estimate.estimatedBytes)}
                     </div>
                   </div>
                   {onEditEstimate && (
-                    <button
-                      type="button"
+                    <Button
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
                         setEditingEstimate(estimate)
                         setShowManualEstimateModal(true)
                       }}
-                      style={{
-                        padding: spacing.xs,
-                        fontSize: typography.fontSize.xs,
-                        color: 'var(--framer-color-text-secondary)',
-                        backgroundColor: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        borderRadius: borders.radius.sm,
-                        transition: 'all 0.15s ease',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                        e.currentTarget.style.color = 'var(--framer-color-text)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = 'transparent'
-                        e.currentTarget.style.color = 'var(--framer-color-text-secondary)'
-                      }}
+                      variant="ghost"
+                      size="sm"
                       title="Edit estimate"
                     >
-                      edit
-                    </button>
+                      Edit
+                    </Button>
                   )}
                 </div>
               ))}
@@ -172,49 +160,37 @@ export function CMSAssetsNotice({
           </div>
         )}
 
-        {/* Add Button */}
-        <button
-          onClick={() => {
-            setEditingEstimate(undefined)
-            setShowManualEstimateModal(true)
-          }}
-          style={{
-            padding: `${spacing.xs} ${spacing.md}`,
-            fontSize: typography.fontSize.sm,
-            fontWeight: typography.fontWeight.medium,
-            color: 'var(--framer-color-text)',
-            backgroundColor: 'transparent',
-            border: `${borders.width.thin} solid var(--framer-color-divider)`,
-            borderRadius: borders.radius.sm,
-            cursor: 'pointer',
-            transition: 'all 0.15s ease',
-            width: '100%',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-            e.currentTarget.style.backgroundColor = 'transparent'
-          }}
-        >
-          {cmsCount === 0 ? 'Add Manual Estimate' : 'Add Estimate'}
-        </button>
+        {/* Actions */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: spacing.sm
+        }}>
+          <Button
+            onClick={() => {
+              setEditingEstimate(undefined)
+              setShowManualEstimateModal(true)
+            }}
+            variant="secondary"
+            fullWidth
+          >
+            {cmsCount === 0 ? 'Add Manual Estimate' : 'Add Estimate'}
+          </Button>
 
-        {/* Guidance Text */}
-        {cmsCount === 0 && (
-          <div style={{
-            marginTop: spacing.sm,
-            padding: spacing.sm,
-            fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-secondary)',
-            backgroundColor: 'var(--framer-color-bg)',
-            borderRadius: borders.radius.sm,
-          }}>
-            CMS assets are detected from your published site. Add manual estimates if your site isn't published or some collections aren't detected.
-          </div>
-        )}
+          {/* Guidance Text */}
+          {cmsCount === 0 && (
+            <div style={{
+              padding: spacing.md,
+              fontSize: typography.fontSize.xs,
+              color: framerColors.textSecondary,
+              backgroundColor: surfaces.tertiary,
+              borderRadius: borders.radius.md,
+              lineHeight: typography.lineHeight.relaxed,
+            }}>
+              CMS assets are detected from your published site. Add manual estimates if your site isn't published or some collections aren't detected.
+            </div>
+          )}
+        </div>
       </div>
 
       {showManualEstimateModal && (

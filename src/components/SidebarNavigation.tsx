@@ -1,7 +1,16 @@
 import { useState } from 'react'
-import { spacing, typography, borders, colors } from '../styles/designTokens'
+import { spacing, typography, borders, colors, surfaces, themeBorders, overlays, hoverStates, framerColors } from '../styles/designTokens'
+import { Button } from './primitives/Button'
 import { formatTimestamp } from '../utils/formatTimestamp'
-import { LayoutDashboard, Image, Sparkles, BarChart3, Settings, Bug, RefreshCw } from 'lucide-react'
+import { 
+  Squares2X2Icon, 
+  PhotoIcon, 
+  SparklesIcon, 
+  ChartBarIcon, 
+  Cog6ToothIcon, 
+  BugAntIcon,
+  ArrowPathIcon
+} from '@heroicons/react/24/solid'
 
 type Tab = 'overview' | 'assets' | 'recommendations' | 'bandwidth' | 'settings' | 'debug'
 
@@ -24,34 +33,38 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
     {
       id: 'overview',
       label: 'Overview',
-      icon: <LayoutDashboard size={24} />
+      icon: <Squares2X2Icon style={{ width: '20px', height: '20px' }} />
     },
     {
       id: 'assets',
       label: 'Assets',
-      icon: <Image size={24} />
+      icon: <PhotoIcon style={{ width: '20px', height: '20px' }} />
     },
     {
       id: 'recommendations',
       label: 'Recommendations',
-      icon: <Sparkles size={24} />
+      icon: <SparklesIcon style={{ width: '20px', height: '20px' }} />
     },
     {
       id: 'bandwidth',
       label: 'Usage Estimate',
-      icon: <BarChart3 size={24} />
+      icon: <ChartBarIcon style={{ width: '20px', height: '20px' }} />
     },
     {
       id: 'settings',
       label: 'Settings',
-      icon: <Settings size={24} />
-    },
-    {
-      id: 'debug',
-      label: 'Debug',
-      icon: <Bug size={24} />
+      icon: <Cog6ToothIcon style={{ width: '20px', height: '20px' }} />
     }
   ]
+
+  // Only show debug tab in development
+  if (import.meta.env.DEV) {
+    tabs.push({
+      id: 'debug',
+      label: 'Debug',
+      icon: <BugAntIcon style={{ width: '20px', height: '20px' }} />
+    })
+  }
 
   return (
     <>
@@ -62,7 +75,7 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
             position: 'fixed',
             inset: 0,
             zIndex: 40,
-            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+            backgroundColor: overlays.backdrop,
             transition: 'opacity 0.3s ease',
           }}
           onClick={() => setIsCollapsed(true)}
@@ -82,8 +95,8 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
           transition: 'width 0.2s ease-out',
           willChange: 'width',
           zIndex: 50,
-          backgroundColor: colors.white,
-          borderRight: `${borders.width.thin} solid ${colors.gray[200]}`,
+          backgroundColor: surfaces.primary,
+          borderRight: `${borders.width.thin} solid ${themeBorders.subtle}`,
         }}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -115,23 +128,24 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
                   width: '100%',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: spacing.md,
-                  padding: `${spacing.sm} ${spacing.md}`,
-                  borderRadius: borders.radius.md,
+                  gap: spacing.sm,
+                  padding: `${spacing.sm} ${spacing.sm}`,
+                  borderRadius: borders.radius.sm,
                   transition: 'all 0.15s ease',
                   position: 'relative',
                   textAlign: 'left',
                   border: 'none',
                   cursor: 'pointer',
+                  marginBottom: '2px',
                   ...(isActive
                     ? {
-                        backgroundColor: colors.white,
-                        color: colors.almostBlack,
+                        backgroundColor: colors.accent.primary, // Blue accent works in both modes
+                        color: colors.white,
                         fontSize: typography.fontSize.sm,
                         fontWeight: typography.fontWeight.medium,
                       }
                     : {
-                        color: colors.gray[600],
+                        color: framerColors.textSecondary,
                         fontSize: typography.fontSize.sm,
                         fontWeight: typography.fontWeight.regular,
                         backgroundColor: 'transparent',
@@ -139,8 +153,8 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {
-                    e.currentTarget.style.backgroundColor = colors.white
-                    e.currentTarget.style.color = colors.almostBlack
+                    e.currentTarget.style.backgroundColor = hoverStates.surface
+                    e.currentTarget.style.color = framerColors.text
                   }
                   // Show tooltip when collapsed
                   if (!isExpanded) {
@@ -153,7 +167,7 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
                 onMouseLeave={(e) => {
                   if (!isActive) {
                     e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.color = colors.gray[600]
+                    e.currentTarget.style.color = framerColors.textSecondary
                   }
                   // Hide tooltip when collapsed
                   if (!isExpanded) {
@@ -168,19 +182,19 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
                 <span
                   style={{
                     flexShrink: 0,
-                    color: isActive ? colors.almostBlack : colors.gray[500],
+                    color: isActive ? colors.white : framerColors.textSecondary,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: '24px',
-                    height: '24px'
+                    width: '20px',
+                    height: '20px'
                   }}
                 >
                   {tab.icon}
                 </span>
                 
                 {isExpanded && (
-                  <span 
+                  <span
                     style={{
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -189,7 +203,7 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
                       flex: 1,
                       lineHeight: typography.lineHeight.tight,
                       fontWeight: isActive ? typography.fontWeight.medium : typography.fontWeight.regular,
-                      color: isActive ? colors.almostBlack : 'inherit',
+                      color: isActive ? colors.white : 'inherit',
                     }}
                   >
                     {tab.label}
@@ -210,7 +224,7 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
                       pointerEvents: 'none',
                       transition: 'opacity 0.2s ease',
                       zIndex: 50,
-                      backgroundColor: colors.almostBlack,
+                      backgroundColor: framerColors.text,
                       color: colors.white,
                       fontSize: typography.fontSize.xs,
                       fontWeight: typography.fontWeight.semibold,
@@ -229,7 +243,7 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
                         height: 0,
                         borderTop: '6px solid transparent',
                         borderBottom: '6px solid transparent',
-                        borderRight: `6px solid ${colors.almostBlack}`
+                        borderRight: `6px solid ${framerColors.text}`
                       }}
                     />
                   </div>
@@ -243,79 +257,31 @@ export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, 
         {onRefresh && (
           <div style={{
             padding: spacing.md,
-            borderTop: `1px solid ${colors.gray[200]}`,
+            borderTop: `1px solid ${themeBorders.subtle}`,
             marginTop: 'auto'
           }}>
-            <button
+            <Button
               onClick={onRefresh}
               disabled={loading}
+              variant="primary"
+              fullWidth
+              icon={
+                <ArrowPathIcon 
+                  style={{ 
+                    width: '16px',
+                    height: '16px',
+                    animation: loading ? 'spin 1s linear infinite' : 'none',
+                    flexShrink: 0
+                  }}
+                />
+              }
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: isExpanded ? spacing.xs : 0,
-                padding: spacing.sm,
-                fontSize: typography.fontSize.sm,
-                fontWeight: typography.fontWeight.medium,
-                  color: loading ? 'var(--framer-color-text-tertiary)' : colors.white,
-                  backgroundColor: loading ? colors.warmGray[50] : colors.accent.primary,
-                border: 'none',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                borderRadius: borders.radius.sm,
-                transition: 'all 0.2s ease',
-                width: '100%',
                 justifyContent: isExpanded ? 'center' : 'center',
-                position: 'relative',
-                overflow: 'hidden'
+                gap: isExpanded ? spacing.xs : 0,
               }}
-              onMouseEnter={(e) => {
-                if (!loading) {
-                  e.currentTarget.style.backgroundColor = '#0088E6' // Darker blue on hover
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!loading) {
-                    e.currentTarget.style.backgroundColor = colors.accent.primary
-                }
-              }}
-              title={loading ? 'Analyzing project...' : 'Rescan project for changes'}
             >
-              {/* Icon - always visible */}
-              <span style={{
-                flexShrink: 0,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                width: '20px',
-                height: '20px',
-                transition: 'opacity 0.2s ease'
-              }}>
-                {loading ? (
-                  <RefreshCw 
-                    size={20}
-                    style={{ 
-                      animation: 'spin 1s linear infinite',
-                      flexShrink: 0
-                    }}
-                  />
-                ) : (
-                  <RefreshCw size={20} style={{ flexShrink: 0 }} />
-                )}
-              </span>
-              
-              {/* Text - fades in/out smoothly */}
-              {isExpanded && (
-                <span style={{
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  opacity: isExpanded ? 1 : 0,
-                  maxWidth: isExpanded ? '200px' : '0px',
-                  transition: 'opacity 0.2s ease, max-width 0.2s ease',
-                  marginLeft: spacing.xs
-                }}>
-                  {loading ? 'analyzing...' : 'Rescan project'}
-                </span>
-              )}
-            </button>
+              {isExpanded && (loading ? 'analyzing...' : 'Rescan project')}
+            </Button>
           </div>
         )}
       </div>

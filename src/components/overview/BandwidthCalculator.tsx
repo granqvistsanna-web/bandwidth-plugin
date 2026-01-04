@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { formatBytes } from '../../utils/formatBytes'
+import { calculateDeviceWeightedBandwidth, getBreakpointInfo } from '../../utils/deviceBandwidth'
 import type { ProjectAnalysis } from '../../types/analysis'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 import { CollapsibleSection } from './CollapsibleSection'
 
 interface BandwidthCalculatorProps {
@@ -42,53 +43,62 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
   }
   
   const getDefaultPagesPerVisit = () => {
-    if (pageCount < 10) return 1.5
-    if (pageCount < 50) return 2.0
-    return 2.5
+    if (pageCount < 10) return 2.5
+    if (pageCount < 50) return 3.5
+    return 4.5
   }
   
   const [monthlyPageviews, setMonthlyPageviews] = useState(getDefaultPageviews())
   const [averagePagesPerVisit, setAveragePagesPerVisit] = useState(getDefaultPagesPerVisit())
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>('basic')
 
-  const desktopData = analysis.overallBreakpoints.desktop
+  const { mobile: mobileData, tablet: tabletData, desktop: desktopData } = analysis.overallBreakpoints
   
-  // Calculate realistic bandwidth based on average pages per visit
+  // Calculate device-weighted bandwidth (Framer serves different image sizes per device)
   const { bytesPerVisit, bandwidthPer1000, monthlyBandwidthGB } = useMemo(() => {
     if (pages.length === 0) {
-      // Fallback: if no pages, use total bytes per pageview
-      const pageWeightMB = desktopData.totalBytes / (1024 * 1024)
-      const pageWeightGB = desktopData.totalBytes / (1024 * 1024 * 1024)
+      // Fallback: use device-weighted overall breakpoint data
+      const weightedBytes = calculateDeviceWeightedBandwidth({
+        mobile: mobileData,
+        tablet: tabletData,
+        desktop: desktopData
+      })
+      const pageWeightMB = weightedBytes / (1024 * 1024)
+      const pageWeightGB = weightedBytes / (1024 * 1024 * 1024)
       const bandwidthPer1000 = (pageWeightMB * 1000) / 1024
       const monthlyBandwidthGB = pageWeightGB * monthlyPageviews
       return {
-        bytesPerVisit: desktopData.totalBytes,
+        bytesPerVisit: weightedBytes,
         bandwidthPer1000,
         monthlyBandwidthGB
       }
     }
     
     // Strategy: Use the heaviest page + weighted average of other pages
-    // Sort pages by total bytes (heaviest first)
+    // Calculate device-weighted bytes for each page
     const sortedPages = [...pages].sort((a, b) => {
-      const aBytes = a.breakpoints.desktop.totalBytes
-      const bBytes = b.breakpoints.desktop.totalBytes
-      return bBytes - aBytes
+      const aWeighted = calculateDeviceWeightedBandwidth(a.breakpoints)
+      const bWeighted = calculateDeviceWeightedBandwidth(b.breakpoints)
+      return bWeighted - aWeighted
     })
     
     const heaviestPage = sortedPages[0]
     const otherPages = sortedPages.slice(1)
     
-    // Calculate average bytes for other pages
+    // Calculate average device-weighted bytes for other pages
     const avgOtherPageBytes = otherPages.length > 0
-      ? otherPages.reduce((sum, page) => sum + page.breakpoints.desktop.totalBytes, 0) / otherPages.length
+      ? otherPages.reduce((sum, page) => {
+          const weighted = calculateDeviceWeightedBandwidth(page.breakpoints)
+          return sum + weighted
+        }, 0) / otherPages.length
       : 0
     
-    // Calculate bytes per visit:
+    // Calculate device-weighted bytes per visit:
     // - Always includes the heaviest page (usually landing page)
     // - Plus (averagePagesPerVisit - 1) × average of other pages
+    const heaviestPageWeighted = calculateDeviceWeightedBandwidth(heaviestPage.breakpoints)
     const additionalPages = Math.max(0, averagePagesPerVisit - 1)
-    const bytesPerVisit = heaviestPage.breakpoints.desktop.totalBytes + (additionalPages * avgOtherPageBytes)
+    const bytesPerVisit = heaviestPageWeighted + (additionalPages * avgOtherPageBytes)
     
     // Convert to GB for display
     const bytesPerVisitMB = bytesPerVisit / (1024 * 1024)
@@ -101,7 +111,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
       bandwidthPer1000,
       monthlyBandwidthGB
     }
-  }, [desktopData.totalBytes, monthlyPageviews, averagePagesPerVisit, pages])
+  }, [mobileData.totalBytes, tabletData.totalBytes, desktopData.totalBytes, monthlyPageviews, averagePagesPerVisit, pages])
 
   const planLimit = FRAMER_PLANS[selectedPlan].bandwidthGB
   const usagePercent = (monthlyBandwidthGB / planLimit) * 100
@@ -144,102 +154,160 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
     }}>
       {/* Hero: Monthly Bandwidth */}
       <div style={{
-        backgroundColor: colors.white,
-        borderRadius: borders.radius.lg,
         padding: spacing.lg,
-        textAlign: 'center'
+        backgroundColor: surfaces.secondary,
+        borderRadius: borders.radius.lg,
+        border: `1px solid ${themeBorders.subtle}`,
+        boxShadow: themeElevation.default
       }}>
         <div style={{
-          fontSize: '36px',
-          fontWeight: typography.fontWeight.bold,
-          lineHeight: '1',
-          color: 'var(--framer-color-text)',
-          marginBottom: spacing.xs,
-          letterSpacing: '-0.02em'
-        }}>
-          {monthlyBandwidthGB.toFixed(2)} GB
-        </div>
-        <div style={{
-          fontSize: typography.fontSize.sm,
-          color: 'var(--framer-color-text-secondary)',
+          display: 'flex',
+          alignItems: 'baseline',
+          gap: spacing.sm,
           marginBottom: spacing.xs
         }}>
-          Estimated monthly bandwidth
+          <div style={{
+            fontSize: '32px',
+            fontWeight: typography.fontWeight.bold,
+            color: framerColors.text,
+            lineHeight: 1,
+            letterSpacing: '-0.02em'
+          }}>
+            {monthlyBandwidthGB.toFixed(2)} GB
+          </div>
+          <div style={{
+            fontSize: typography.fontSize.sm,
+            color: framerColors.textSecondary,
+            fontWeight: typography.fontWeight.medium
+          }}>
+            per month
+          </div>
         </div>
         <div style={{
           fontSize: typography.fontSize.xs,
-          color: 'var(--framer-color-text-tertiary)'
+          color: framerColors.textSecondary,
+          marginBottom: spacing.xs
         }}>
-          For {monthlyPageviews.toLocaleString()} pageviews
+          Based on {monthlyPageviews.toLocaleString()} pageviews
+        </div>
+        <div style={{
+          fontSize: typography.fontSize.xs,
+          color: framerColors.textTertiary,
+          lineHeight: typography.lineHeight.relaxed
+        }}>
+          Estimate accounts for responsive images: Framer serves smaller images to mobile devices, larger to desktop. Weighted by typical device distribution (55% mobile, 15% tablet, 30% desktop).
         </div>
       </div>
 
+      {/* Breakpoint Breakdown */}
+      <CollapsibleSection
+        title="Breakpoint Estimates"
+        defaultCollapsed={true}
+      >
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: spacing.md
+        }}>
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: framerColors.textSecondary,
+            lineHeight: typography.lineHeight.relaxed,
+            marginBottom: spacing.sm
+          }}>
+            Framer serves different image sizes based on viewport. Each breakpoint shows the estimated page weight for that device type.
+          </div>
+          
+          {(['mobile', 'tablet', 'desktop'] as const).map((breakpoint) => {
+            const data = analysis.overallBreakpoints[breakpoint]
+            const info = getBreakpointInfo(breakpoint)
+            const pageWeightMB = data.totalBytes / (1024 * 1024)
+            const monthlyGB = (pageWeightMB * monthlyPageviews) / 1024
+            
+            return (
+              <div
+                key={breakpoint}
+                style={{
+                  padding: spacing.md,
+                  backgroundColor: surfaces.primary,
+                  borderRadius: borders.radius.md,
+                  border: `1px solid ${themeBorders.subtle}`
+                }}
+              >
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'baseline',
+                  marginBottom: spacing.xs
+                }}>
+                  <div>
+                    <div style={{
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: typography.fontWeight.semibold,
+                      color: framerColors.text,
+                      marginBottom: '2px'
+                    }}>
+                      {info.label} ({info.width})
+                    </div>
+                    <div style={{
+                      fontSize: typography.fontSize.xs,
+                      color: framerColors.textSecondary
+                    }}>
+                      {info.description} • {info.distribution}
+                    </div>
+                  </div>
+                  <div style={{
+                    textAlign: 'right'
+                  }}>
+                    <div style={{
+                      fontSize: typography.fontSize.sm,
+                      fontWeight: typography.fontWeight.bold,
+                      color: framerColors.text
+                    }}>
+                      {formatBytes(data.totalBytes)}
+                    </div>
+                    <div style={{
+                      fontSize: typography.fontSize.xs,
+                      color: framerColors.textTertiary
+                    }}>
+                      {monthlyGB.toFixed(2)} GB/month
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </CollapsibleSection>
+
       {/* Traffic Estimate Inputs */}
       <div style={{
-        backgroundColor: colors.warmGray[100],
+        padding: spacing.lg,
+        backgroundColor: surfaces.secondary,
         borderRadius: borders.radius.lg,
-        padding: spacing.md
+        border: `1px solid ${themeBorders.subtle}`,
+        boxShadow: themeElevation.default
       }}>
         <div style={{
-          fontSize: typography.fontSize.md,
+          fontSize: typography.fontSize.sm,
           fontWeight: typography.fontWeight.semibold,
-          color: 'var(--framer-color-text)',
-          marginBottom: spacing.md
+          color: framerColors.text,
+          marginBottom: spacing.lg
         }}>
           Traffic Estimate
         </div>
 
         {/* Monthly Pageviews */}
-        <div style={{ marginBottom: spacing.md }}>
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+        <div style={{ marginBottom: spacing.lg }}>
+          <label style={{
+            display: 'block',
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            color: framerColors.text,
             marginBottom: spacing.xs
           }}>
-            <label style={{
-              fontSize: typography.fontSize.xs,
-              fontWeight: typography.fontWeight.medium,
-              color: 'var(--framer-color-text)'
-            }}>
-              Monthly pageviews
-            </label>
-            <select
-              value={monthlyPageviews}
-              onChange={(e) => setMonthlyPageviews(parseInt(e.target.value))}
-              style={{
-                padding: `${spacing.xs} ${spacing.sm}`,
-                fontSize: typography.fontSize.xs,
-                fontWeight: typography.fontWeight.medium,
-                color: 'var(--framer-color-text)',
-                backgroundColor: colors.white,
-                border: `1px solid var(--framer-color-divider)`,
-                borderRadius: borders.radius.sm,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                minWidth: '100px'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--framer-color-text)'
-                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              <option value={1000}>1K</option>
-              <option value={5000}>5K</option>
-              <option value={10000}>10K</option>
-              <option value={25000}>25K</option>
-              <option value={50000}>50K</option>
-              <option value={100000}>100K</option>
-              <option value={250000}>250K</option>
-              <option value={500000}>500K</option>
-              <option value={1000000}>1M</option>
-              <option value={monthlyPageviews}>Custom ({monthlyPageviews.toLocaleString()})</option>
-            </select>
-          </div>
+            Monthly pageviews
+          </label>
           <input
             type="number"
             value={monthlyPageviews}
@@ -247,116 +315,91 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             style={{
               width: '100%',
               padding: `${spacing.sm} ${spacing.md}`,
-              fontSize: typography.fontSize.sm,
-              color: 'var(--framer-color-text)',
-              backgroundColor: colors.white,
-              border: `1px solid var(--framer-color-divider)`,
+              fontSize: typography.fontSize.md,
+              fontWeight: typography.fontWeight.medium,
+              color: framerColors.text,
+              backgroundColor: surfaces.primary,
+              border: `1px solid ${themeBorders.default}`,
               borderRadius: borders.radius.md,
               transition: 'all 0.15s ease'
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-text)'
-              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
+              e.currentTarget.style.borderColor = framerColors.text
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+              e.currentTarget.style.borderColor = themeBorders.default
               e.currentTarget.style.boxShadow = 'none'
             }}
             min="1"
             step="1000"
           />
+          {/* Quick values */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: spacing.xs,
+            marginTop: spacing.sm
+          }}>
+            {[1000, 5000, 10000, 25000, 50000, 100000].map(value => (
+              <button
+                key={value}
+                onClick={() => setMonthlyPageviews(value)}
+                style={{
+                  padding: `${spacing.xs} ${spacing.sm}`,
+                  fontSize: typography.fontSize.xs,
+                  fontWeight: typography.fontWeight.medium,
+                  color: monthlyPageviews === value ? surfaces.primary : framerColors.text,
+                  backgroundColor: monthlyPageviews === value ? framerColors.text : surfaces.tertiary,
+                  border: 'none',
+                  borderRadius: borders.radius.md,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (monthlyPageviews !== value) {
+                    e.currentTarget.style.backgroundColor = framerColors.bgSecondary
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (monthlyPageviews !== value) {
+                    e.currentTarget.style.backgroundColor = surfaces.tertiary
+                  }
+                }}
+              >
+                {value >= 1000 ? `${value / 1000}K` : value}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Pages per Visit */}
         <div>
-          <div style={{
+          <label style={{
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            gap: spacing.xs,
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            color: framerColors.text,
             marginBottom: spacing.xs
           }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: spacing.xs
-            }}>
-              <label style={{
-                fontSize: typography.fontSize.xs,
-                fontWeight: typography.fontWeight.medium,
-                color: 'var(--framer-color-text)'
-              }}>
-                Pages per visit
-              </label>
-              <div style={{ position: 'relative', display: 'inline-block' }}>
-                <svg 
-                  style={{ 
-                    width: '12px', 
-                    height: '12px', 
-                    color: 'var(--framer-color-text-tertiary)',
-                    cursor: 'help'
-                  }} 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <div style={{
-                  position: 'absolute',
-                  left: 0,
-                  bottom: '100%',
-                  marginBottom: spacing.xs,
-                  width: '240px',
-                  padding: spacing.sm,
-                  fontSize: typography.fontSize.xs,
-                  borderRadius: borders.radius.md,
-                  backgroundColor: 'var(--framer-color-text)',
-                  color: 'var(--framer-color-text-reversed)',
-                  opacity: 0,
-                  pointerEvents: 'none',
-                  transition: 'opacity 0.15s ease',
-                  zIndex: 10,
-                  whiteSpace: 'normal'
+            Pages per visit
+            <span title="Most visitors view 1–3 pages. Landing page is always included, other pages are weighted by this value." style={{ cursor: 'help' }}>
+              <svg
+                style={{
+                  width: '14px',
+                  height: '14px',
+                  color: framerColors.textTertiary
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.opacity = '1' }}
-                onMouseLeave={(e) => { e.currentTarget.style.opacity = '0' }}
-                >
-                  Most visitors view 1–3 pages. Landing page is always included, other pages are weighted by this value.
-                </div>
-              </div>
-            </div>
-            <select
-              value={averagePagesPerVisit.toFixed(1)}
-              onChange={(e) => setAveragePagesPerVisit(parseFloat(e.target.value))}
-              style={{
-                padding: `${spacing.xs} ${spacing.sm}`,
-                fontSize: typography.fontSize.xs,
-                fontWeight: typography.fontWeight.medium,
-                color: 'var(--framer-color-text)',
-                backgroundColor: colors.white,
-                border: `1px solid var(--framer-color-divider)`,
-                borderRadius: borders.radius.sm,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                minWidth: '100px'
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = 'var(--framer-color-text)'
-                e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-                e.currentTarget.style.boxShadow = 'none'
-              }}
-            >
-              <option value="1.0">Landing only (1.0)</option>
-              <option value="1.5">Light (1.5)</option>
-              <option value="2.0">Typical (2.0)</option>
-              <option value="2.5">Moderate (2.5)</option>
-              <option value="3.0">Deep (3.0)</option>
-              <option value={averagePagesPerVisit.toFixed(1)}>Custom ({averagePagesPerVisit.toFixed(1)})</option>
-            </select>
-          </div>
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </span>
+          </label>
           <input
             type="number"
             value={averagePagesPerVisit}
@@ -364,83 +407,122 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             style={{
               width: '100%',
               padding: `${spacing.sm} ${spacing.md}`,
-              fontSize: typography.fontSize.sm,
-              color: 'var(--framer-color-text)',
-              backgroundColor: colors.white,
-              border: `1px solid var(--framer-color-divider)`,
+              fontSize: typography.fontSize.md,
+              fontWeight: typography.fontWeight.medium,
+              color: framerColors.text,
+              backgroundColor: surfaces.primary,
+              border: `1px solid ${themeBorders.default}`,
               borderRadius: borders.radius.md,
               transition: 'all 0.15s ease'
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-text)'
-              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
+              e.currentTarget.style.borderColor = framerColors.text
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+              e.currentTarget.style.borderColor = themeBorders.default
               e.currentTarget.style.boxShadow = 'none'
             }}
             min="0.1"
             max={pages.length || 10}
             step="0.1"
           />
+          {/* Quick values */}
+          <div style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: spacing.xs,
+            marginTop: spacing.sm
+          }}>
+            {[
+              { value: 1.0, label: 'Landing only' },
+              { value: 2.5, label: 'Light' },
+              { value: 3.5, label: 'Typical' },
+              { value: 4.5, label: 'Moderate' },
+              { value: 6.0, label: 'Deep' }
+            ].map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setAveragePagesPerVisit(value)}
+                style={{
+                  padding: `${spacing.xs} ${spacing.sm}`,
+                  fontSize: typography.fontSize.xs,
+                  fontWeight: typography.fontWeight.medium,
+                  color: averagePagesPerVisit === value ? surfaces.primary : framerColors.text,
+                  backgroundColor: averagePagesPerVisit === value ? framerColors.text : surfaces.tertiary,
+                  border: 'none',
+                  borderRadius: borders.radius.md,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (averagePagesPerVisit !== value) {
+                    e.currentTarget.style.backgroundColor = framerColors.bgSecondary
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (averagePagesPerVisit !== value) {
+                    e.currentTarget.style.backgroundColor = surfaces.tertiary
+                  }
+                }}
+              >
+                {label} ({value})
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Plan Status */}
       <div style={{
-        backgroundColor: colors.warmGray[100],
+        padding: spacing.lg,
+        backgroundColor: surfaces.secondary,
         borderRadius: borders.radius.lg,
-        padding: spacing.md
+        border: `1px solid ${themeBorders.subtle}`,
+        boxShadow: themeElevation.default
       }}>
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: spacing.sm
+          marginBottom: spacing.lg
         }}>
-          <div>
-            <div style={{
-              fontSize: typography.fontSize.sm,
-              fontWeight: typography.fontWeight.medium,
-              color: 'var(--framer-color-text)',
-              marginBottom: '2px'
-            }}>
-              Plan: {FRAMER_PLANS[selectedPlan].name}
-            </div>
-            <div style={{
-              fontSize: typography.fontSize.xs,
-              color: 'var(--framer-color-text-secondary)'
-            }}>
-              {planLimit} GB/month limit
-            </div>
+          <div style={{
+            fontSize: typography.fontSize.sm,
+            fontWeight: typography.fontWeight.semibold,
+            color: framerColors.text,
+            marginBottom: spacing.md
+          }}>
+            Your Plan
           </div>
           <select
             value={selectedPlan}
             onChange={(e) => setSelectedPlan(e.target.value as PlanKey)}
             style={{
-              padding: `${spacing.xs} ${spacing.sm}`,
-              fontSize: typography.fontSize.xs,
+              width: '100%',
+              padding: `${spacing.sm} ${spacing.md}`,
+              fontSize: typography.fontSize.md,
               fontWeight: typography.fontWeight.medium,
-              color: 'var(--framer-color-text)',
-              backgroundColor: colors.white,
-              border: `1px solid var(--framer-color-divider)`,
-              borderRadius: borders.radius.sm,
+              color: framerColors.text,
+              backgroundColor: surfaces.primary,
+              border: `1px solid ${themeBorders.default}`,
+              borderRadius: borders.radius.md,
               cursor: 'pointer',
               transition: 'all 0.15s ease',
-              minWidth: '120px'
+              appearance: 'none',
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'right 12px center'
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-text)'
-              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 0, 0, 0.05)'
+              e.currentTarget.style.borderColor = framerColors.text
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+              e.currentTarget.style.borderColor = themeBorders.default
               e.currentTarget.style.boxShadow = 'none'
             }}
           >
             {(Object.keys(FRAMER_PLANS) as PlanKey[]).map((plan) => (
               <option key={plan} value={plan}>
-                {FRAMER_PLANS[plan].name} ({FRAMER_PLANS[plan].bandwidthGB} GB)
+                {FRAMER_PLANS[plan].name} - {FRAMER_PLANS[plan].bandwidthGB} GB/month
               </option>
             ))}
           </select>
@@ -448,49 +530,50 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
 
         {/* Usage Progress Bar */}
         {monthlyBandwidthGB > 0 && (
-          <div style={{ marginTop: spacing.md }}>
+          <div>
             <div style={{
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
-              marginBottom: spacing.xs
+              marginBottom: spacing.sm
             }}>
               <div style={{
                 fontSize: typography.fontSize.xs,
-                fontWeight: typography.fontWeight.medium,
-                color: 'var(--framer-color-text)'
+                fontWeight: typography.fontWeight.semibold,
+                color: framerColors.text
               }}>
                 {riskTitle}
               </div>
               <div style={{
                 fontSize: typography.fontSize.xs,
-                color: 'var(--framer-color-text-secondary)'
+                fontWeight: typography.fontWeight.medium,
+                color: framerColors.textSecondary
               }}>
                 {usagePercent.toFixed(1)}% used
               </div>
             </div>
             <div style={{
               width: '100%',
-              height: '8px',
-              backgroundColor: 'var(--framer-color-divider)',
+              height: '10px',
+              backgroundColor: surfaces.tertiary,
               borderRadius: borders.radius.full,
               overflow: 'hidden',
-              marginBottom: spacing.sm
+              marginBottom: spacing.md
             }}>
               <div
                 style={{
                   height: '100%',
                   width: `${Math.min(usagePercent, 100)}%`,
-                  backgroundColor: riskLevel === 'danger' ? 'var(--framer-color-text)' :
-                                  riskLevel === 'warning' ? 'var(--framer-color-text-secondary)' :
-                                  'var(--framer-color-text-tertiary)',
+                  backgroundColor: riskLevel === 'danger' ? 'var(--status-error-solid)' :
+                                  riskLevel === 'warning' ? 'var(--status-warning-solid)' :
+                                  'var(--status-success-solid)',
                   transition: 'width 0.3s ease'
                 }}
               />
             </div>
             <div style={{
               fontSize: typography.fontSize.xs,
-              color: 'var(--framer-color-text-secondary)',
+              color: framerColors.textSecondary,
               lineHeight: typography.lineHeight.relaxed
             }}>
               {riskMessage}
@@ -498,11 +581,11 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             {overageGB > 0 && (
               <div style={{
                 fontSize: typography.fontSize.xs,
-                fontWeight: typography.fontWeight.medium,
-                color: 'var(--framer-color-text)',
-                marginTop: spacing.sm,
-                paddingTop: spacing.sm,
-                borderTop: `1px solid var(--framer-color-divider)`
+                fontWeight: typography.fontWeight.semibold,
+                color: framerColors.text,
+                marginTop: spacing.md,
+                paddingTop: spacing.md,
+                borderTop: `1px solid ${themeBorders.subtle}`
               }}>
                 Estimated overage: {overageGB.toFixed(2)} GB beyond plan limit
               </div>
@@ -510,12 +593,12 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             {suggestedPlan && suggestedPlan !== selectedPlan && (
               <div style={{
                 fontSize: typography.fontSize.xs,
-                color: 'var(--framer-color-text-secondary)',
-                marginTop: spacing.sm,
-                paddingTop: spacing.sm,
-                borderTop: `1px solid var(--framer-color-divider)`
+                color: framerColors.textSecondary,
+                marginTop: spacing.md,
+                paddingTop: spacing.md,
+                borderTop: `1px solid ${themeBorders.subtle}`
               }}>
-                Based on your estimate, we recommend the <strong style={{ color: 'var(--framer-color-text)' }}>{FRAMER_PLANS[suggestedPlan].name}</strong> plan
+                Based on your estimate, we recommend the <strong style={{ color: framerColors.text }}>{FRAMER_PLANS[suggestedPlan].name}</strong> plan
               </div>
             )}
           </div>
@@ -536,7 +619,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
           <div>
             <div style={{
               fontSize: typography.fontSize.xs,
-              color: 'var(--framer-color-text-secondary)',
+              color: framerColors.textSecondary,
               marginBottom: spacing.xs
             }}>
               Per visit
@@ -544,7 +627,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             <div style={{
               fontSize: typography.fontSize.md,
               fontWeight: typography.fontWeight.semibold,
-              color: 'var(--framer-color-text)'
+              color: framerColors.text
             }}>
               {formatBytes(bytesPerVisit)}
             </div>
@@ -552,7 +635,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
           <div>
             <div style={{
               fontSize: typography.fontSize.xs,
-              color: 'var(--framer-color-text-secondary)',
+              color: framerColors.textSecondary,
               marginBottom: spacing.xs
             }}>
               Per 1,000 views
@@ -560,7 +643,7 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
             <div style={{
               fontSize: typography.fontSize.md,
               fontWeight: typography.fontWeight.semibold,
-              color: 'var(--framer-color-text)'
+              color: framerColors.text
             }}>
               {bandwidthPer1000.toFixed(3)} GB
             </div>
@@ -571,21 +654,23 @@ export function BandwidthCalculator({ analysis }: BandwidthCalculatorProps) {
       {/* Action Items */}
       {(usagePercent > 80 || overageGB > 0) && (
         <div style={{
-          backgroundColor: colors.warmGray[100],
+          padding: spacing.lg,
+          backgroundColor: surfaces.secondary,
           borderRadius: borders.radius.lg,
-          padding: spacing.md
+          border: `1px solid ${themeBorders.subtle}`,
+          boxShadow: themeElevation.default
         }}>
           <div style={{
             fontSize: typography.fontSize.sm,
-            fontWeight: typography.fontWeight.medium,
-            color: 'var(--framer-color-text)',
-            marginBottom: spacing.xs
+            fontWeight: typography.fontWeight.semibold,
+            color: framerColors.text,
+            marginBottom: spacing.sm
           }}>
             Reduce bandwidth usage
           </div>
           <div style={{
             fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-secondary)',
+            color: framerColors.textSecondary,
             lineHeight: typography.lineHeight.relaxed
           }}>
             Optimize your largest images, convert PNGs to WebP, and enable Framer's image optimization. See the Recommendations page for specific opportunities.

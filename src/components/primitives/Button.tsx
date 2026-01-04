@@ -1,5 +1,5 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, colors, surfaces, themeBorders, framerColors } from '../../styles/designTokens'
 
 type ButtonVariant = 'primary' | 'secondary' | 'ghost'
 type ButtonSize = 'sm' | 'md'
@@ -22,58 +22,69 @@ export function Button({
   className,
   ...props
 }: ButtonProps) {
-  const baseStyles = {
+  // Standardized button dimensions
+  const sizeConfig = {
+    sm: {
+      padding: `6px ${spacing.md}`, // 6px 12px
+      minHeight: '32px',
+      fontSize: typography.fontSize.xs,
+    },
+    md: {
+      padding: `${spacing.sm} ${spacing.lg}`, // 8px 16px
+      minHeight: '36px',
+      fontSize: typography.fontSize.sm,
+    }
+  }
+
+  const config = sizeConfig[size]
+
+  const baseStyles: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
     fontFamily: typography.fontFamily.sans,
-    fontSize: typography.fontSize.sm,
+    fontSize: config.fontSize,
     fontWeight: typography.fontWeight.medium,
     lineHeight: typography.lineHeight.tight,
-    borderRadius: borders.radius.md,
-    border: `${borders.width.thin} solid`,
+    borderRadius: borders.radius.md, // 12px - consistent across all buttons
+    border: 'none',
     cursor: disabled ? 'not-allowed' : 'pointer',
     transition: 'all 0.15s ease',
     whiteSpace: 'nowrap' as const,
     width: fullWidth ? '100%' : 'auto',
-    opacity: disabled ? 0.4 : 1,
-    padding: size === 'sm'
-      ? `6px ${spacing.md}`
-      : `${spacing.sm} ${spacing.lg}`,
-    minHeight: size === 'sm' ? '32px' : '36px',
+    opacity: disabled ? 0.5 : 1,
+    padding: config.padding,
+    minHeight: config.minHeight,
   }
 
-  const variantStyles = {
+  const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
     primary: {
-      backgroundColor: colors.black,
-      borderColor: colors.black,
-      color: colors.white,
+      backgroundColor: disabled ? surfaces.tertiary : colors.accent.primary,
+      color: disabled ? framerColors.textTertiary : colors.white,
     },
     secondary: {
-      backgroundColor: colors.white,
-      borderColor: colors.gray[300],
-      color: colors.black,
+      backgroundColor: disabled ? surfaces.tertiary : surfaces.secondary,
+      border: `1px solid ${themeBorders.subtle}`,
+      color: disabled ? framerColors.textTertiary : framerColors.text,
     },
     ghost: {
       backgroundColor: 'transparent',
-      borderColor: 'transparent',
-      color: colors.gray[600],
+      color: disabled ? framerColors.textTertiary : framerColors.textSecondary,
     }
   }
 
-  const hoverStyles = {
+  const hoverStyles: Record<ButtonVariant, Partial<React.CSSProperties>> = {
     primary: {
-      backgroundColor: colors.gray[800],
-      borderColor: colors.gray[800],
+      backgroundColor: '#0088E6', // Darker blue
     },
     secondary: {
-      backgroundColor: colors.gray[50],
-      borderColor: colors.gray[400],
+      backgroundColor: surfaces.tertiary,
+      borderColor: themeBorders.default,
     },
     ghost: {
-      backgroundColor: colors.gray[100],
-      color: colors.black,
+      backgroundColor: 'var(--framer-color-bg-secondary)',
+      color: framerColors.text,
     }
   }
 

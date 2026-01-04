@@ -1,7 +1,7 @@
 # MVP TODO List - Week 1
 
 **Goal:** Ship Phase 1 MVP in 1 week
-**Status:** 70% complete
+**Status:** 85% complete
 
 ---
 
@@ -125,6 +125,13 @@
 - [x] Improve empty states
 - [x] Add tooltips for unclear terms
 - [x] Better loading indicators
+- [x] Standardized button components (consistent sizing, spacing, variants)
+- [x] Fixed filter section layout and functionality
+- [x] Improved CMS assets card with balanced buttons
+- [x] Removed non-essential search feature from assets page
+- [x] Added optimization instructions to recommendations
+- [x] Made Ignore button prominent and accessible
+- [x] Responsive image variant support with device-weighted calculations
 - [ ] Improve responsive layout (optional)
 
 #### Documentation
@@ -316,14 +323,15 @@
 
 ## 📊 Progress Tracking
 
-**Overall MVP Progress: 90%**
+**Overall MVP Progress: 92%**
 
 - Core Engine: 95% ✅
-- UI Components: 90% ✅
+- UI Components: 95% ✅ (standardized buttons, improved layout)
 - Asset Metadata: 95% ✅
-- Recommendations: 85% ✅
+- Recommendations: 90% ✅ (instructions added, Ignore button improved)
 - Export: 100% ✅
 - Page Selection: 100% ✅
+- Responsive Images: 100% ✅ (device-weighted calculations implemented)
 - Testing: 20% ⏳
 - Documentation: 80% ✅
 
@@ -337,8 +345,11 @@
 4. ~~No way to select individual pages~~ ✅ Fixed
 5. ~~Can't export report~~ ✅ Fixed
 6. ~~Recommendations could be more specific~~ ✅ Improved
-7. Need to test accuracy against real builds
-8. Performance on very large projects (100+ pages) untested
+7. ~~Buttons inconsistent across pages~~ ✅ Fixed (standardized)
+8. ~~Filter section layout issues~~ ✅ Fixed
+9. ~~Bandwidth estimates don't account for responsive images~~ ✅ Fixed (device-weighted)
+10. Need to test accuracy against real builds
+11. Performance on very large projects (100+ pages) untested
 
 ---
 
@@ -346,9 +357,10 @@
 
 These are good ideas but NOT blocking for MVP:
 
+- [x] ~~Monthly bandwidth calculator~~ ✅ Complete
+- [x] ~~Responsive image variant support~~ ✅ Complete (device-weighted calculations)
 - [ ] Video analysis
 - [ ] Published URL audit
-- [ ] Monthly bandwidth calculator
 - [ ] One-click compression
 - [ ] Above-the-fold detection
 - [ ] CMS image auditing

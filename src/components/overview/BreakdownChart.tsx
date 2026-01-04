@@ -1,6 +1,6 @@
 import type { BreakdownData } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
-import { spacing, typography, colors } from '../../styles/designTokens'
+import { spacing, typography, colors, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 
 interface BreakdownChartProps {
   breakdown: BreakdownData
@@ -8,11 +8,12 @@ interface BreakdownChartProps {
 }
 
 export function BreakdownChart({ breakdown, totalBytes }: BreakdownChartProps) {
+  // Use fixed semantic colors that work well in both light and dark modes
   const items = [
-    { label: 'Images', bytes: breakdown.images, shade: colors.gray[800] },
-    { label: 'Fonts', bytes: breakdown.fonts, shade: colors.gray[600] },
-    { label: 'HTML/CSS/JS', bytes: breakdown.htmlCss, shade: colors.gray[400] },
-    { label: 'SVG', bytes: breakdown.svg, shade: colors.gray[300] }
+    { label: 'Images', bytes: breakdown.images, shade: colors.accent.primary }, // Primary blue
+    { label: 'Fonts', bytes: breakdown.fonts, shade: '#8B5CF6' }, // Purple - visible in both modes
+    { label: 'HTML/CSS/JS', bytes: breakdown.htmlCss, shade: '#14B8A6' }, // Teal - visible in both modes
+    { label: 'SVG', bytes: breakdown.svg, shade: '#F59E0B' } // Orange - visible in both modes
   ]
 
   return (
@@ -34,7 +35,7 @@ export function BreakdownChart({ breakdown, totalBytes }: BreakdownChartProps) {
                 style={{
                   fontSize: typography.fontSize.sm,
                   fontWeight: typography.fontWeight.medium,
-                  color: colors.almostBlack,
+                  color: framerColors.text,
                 }}
               >
                 {item.label}
@@ -42,7 +43,7 @@ export function BreakdownChart({ breakdown, totalBytes }: BreakdownChartProps) {
               <span
                 style={{
                   fontSize: typography.fontSize.xs,
-                  color: colors.gray[500],
+                  color: framerColors.textSecondary,
                 }}
               >
                 {formatBytes(item.bytes)} <span style={{ opacity: 0.7 }}>({percentage.toFixed(1)}%)</span>
@@ -53,7 +54,7 @@ export function BreakdownChart({ breakdown, totalBytes }: BreakdownChartProps) {
                 width: '100%',
                 height: '6px',
                 borderRadius: '3px',
-                backgroundColor: colors.gray[100],
+                backgroundColor: surfaces.tertiary,
                 overflow: 'hidden' as const,
               }}
             >

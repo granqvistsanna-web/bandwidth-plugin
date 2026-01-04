@@ -4,14 +4,17 @@ import { formatBytes } from '../../utils/formatBytes'
 import { BreakdownChart } from './BreakdownChart'
 import { generateMarkdownReport, copyToClipboard, downloadJSON } from '../../utils/exportReport'
 import { CMSAssetsNotice } from './CMSAssetsNotice'
+import { Button } from '../primitives/Button'
+import { calculateDeviceWeightedBandwidth } from '../../utils/deviceBandwidth'
 import { debugLog } from '../../utils/debugLog'
 import type { ManualCMSEstimate } from '../../hooks/useAnalysis'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, colors, backgrounds, surfaces, themeBorders, themeElevation, hoverStates, framerColors } from '../../styles/designTokens'
 import { formatTimestamp } from '../../utils/formatTimestamp'
 
 interface OverviewPanelProps {
   analysis: ProjectAnalysis
   onNavigateToRecommendations?: () => void
+  onNavigateToBandwidth?: () => void
   onRescan?: () => void
   manualCMSEstimates?: ManualCMSEstimate[]
   addManualCMSEstimate?: (estimate: Omit<ManualCMSEstimate, 'id' | 'createdAt'>) => void
@@ -24,6 +27,7 @@ interface OverviewPanelProps {
 export function OverviewPanel({
   analysis,
   onNavigateToRecommendations,
+  onNavigateToBandwidth,
   onRescan,
   manualCMSEstimates = [],
   removeManualCMSEstimate,
@@ -36,6 +40,46 @@ export function OverviewPanel({
   const breakpointData = analysis.overallBreakpoints.desktop
   const recommendations = analysis.allRecommendations
   const customCode = analysis.publishedData?.customCode
+  const pages = analysis.pages || []
+
+  // Calculate estimated monthly bandwidth using device-weighted estimates
+  // Framer serves responsive image variants - smaller on mobile, larger on desktop
+  const estimatedMonthlyBandwidth = (() => {
+    const defaultPageviews = 5000 // Conservative default
+    const defaultPagesPerVisit = 2.5 // Light browsing - conservative estimate
+
+    if (pages.length === 0) {
+      // Fallback: use device-weighted overall breakpoint data
+      const weightedBytes = calculateDeviceWeightedBandwidth(analysis.overallBreakpoints)
+      const bytesPerVisitGB = weightedBytes / (1024 * 1024 * 1024)
+      return bytesPerVisitGB * defaultPageviews
+    }
+
+    // Use heaviest page + weighted average of other pages
+    // Calculate device-weighted bytes for each page
+    const sortedPages = [...pages].sort((a, b) => {
+      const aWeighted = calculateDeviceWeightedBandwidth(a.breakpoints)
+      const bWeighted = calculateDeviceWeightedBandwidth(b.breakpoints)
+      return bWeighted - aWeighted
+    })
+
+    const heaviestPage = sortedPages[0]
+    const otherPages = sortedPages.slice(1)
+
+    const avgOtherPageBytes = otherPages.length > 0
+      ? otherPages.reduce((sum, page) => {
+          const weighted = calculateDeviceWeightedBandwidth(page.breakpoints)
+          return sum + weighted
+        }, 0) / otherPages.length
+      : 0
+
+    const heaviestPageWeighted = calculateDeviceWeightedBandwidth(heaviestPage.breakpoints)
+    const additionalPages = Math.max(0, defaultPagesPerVisit - 1)
+    const bytesPerVisit = heaviestPageWeighted + (additionalPages * avgOtherPageBytes)
+    const bytesPerVisitGB = bytesPerVisit / (1024 * 1024 * 1024)
+
+    return bytesPerVisitGB * defaultPageviews
+  })()
 
   const handleExportMarkdown = async () => {
     try {
@@ -73,7 +117,7 @@ export function OverviewPanel({
   return (
     <div style={{
       padding: spacing.lg,
-      backgroundColor: 'var(--framer-color-bg)',
+      backgroundColor: backgrounds.page,
       minHeight: '100vh'
     }}>
       <div style={{
@@ -83,76 +127,86 @@ export function OverviewPanel({
         flexDirection: 'column',
         gap: spacing.lg
       }}>
-        {/* Page Header */}
+        {/* Compact Header */}
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
           marginBottom: spacing.md
         }}>
           <h1 style={{
-            fontSize: typography.fontSize.xl,
+            fontSize: typography.fontSize.lg,
             fontWeight: typography.fontWeight.bold,
-            color: 'var(--framer-color-text)',
+            color: framerColors.text,
             margin: 0,
-            lineHeight: typography.lineHeight.tight
+            marginBottom: spacing.xs,
+            lineHeight: typography.lineHeight.tight,
+            letterSpacing: '-0.02em'
           }}>
             Overview
           </h1>
           {lastScanned && (
             <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: spacing.xs,
-              padding: `${spacing.xs} ${spacing.sm}`,
-              backgroundColor: colors.warmGray[100],
-              borderRadius: borders.radius.md,
               fontSize: typography.fontSize.xs,
-              color: 'var(--framer-color-text-secondary)'
+              color: framerColors.textSecondary
             }}>
-              <div
-                style={{
-                  width: '6px',
-                  height: '6px',
-                  borderRadius: '50%',
-                  backgroundColor: loading ? '#3b82f6' : '#22c55e',
-                  opacity: loading ? 0.8 : 1,
-                  flexShrink: 0
-                }}
-              />
-              <span>{loading ? 'analyzing' : formatTimestamp(lastScanned)}</span>
+              {loading ? 'Analyzing...' : `Scanned ${formatTimestamp(lastScanned)}`}
             </div>
           )}
         </div>
 
-        {/* Page Weight - Large, minimal */}
-      <div>
+        {/* Page Weight - Hero Card */}
+        <div style={{
+          padding: spacing.lg,
+          backgroundColor: surfaces.secondary,
+          borderRadius: borders.radius.lg,
+          border: `1px solid ${themeBorders.subtle}`,
+          boxShadow: themeElevation.default
+        }}>
           <div style={{
-            fontSize: '36px',
-            fontWeight: typography.fontWeight.bold,
-            lineHeight: '1',
-            color: colors.almostBlack,
-            marginBottom: spacing.xs,
-            letterSpacing: '-0.02em'
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: spacing.sm,
+            marginBottom: spacing.xs
           }}>
-            {formatBytes(currentTotal)}
-      </div>
-
-          {/* Inline secondary metric */}
+            <div style={{
+              fontSize: '32px',
+              fontWeight: typography.fontWeight.bold,
+              lineHeight: '1',
+              color: framerColors.text,
+              letterSpacing: '-0.02em'
+            }}>
+              {formatBytes(currentTotal)}
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.sm,
+              color: framerColors.textSecondary,
+              fontWeight: typography.fontWeight.medium
+            }}>
+              total page weight
+            </div>
+          </div>
           <div style={{
             fontSize: typography.fontSize.xs,
-            color: colors.warmGray[500]
+            color: framerColors.textSecondary,
+            marginBottom: spacing.xs
           }}>
             {breakpointData.assets.length} assets across all pages
+          </div>
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: framerColors.textTertiary,
+            lineHeight: typography.lineHeight.relaxed
+          }}>
+            Desktop viewport (1440px) • 3 breakpoints. Framer serves responsive image variants—smaller on mobile, larger on desktop. Monthly estimates account for device distribution.
           </div>
         </div>
 
         {/* Savings potential - if exists */}
         {totalSavings > 0 && (
           <div style={{
-            backgroundColor: colors.warmGray[100],
+            backgroundColor: surfaces.secondary,
             borderRadius: borders.radius.lg,
-            padding: spacing.md
+            border: `1px solid ${themeBorders.subtle}`,
+            boxShadow: themeElevation.default,
+            padding: spacing.lg
           }}>
             {/* Header with savings badge */}
             <div style={{
@@ -165,8 +219,8 @@ export function OverviewPanel({
                 display: 'inline-flex',
                 alignItems: 'center',
                 padding: `4px ${spacing.sm}`,
-                backgroundColor: colors.almostBlack,
-                color: colors.white,
+                backgroundColor: surfaces.tertiary,
+                color: framerColors.text,
                 fontSize: typography.fontSize.sm,
                 fontWeight: typography.fontWeight.bold,
                 borderRadius: borders.radius.full,
@@ -176,43 +230,28 @@ export function OverviewPanel({
               </div>
               <div style={{
                 fontSize: typography.fontSize.xs,
-                color: colors.warmGray[500]
+                color: framerColors.textSecondary
               }}>
                 can be saved ({savingsPercent.toFixed(0)}% reduction)
               </div>
             </div>
 
             {onNavigateToRecommendations && (
-              <button
+              <Button
                 onClick={onNavigateToRecommendations}
-                style={{
-                  padding: `${spacing.xs} ${spacing.md}`,
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.medium,
-                  color: colors.white,
-                  backgroundColor: colors.almostBlack,
-                  border: 'none',
-                  borderRadius: borders.radius.sm,
-                  cursor: 'pointer',
-                  transition: 'opacity 0.15s ease',
-                  width: '100%',
-                  marginBottom: spacing.sm
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = '0.85'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = '1'
-                }}
+                variant="primary"
+                size="sm"
+                fullWidth
+                style={{ marginBottom: spacing.sm }}
               >
                 View {recommendations.length} {recommendations.length === 1 ? 'opportunity' : 'opportunities'}
-              </button>
+              </Button>
             )}
 
             {/* Top 3 opportunities - compact */}
             <div style={{
               paddingTop: spacing.sm,
-              borderTop: `1px solid ${colors.warmGray[200]}`,
+              borderTop: `1px solid ${themeBorders.subtle}`,
               display: 'flex',
               flexDirection: 'column',
               gap: spacing.xs
@@ -237,7 +276,7 @@ export function OverviewPanel({
                     }}
                     onClick={onNavigateToRecommendations}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = colors.warmGray[50]
+                      e.currentTarget.style.backgroundColor = hoverStates.surface
                     }}
                     onMouseLeave={(e) => {
                       e.currentTarget.style.backgroundColor = 'transparent'
@@ -247,7 +286,7 @@ export function OverviewPanel({
                       <div style={{
                         fontSize: typography.fontSize.xs,
                         fontWeight: typography.fontWeight.medium,
-                        color: colors.almostBlack,
+                        color: framerColors.text,
                         marginBottom: '1px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -257,7 +296,7 @@ export function OverviewPanel({
                       </div>
                       <div style={{
                         fontSize: typography.fontSize.xs,
-                        color: colors.warmGray[500],
+                        color: framerColors.textSecondary,
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
@@ -269,7 +308,7 @@ export function OverviewPanel({
                     <div style={{
                       fontSize: typography.fontSize.xs,
                       fontWeight: typography.fontWeight.semibold,
-                      color: colors.almostBlack,
+                      color: framerColors.text,
                       flexShrink: 0
                     }}>
                       -{formatBytes(rec.potentialSavings)}
@@ -280,19 +319,93 @@ export function OverviewPanel({
           </div>
         )}
 
+        {/* Bandwidth Estimate */}
+        <div
+          style={{
+            backgroundColor: surfaces.secondary,
+            borderRadius: borders.radius.lg,
+            border: `1px solid ${themeBorders.subtle}`,
+            boxShadow: themeElevation.default,
+            padding: spacing.lg,
+            cursor: onNavigateToBandwidth ? 'pointer' : 'default',
+            transition: onNavigateToBandwidth ? 'all 0.15s ease' : 'none'
+          }}
+          onClick={onNavigateToBandwidth}
+          onMouseEnter={(e) => {
+            if (onNavigateToBandwidth) {
+              e.currentTarget.style.backgroundColor = hoverStates.surface
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (onNavigateToBandwidth) {
+              e.currentTarget.style.backgroundColor = surfaces.secondary
+            }
+          }}
+        >
+          <div style={{
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: spacing.sm,
+            marginBottom: spacing.xs
+          }}>
+            <div style={{
+              fontSize: typography.fontSize.lg,
+              fontWeight: typography.fontWeight.bold,
+              color: framerColors.text,
+              lineHeight: 1,
+              letterSpacing: '-0.02em'
+            }}>
+              {estimatedMonthlyBandwidth.toFixed(2)} GB
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              color: framerColors.textSecondary,
+              fontWeight: typography.fontWeight.medium
+            }}>
+              per month
+            </div>
+          </div>
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: framerColors.textSecondary
+          }}>
+            Estimated bandwidth for 5K pageviews
+          </div>
+          {onNavigateToBandwidth && (
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              color: framerColors.text,
+              marginTop: spacing.xs,
+              fontWeight: typography.fontWeight.medium
+            }}>
+              Click to customize estimate →
+            </div>
+          )}
+        </div>
+
         {/* Asset Breakdown */}
         <div style={{
-          backgroundColor: colors.warmGray[100],
+          backgroundColor: surfaces.secondary,
           borderRadius: borders.radius.lg,
-          padding: spacing.md
+          border: `1px solid ${themeBorders.subtle}`,
+          boxShadow: themeElevation.default,
+          padding: spacing.lg
         }}>
           <div style={{
-            fontSize: typography.fontSize.md,
+            fontSize: typography.fontSize.sm,
             fontWeight: typography.fontWeight.semibold,
-            color: 'var(--framer-color-text)',
-            marginBottom: spacing.sm
+            color: framerColors.text,
+            marginBottom: spacing.xs,
+            letterSpacing: '-0.01em'
           }}>
             Breakdown
+          </div>
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: framerColors.textTertiary,
+            marginBottom: spacing.md
+          }}>
+            Desktop viewport (1440px) • Shows desktop image sizes
           </div>
           <BreakdownChart breakdown={breakpointData.breakdown} totalBytes={breakpointData.totalBytes} />
         </div>
@@ -322,22 +435,25 @@ export function OverviewPanel({
         {/* Custom Code Assets */}
         {customCode && customCode.hasCustomCode && (
           <div style={{
-            backgroundColor: colors.warmGray[100],
+            backgroundColor: surfaces.secondary,
             borderRadius: borders.radius.lg,
-            padding: spacing.md
+            border: `1px solid ${themeBorders.subtle}`,
+            boxShadow: themeElevation.default,
+            padding: spacing.lg
           }}>
             <div style={{
-              fontSize: typography.fontSize.md,
+              fontSize: typography.fontSize.sm,
               fontWeight: typography.fontWeight.semibold,
-              color: 'var(--framer-color-text)',
-              marginBottom: spacing.sm
+              color: framerColors.text,
+              marginBottom: spacing.md,
+              letterSpacing: '-0.01em'
             }}>
               Custom code
             </div>
               <div style={{ marginBottom: spacing.sm }}>
                 <div style={{
                   fontSize: typography.fontSize.xs,
-                  color: colors.warmGray[500],
+                  color: framerColors.textSecondary,
                   marginBottom: '2px'
                 }}>
                   Dynamically loaded assets
@@ -345,7 +461,7 @@ export function OverviewPanel({
                 <div style={{
                   fontSize: typography.fontSize.lg,
                   fontWeight: typography.fontWeight.bold,
-                  color: colors.almostBlack
+                  color: framerColors.text
                 }}>
                   {formatBytes(customCode.totalEstimatedBytes)}
                 </div>
@@ -362,13 +478,13 @@ export function OverviewPanel({
                       key={i}
                       style={{
                         paddingBottom: spacing.sm,
-                        borderBottom: i < Math.min(4, customCode.assets.length - 1) ? `1px solid ${colors.warmGray[100]}` : 'none'
+                        borderBottom: i < Math.min(4, customCode.assets.length - 1) ? `1px solid ${themeBorders.subtle}` : 'none'
                       }}
                     >
                       <div style={{
                         fontSize: typography.fontSize.sm,
                         fontWeight: typography.fontWeight.medium,
-                        color: colors.almostBlack,
+                        color: framerColors.text,
                         marginBottom: '2px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -381,7 +497,7 @@ export function OverviewPanel({
                         alignItems: 'center',
                         gap: spacing.sm,
                         fontSize: typography.fontSize.xs,
-                        color: colors.warmGray[500]
+                        color: framerColors.textSecondary
                       }}>
                         <span>{asset.type}</span>
                         {asset.isLazyLoaded && <span>• lazy loaded</span>}
@@ -392,7 +508,7 @@ export function OverviewPanel({
                   {customCode.assets.length > 5 && (
                     <div style={{
                       fontSize: typography.fontSize.xs,
-                      color: colors.warmGray[500],
+                      color: framerColors.textSecondary,
                       paddingTop: spacing.xs
                     }}>
                       + {customCode.assets.length - 5} more
@@ -404,12 +520,19 @@ export function OverviewPanel({
         )}
 
         {/* Export Actions */}
-        <div>
+        <div style={{
+          backgroundColor: surfaces.secondary,
+          borderRadius: borders.radius.lg,
+          border: `1px solid ${themeBorders.subtle}`,
+          boxShadow: themeElevation.default,
+          padding: spacing.lg
+        }}>
           <div style={{
-            fontSize: typography.fontSize.md,
+            fontSize: typography.fontSize.sm,
             fontWeight: typography.fontWeight.semibold,
-            color: colors.almostBlack,
-            marginBottom: spacing.sm
+            color: framerColors.text,
+            marginBottom: spacing.md,
+            letterSpacing: '-0.01em'
           }}>
             Export
           </div>
@@ -417,52 +540,22 @@ export function OverviewPanel({
             display: 'flex',
             gap: spacing.sm
           }}>
-            <button
+            <Button
               onClick={handleExportMarkdown}
-              style={{
-                flex: 1,
-                padding: `${spacing.xs} ${spacing.sm}`,
-                fontSize: typography.fontSize.xs,
-                fontWeight: typography.fontWeight.medium,
-                color: colors.almostBlack,
-                backgroundColor: colors.white,
-                border: `1px solid ${colors.warmGray[200]}`,
-                borderRadius: borders.radius.sm,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = colors.warmGray[300]
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = colors.warmGray[200]
-              }}
+              variant="secondary"
+              size="sm"
+              style={{ flex: 1 }}
             >
               Copy Markdown
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleExportJSON}
-              style={{
-                flex: 1,
-                padding: `${spacing.xs} ${spacing.sm}`,
-                fontSize: typography.fontSize.xs,
-                fontWeight: typography.fontWeight.medium,
-                color: colors.almostBlack,
-                backgroundColor: colors.white,
-                border: `1px solid ${colors.warmGray[200]}`,
-                borderRadius: borders.radius.sm,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = colors.warmGray[300]
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = colors.warmGray[200]
-              }}
+              variant="secondary"
+              size="sm"
+              style={{ flex: 1 }}
             >
               Download JSON
-            </button>
+            </Button>
           </div>
         </div>
 

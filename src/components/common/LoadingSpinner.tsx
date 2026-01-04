@@ -6,7 +6,7 @@ export function LoadingSpinner() {
           className="animate-spin rounded-full h-10 w-10 border-b-2"
           style={{ borderColor: 'var(--framer-color-tint)' }}
         ></div>
-        <p className="text-sm" style={{ color: 'var(--framer-color-text-secondary)' }}>Analyzing bandwidth...</p>
+        <p className="text-sm" style={{ color: framerColors.textSecondary }}>Analyzing bandwidth...</p>
       </div>
     </div>
   )

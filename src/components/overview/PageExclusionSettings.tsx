@@ -40,10 +40,10 @@ export function PageExclusionSettings({
         }}
       >
         <div className="flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--framer-color-text-secondary)' }}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: framerColors.textSecondary }}>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <span className="text-sm font-medium" style={{ color: 'var(--framer-color-text)' }}>
+          <span className="text-sm font-medium" style={{ color: framerColors.text }}>
             Page Exclusions
           </span>
           {excludedCount > 0 && (
@@ -63,7 +63,7 @@ export function PageExclusionSettings({
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          style={{ color: 'var(--framer-color-text-secondary)' }}
+          style={{ color: framerColors.textSecondary }}
         >
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
@@ -73,11 +73,11 @@ export function PageExclusionSettings({
         <div
           className="mt-2 p-4 rounded-lg border"
           style={{
-            backgroundColor: 'var(--framer-color-bg)',
+            backgroundColor: backgrounds.page,
             borderColor: 'var(--framer-color-divider)'
           }}
         >
-          <p className="text-xs mb-3" style={{ color: 'var(--framer-color-text-secondary)' }}>
+          <p className="text-xs mb-3" style={{ color: framerColors.textSecondary }}>
             Exclude pages from bandwidth estimates. Excluded pages won't be included in calculations or recommendations.
           </p>
           
@@ -111,7 +111,7 @@ export function PageExclusionSettings({
                       accentColor: 'var(--framer-color-tint)'
                     }}
                   />
-                  <span className="text-sm flex-1" style={{ color: 'var(--framer-color-text)' }}>
+                  <span className="text-sm flex-1" style={{ color: framerColors.text }}>
                     {page.pageName}
                   </span>
                   {isExcluded && (
@@ -134,7 +134,7 @@ export function PageExclusionSettings({
                 className="w-full px-3 py-2 rounded-lg text-sm font-medium transition-colors"
                 style={{
                   backgroundColor: 'var(--framer-color-tint)',
-                  color: 'var(--framer-color-text-reversed)'
+                  color: framerColors.textReversed
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.opacity = '0.9'

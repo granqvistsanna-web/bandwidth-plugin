@@ -41,7 +41,7 @@ export function DeviceBreakdownCards({ analysis }: DeviceBreakdownCardsProps) {
     const mb = bytes / (1024 * 1024)
     if (mb >= 5) return '#ef4444' // Red for very large
     if (mb >= 2) return '#f59e0b' // Orange for large
-    return 'var(--framer-color-text)' // Default
+    return framerColors.text // Default
   }
 
   return (
@@ -63,14 +63,14 @@ export function DeviceBreakdownCards({ analysis }: DeviceBreakdownCardsProps) {
               gap: spacing.sm,
             }}
           >
-            <div style={{ color: 'var(--framer-color-text-secondary)', flexShrink: 0 }}>
+            <div style={{ color: framerColors.textSecondary, flexShrink: 0 }}>
               {device.icon}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div
                 style={{
                   fontSize: typography.fontSize.xs,
-                  color: 'var(--framer-color-text-secondary)',
+                  color: framerColors.textSecondary,
                   marginBottom: '2px',
                 }}
               >

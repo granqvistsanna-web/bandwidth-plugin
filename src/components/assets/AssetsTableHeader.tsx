@@ -34,7 +34,7 @@ function SortableHeader({ label, column, sortConfig, onSort, align = 'left' }: S
         onClick={handleClick}
         className="w-full flex items-center gap-1 text-xs font-medium hover:opacity-70 transition-opacity"
         style={{
-          color: isActive ? 'var(--framer-color-text)' : 'var(--framer-color-text-secondary)',
+          color: isActive ? framerColors.text : framerColors.textSecondary,
           justifyContent: align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start',
           padding: '4px 12px'
         }}
@@ -57,7 +57,7 @@ export function AssetsTableHeader({ sortConfig, onSort }: AssetsTableHeaderProps
     <thead
       className="sticky top-0 z-10"
       style={{
-        backgroundColor: 'var(--framer-color-bg)',
+        backgroundColor: backgrounds.page,
       }}
     >
       <tr style={{ borderBottom: `1px solid var(--framer-color-divider)` }}>

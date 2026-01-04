@@ -1,5 +1,7 @@
 import { spacing, typography, borders, colors } from '../styles/designTokens'
+import { Button } from './primitives/Button'
 import { formatTimestamp } from '../utils/formatTimestamp'
+import { ArrowPathIcon } from '@heroicons/react/24/solid'
 
 interface HeaderProps {
   onRefresh: () => void
@@ -13,7 +15,7 @@ export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
       style={{
         padding: `${spacing.md} ${spacing.lg}`,
         borderBottom: `${borders.width.thin} solid var(--framer-color-divider)`,
-        backgroundColor: 'var(--framer-color-bg)',
+        backgroundColor: backgrounds.page,
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
@@ -23,7 +25,7 @@ export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
             style={{
               fontSize: typography.fontSize.lg,
               fontWeight: typography.fontWeight.semibold,
-              color: 'var(--framer-color-text)',
+              color: framerColors.text,
               margin: 0,
               lineHeight: typography.lineHeight.tight,
             }}
@@ -39,14 +41,14 @@ export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
                   width: '6px',
                   height: '6px',
                   borderRadius: '50%',
-                  backgroundColor: loading ? '#3b82f6' : '#22c55e',
+                  backgroundColor: loading ? 'var(--status-info-solid)' : 'var(--status-success-solid)',
                   opacity: loading ? 0.8 : 1,
                 }}
               />
               <span
                 style={{
                   fontSize: typography.fontSize.xs,
-                  color: 'var(--framer-color-text-secondary)',
+                  color: framerColors.textSecondary,
                   fontFamily: typography.fontFamily.sans,
                 }}
               >
@@ -56,58 +58,26 @@ export function Header({ onRefresh, loading, lastScanned }: HeaderProps) {
           )}
         </div>
 
-        {/* Rescan Button - improved styling */}
-        <button
+        {/* Rescan Button - standardized */}
+        <Button
           onClick={onRefresh}
           disabled={loading}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: spacing.xs,
-            padding: `${spacing.sm} ${spacing.md}`,
-            fontSize: typography.fontSize.sm,
-            fontWeight: typography.fontWeight.medium,
-            color: loading ? 'var(--framer-color-text-tertiary)' : colors.white,
-            backgroundColor: loading ? colors.warmGray[50] : colors.accent.primary,
-            border: 'none',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            borderRadius: borders.radius.sm,
-            transition: 'all 0.15s ease',
-            alignSelf: 'flex-start',
-            width: 'auto',
-          }}
-          onMouseEnter={(e) => {
-            if (!loading) {
-              e.currentTarget.style.backgroundColor = '#0088E6' // Darker blue on hover
-              e.currentTarget.style.transform = 'translateY(-1px)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!loading) {
-              e.currentTarget.style.backgroundColor = colors.accent.primary
-              e.currentTarget.style.transform = 'translateY(0)'
-            }
-          }}
-          title={loading ? 'Analyzing project...' : 'Rescan project for changes'}
+          variant="primary"
+          size="sm"
+          icon={
+            <ArrowPathIcon 
+              style={{ 
+                width: '14px',
+                height: '14px',
+                animation: loading ? 'spin 1s linear infinite' : 'none',
+                flexShrink: 0
+              }}
+            />
+          }
+          style={{ alignSelf: 'flex-start' }}
         >
-          {loading ? (
-            <>
-              <RefreshCw 
-                size={14}
-                style={{ 
-                  animation: 'spin 1s linear infinite',
-                  flexShrink: 0
-                }}
-              />
-              <span>analyzing...</span>
-            </>
-          ) : (
-            <>
-              <RefreshCw size={14} style={{ flexShrink: 0 }} />
-              <span>Rescan project</span>
-            </>
-          )}
-        </button>
+          {loading ? 'analyzing...' : 'Rescan project'}
+        </Button>
       </div>
     </div>
   )

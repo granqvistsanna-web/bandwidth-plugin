@@ -55,9 +55,27 @@ export async function analyzeProject(
       throw new Error('No pages found in project. Try creating a page first.')
     }
 
-    // Use efficient collection for overall project analysis
-    debugLog.info('📡 Collecting assets using efficient API (getNodesWithAttributeSet)...')
-    const canvasAssets = await collectAllAssetsEfficient('desktop', true, excludedPageIds) // Exclude design pages and user-excluded pages
+    // Collect assets for all breakpoints to handle breakpoint-specific images
+    debugLog.info('📡 Collecting assets for all breakpoints using efficient API...')
+
+    // Collect for each breakpoint
+    const desktopCanvasAssets = await collectAllAssetsEfficient('desktop', true, excludedPageIds)
+    const tabletCanvasAssets = await collectAllAssetsEfficient('tablet', true, excludedPageIds)
+    const mobileCanvasAssets = await collectAllAssetsEfficient('mobile', true, excludedPageIds)
+
+    debugLog.info(`Collected ${desktopCanvasAssets.length} desktop, ${tabletCanvasAssets.length} tablet, ${mobileCanvasAssets.length} mobile assets`)
+
+    // Merge all assets and deduplicate by URL/nodeId (asset may appear on multiple breakpoints)
+    const allCanvasAssets = [...desktopCanvasAssets, ...tabletCanvasAssets, ...mobileCanvasAssets]
+    const uniqueCanvasMap = new Map<string, AssetInfo>()
+    for (const asset of allCanvasAssets) {
+      const key = asset.url || asset.nodeId
+      if (!uniqueCanvasMap.has(key)) {
+        uniqueCanvasMap.set(key, asset)
+      }
+    }
+    const canvasAssets = Array.from(uniqueCanvasMap.values())
+    debugLog.success(`✅ Deduplicated to ${canvasAssets.length} unique canvas assets`)
 
         // Collect CMS assets using official Framer CMS API
         debugLog.info('📦 Detecting CMS collections using official Framer API...')

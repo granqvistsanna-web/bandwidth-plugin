@@ -37,14 +37,14 @@ export function TopQuickWins({ recommendations, onItemClick }: TopQuickWinsProps
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.md }}>
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--framer-color-text)' }}>
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: framerColors.text }}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
         </svg>
         <h3
           style={{
             fontSize: typography.fontSize.sm,
             fontWeight: typography.fontWeight.semibold,
-            color: 'var(--framer-color-text)',
+            color: framerColors.text,
           }}
         >
           Top 3 Quick Wins
@@ -105,7 +105,7 @@ export function TopQuickWins({ recommendations, onItemClick }: TopQuickWinsProps
                   style={{
                     fontSize: typography.fontSize.sm,
                     fontWeight: typography.fontWeight.medium,
-                    color: 'var(--framer-color-text)',
+                    color: framerColors.text,
                     marginBottom: '6px',
                   }}
                 >
@@ -114,7 +114,7 @@ export function TopQuickWins({ recommendations, onItemClick }: TopQuickWinsProps
                 <div
                   style={{
                     fontSize: typography.fontSize.xs,
-                    color: 'var(--framer-color-text-secondary)',
+                    color: framerColors.textSecondary,
                     marginBottom: '6px',
                   }}
                 >

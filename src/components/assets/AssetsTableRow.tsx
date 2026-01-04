@@ -2,7 +2,7 @@ import { memo } from 'react'
 import type { AssetInfo } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
 import { Badge } from '../primitives/Badge'
-import { spacing, typography, colors, borders } from '../../styles/designTokens'
+import { spacing, typography, colors, borders, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 
 interface AssetsTableRowProps {
   asset: AssetInfo
@@ -12,9 +12,10 @@ interface AssetsTableRowProps {
 
 function getSizeIndicator(bytes: number): { label: string; shade: string } {
   const kb = bytes / 1024
-  if (kb >= 500) return { label: 'Large', shade: colors.gray[800] }
-  if (kb >= 200) return { label: 'Medium', shade: colors.gray[600] }
-  return { label: 'Small', shade: colors.gray[400] }
+  // Use theme-aware colors that work in both light and dark modes
+  if (kb >= 500) return { label: 'Large', shade: framerColors.text }
+  if (kb >= 200) return { label: 'Medium', shade: framerColors.textSecondary }
+  return { label: 'Small', shade: framerColors.textTertiary }
 }
 
 // Calculate potential savings for unoptimized assets
@@ -55,20 +56,18 @@ export const AssetsTableRow = memo(function AssetsTableRow({
       onClick={() => canClick && onClick(asset.nodeId)}
       style={{
         ...style,
-        display: 'grid',
-        gridTemplateColumns: '48px 1fr auto',
+        display: 'flex',
         alignItems: 'flex-start',
-        gap: spacing.lg,
-        padding: `${spacing.lg} 0`,
+        gap: spacing.md,
+        padding: `${spacing.md} 0`,
         backgroundColor: 'transparent',
-        borderBottom: `1px solid ${colors.warmGray[100]}`,
+        borderBottom: `1px solid ${themeBorders.subtle}`,
         cursor: canClick ? 'pointer' : 'default',
         transition: canClick ? 'background-color 0.15s ease' : 'none',
-        opacity: canClick ? 1 : 0.5,
       }}
       onMouseEnter={(e) => {
         if (canClick) {
-          e.currentTarget.style.backgroundColor = colors.warmGray[50]
+          e.currentTarget.style.backgroundColor = framerColors.bgSecondary
         }
       }}
       onMouseLeave={(e) => {
@@ -77,39 +76,39 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         }
       }}
     >
-      {/* Thumbnail - 48px */}
+      {/* Thumbnail - 64px */}
       <div style={{ flexShrink: 0 }}>
         {asset.type === 'svg' ? (
           asset.svgContent ? (
             <div
               style={{
-                width: '48px',
-                height: '48px',
+                width: '64px',
+                height: '64px',
                 borderRadius: borders.radius.md,
-                border: `1px solid ${colors.warmGray[200]}`,
-                backgroundColor: colors.warmGray[50],
+                border: `1px solid ${themeBorders.subtle}`,
+                backgroundColor: surfaces.tertiary,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 overflow: 'hidden' as const,
-                padding: '6px',
+                padding: '8px',
               }}
               dangerouslySetInnerHTML={{ __html: asset.svgContent }}
             />
           ) : (
             <div
               style={{
-                width: '48px',
-                height: '48px',
+                width: '64px',
+                height: '64px',
                 borderRadius: borders.radius.md,
-                border: `1px solid ${colors.warmGray[200]}`,
-                backgroundColor: colors.warmGray[50],
+                border: `1px solid ${themeBorders.subtle}`,
+                backgroundColor: surfaces.tertiary,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={colors.warmGray[400]} strokeWidth="2">
+              <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke={framerColors.textTertiary} strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
               </svg>
             </div>
@@ -122,7 +121,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
               width: '48px',
               height: '48px',
               borderRadius: borders.radius.md,
-              border: `1px solid ${colors.warmGray[200]}`,
+              border: `1px solid ${themeBorders.subtle}`,
               objectFit: 'cover' as const,
               display: 'block',
             }}
@@ -137,14 +136,14 @@ export const AssetsTableRow = memo(function AssetsTableRow({
               width: '48px',
               height: '48px',
               borderRadius: borders.radius.md,
-              border: `1px solid ${colors.warmGray[200]}`,
-              backgroundColor: colors.warmGray[50],
+              border: `1px solid ${themeBorders.subtle}`,
+              backgroundColor: surfaces.tertiary,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={colors.warmGray[400]} strokeWidth="2">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={framerColors.textTertiary} strokeWidth="2">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
@@ -152,19 +151,19 @@ export const AssetsTableRow = memo(function AssetsTableRow({
       </div>
 
       {/* Content - flexible wrapping layout */}
-      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: spacing.xs }}>
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: spacing.xs }}>
         {/* Name */}
         <div
           style={{
-            fontSize: typography.fontSize.md,
+            fontSize: typography.fontSize.sm,
             fontWeight: typography.fontWeight.medium,
-            color: colors.almostBlack,
+            color: framerColors.text,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
-            lineHeight: '1.5',
+            lineHeight: '1.4',
           }}
           title={asset.nodeName}
         >
@@ -177,7 +176,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
           alignItems: 'center',
           gap: spacing.xs,
           fontSize: typography.fontSize.xs,
-          color: colors.warmGray[500],
+          color: framerColors.textSecondary,
           flexWrap: 'wrap',
           lineHeight: '1.6'
         }}>
@@ -186,23 +185,23 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             fontSize: '10px',
             fontWeight: typography.fontWeight.semibold,
             letterSpacing: '0.05em',
-            color: colors.warmGray[400]
+            color: framerColors.textTertiary
           }}>
             {asset.type}
           </span>
-          <span style={{ color: colors.warmGray[300] }}>·</span>
+          <span style={{ color: framerColors.textTertiary }}>·</span>
           <span style={{ fontWeight: typography.fontWeight.medium, whiteSpace: 'nowrap' }}>
             {Math.round(asset.dimensions.width)} × {Math.round(asset.dimensions.height)}
           </span>
           {asset.format && (
             <>
-              <span style={{ color: colors.warmGray[300] }}>·</span>
+              <span style={{ color: framerColors.textTertiary }}>·</span>
               <span style={{
                 textTransform: 'uppercase',
                 fontSize: '10px',
                 fontWeight: typography.fontWeight.semibold,
                 letterSpacing: '0.05em',
-                color: colors.warmGray[400]
+                color: framerColors.textTertiary
               }}>
                 {asset.format}
               </span>
@@ -213,6 +212,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
 
       {/* Size and Savings - compact right column */}
       <div style={{
+        flex: 'none',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'flex-end',
@@ -225,8 +225,8 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             display: 'inline-flex',
             alignItems: 'center',
             padding: `3px ${spacing.sm}`,
-            backgroundColor: colors.almostBlack,
-            color: colors.white,
+            backgroundColor: surfaces.tertiary,
+            color: framerColors.text,
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.bold,
             borderRadius: borders.radius.full,
@@ -240,9 +240,9 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         {/* Current size */}
         <span
           style={{
-            fontSize: typography.fontSize.md,
+            fontSize: typography.fontSize.sm,
             fontWeight: typography.fontWeight.semibold,
-            color: colors.almostBlack,
+            color: framerColors.text,
             whiteSpace: 'nowrap'
           }}
         >

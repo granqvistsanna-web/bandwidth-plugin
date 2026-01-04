@@ -25,18 +25,18 @@ export function OptimizationResult({
   const savingsPercent = ((savings / originalSize) * 100).toFixed(1)
 
   return (
-    <div 
+    <div
       className="border rounded-lg p-4 space-y-4"
       style={{
-        backgroundColor: '#dcfce7',
-        borderColor: '#86efac'
+        backgroundColor: 'var(--status-success-bg)',
+        borderColor: 'var(--status-success-solid)'
       }}
     >
       <div className="flex items-center gap-2">
-        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: '#22c55e' }}>
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ color: 'var(--status-success-solid)' }}>
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h4 className="font-semibold" style={{ color: '#166534' }}>Image Optimized Successfully!</h4>
+        <h4 className="font-semibold" style={{ color: 'var(--status-success-text)' }}>Image Optimized Successfully!</h4>
       </div>
 
       {/* Before/After Comparison */}
@@ -44,46 +44,46 @@ export function OptimizationResult({
         <div 
           className="rounded p-3 border"
           style={{
-            backgroundColor: 'var(--framer-color-bg)',
+            backgroundColor: backgrounds.page,
             borderColor: 'var(--framer-color-divider)'
           }}
         >
-          <div className="text-xs font-medium mb-2" style={{ color: 'var(--framer-color-text-tertiary)' }}>Before</div>
-          <div className="text-lg font-bold" style={{ color: 'var(--framer-color-text)' }}>{formatBytes(originalSize)}</div>
-          <div className="text-xs mt-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
+          <div className="text-xs font-medium mb-2" style={{ color: framerColors.textTertiary }}>Before</div>
+          <div className="text-lg font-bold" style={{ color: framerColors.text }}>{formatBytes(originalSize)}</div>
+          <div className="text-xs mt-1" style={{ color: framerColors.textSecondary }}>
             {Math.round(originalDimensions.width)}×{Math.round(originalDimensions.height)}px
           </div>
         </div>
-        <div 
+        <div
           className="rounded p-3 border"
           style={{
-            backgroundColor: 'var(--framer-color-bg)',
-            borderColor: '#22c55e'
+            backgroundColor: backgrounds.page,
+            borderColor: 'var(--status-success-solid)'
           }}
         >
-          <div className="text-xs font-medium mb-2" style={{ color: 'var(--framer-color-text-tertiary)' }}>After</div>
-          <div className="text-lg font-bold" style={{ color: '#166534' }}>{formatBytes(optimizedSize)}</div>
-          <div className="text-xs mt-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
+          <div className="text-xs font-medium mb-2" style={{ color: framerColors.textTertiary }}>After</div>
+          <div className="text-lg font-bold" style={{ color: 'var(--status-success-text)' }}>{formatBytes(optimizedSize)}</div>
+          <div className="text-xs mt-1" style={{ color: framerColors.textSecondary }}>
             {Math.round(optimizedDimensions.width)}×{Math.round(optimizedDimensions.height)}px
           </div>
         </div>
       </div>
 
       {/* Savings */}
-      <div 
+      <div
         className="rounded p-3 border"
         style={{
-          backgroundColor: 'var(--framer-color-bg)',
-          borderColor: '#86efac'
+          backgroundColor: backgrounds.page,
+          borderColor: 'var(--status-success-solid)'
         }}
       >
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium" style={{ color: 'var(--framer-color-text)' }}>Savings:</span>
-          <span className="text-lg font-bold" style={{ color: '#166534' }}>
+          <span className="text-sm font-medium" style={{ color: framerColors.text }}>Savings:</span>
+          <span className="text-lg font-bold" style={{ color: 'var(--status-success-text)' }}>
             {formatBytes(savings)} ({savingsPercent}%)
           </span>
         </div>
-        <div className="text-xs mt-1" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+        <div className="text-xs mt-1" style={{ color: framerColors.textTertiary }}>
           Format: {format.replace('image/', '').toUpperCase()}
         </div>
       </div>
@@ -99,7 +99,7 @@ export function OptimizationResult({
             }}
           >
             <div className="text-sm font-medium mb-1" style={{ color: 'var(--framer-color-tint)' }}>Next Steps:</div>
-            <ol className="text-xs space-y-1 list-decimal list-inside" style={{ color: 'var(--framer-color-text)' }}>
+            <ol className="text-xs space-y-1 list-decimal list-inside" style={{ color: framerColors.text }}>
               <li>Image has been downloaded to your computer</li>
               <li>In Framer, select the node with the original image</li>
               <li>Drag the downloaded image onto the node to replace it</li>
@@ -111,14 +111,14 @@ export function OptimizationResult({
                 onClick={onDownload}
                 className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 style={{
-                  backgroundColor: '#22c55e',
+                  backgroundColor: 'var(--status-success-solid)',
                   color: 'white'
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#16a34a'
+                  e.currentTarget.style.backgroundColor = 'var(--status-success-hover)'
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#22c55e'
+                  e.currentTarget.style.backgroundColor = 'var(--status-success-solid)'
                 }}
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -133,7 +133,7 @@ export function OptimizationResult({
                 className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                 style={{
                   backgroundColor: 'var(--framer-color-tint)',
-                  color: 'var(--framer-color-text-reversed)'
+                  color: framerColors.textReversed
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.backgroundColor = 'var(--framer-color-tint-dark)'
@@ -153,14 +153,14 @@ export function OptimizationResult({
       )}
 
       {method === 'direct' && (
-        <div 
+        <div
           className="border rounded p-3"
           style={{
-            backgroundColor: '#dcfce7',
-            borderColor: '#86efac'
+            backgroundColor: 'var(--status-success-bg)',
+            borderColor: 'var(--status-success-solid)'
           }}
         >
-          <div className="text-sm" style={{ color: '#166534' }}>
+          <div className="text-sm" style={{ color: 'var(--status-success-text)' }}>
             ✓ Image has been automatically replaced in Framer!
           </div>
         </div>

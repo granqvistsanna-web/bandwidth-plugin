@@ -1,4 +1,4 @@
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, backgrounds, framerColors } from '../../styles/designTokens'
 import { useTheme, type ThemeMode } from '../../hooks/useTheme'
 import { formatTimestamp } from '../../utils/formatTimestamp'
 
@@ -43,7 +43,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
   return (
     <div style={{
       padding: spacing.md,
-      backgroundColor: 'var(--framer-color-bg)',
+      backgroundColor: backgrounds.page,
       minHeight: '100vh'
     }}>
       <div style={{
@@ -63,7 +63,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
           <h1 style={{
             fontSize: typography.fontSize.xl,
             fontWeight: typography.fontWeight.bold,
-            color: 'var(--framer-color-text)',
+            color: framerColors.text,
             margin: 0,
             lineHeight: typography.lineHeight.tight
           }}>
@@ -75,17 +75,17 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
               alignItems: 'center',
               gap: spacing.xs,
               padding: `${spacing.xs} ${spacing.sm}`,
-              backgroundColor: colors.warmGray[100],
+              backgroundColor: surfaces.tertiary,
               borderRadius: borders.radius.md,
               fontSize: typography.fontSize.xs,
-              color: 'var(--framer-color-text-secondary)'
+              color: framerColors.textSecondary
             }}>
               <div
                 style={{
                   width: '6px',
                   height: '6px',
                   borderRadius: '50%',
-                  backgroundColor: loading ? '#3b82f6' : '#22c55e',
+                  backgroundColor: loading ? 'var(--status-info-solid)' : 'var(--status-success-solid)',
                   opacity: loading ? 0.8 : 1,
                   flexShrink: 0
                 }}
@@ -100,7 +100,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
         <div
           style={{
             padding: spacing.md,
-            backgroundColor: colors.warmGray[100],
+            backgroundColor: surfaces.tertiary,
             borderRadius: borders.radius.lg,
           }}
         >
@@ -108,7 +108,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
             <div style={{
               fontSize: typography.fontSize.xs,
               fontWeight: typography.fontWeight.medium,
-              color: 'var(--framer-color-text)',
+              color: framerColors.text,
               marginBottom: '2px'
             }}>
               Theme
@@ -116,7 +116,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
             <p
               style={{
                 fontSize: typography.fontSize.xs,
-                color: 'var(--framer-color-text-secondary)',
+                color: framerColors.textSecondary,
                 lineHeight: '1.4'
               }}
             >
@@ -137,7 +137,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
                   gap: spacing.sm,
                   padding: spacing.sm,
                   backgroundColor: isSelected ? 'var(--framer-color-bg-secondary)' : 'transparent',
-                  border: `1px solid ${isSelected ? 'var(--framer-color-text)' : 'var(--framer-color-divider)'}`,
+                  border: `1px solid ${isSelected ? framerColors.text : 'var(--framer-color-divider)'}`,
                   borderRadius: borders.radius.sm,
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
@@ -146,7 +146,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
                 onMouseEnter={(e) => {
                   if (!isSelected) {
                     e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                    e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
+                    e.currentTarget.style.borderColor = framerColors.textSecondary
                   }
                 }}
                 onMouseLeave={(e) => {
@@ -158,7 +158,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
               >
                 <div
                   style={{
-                    color: isSelected ? 'var(--framer-color-text)' : 'var(--framer-color-text-secondary)',
+                    color: isSelected ? framerColors.text : framerColors.textSecondary,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -173,7 +173,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
                     style={{
                       fontSize: typography.fontSize.xs,
                       fontWeight: isSelected ? typography.fontWeight.semibold : typography.fontWeight.medium,
-                      color: 'var(--framer-color-text)',
+                      color: framerColors.text,
                       marginBottom: '1px',
                     }}
                   >
@@ -183,7 +183,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
                     <div
                       style={{
                         fontSize: typography.fontSize.xs,
-                        color: 'var(--framer-color-text-secondary)',
+                        color: framerColors.textSecondary,
                         lineHeight: '1.3'
                       }}
                     >
@@ -192,7 +192,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
                   )}
                 </div>
                 {isSelected && (
-                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: 'var(--framer-color-text)' }}>
+                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5} style={{ color: framerColors.text }}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
@@ -208,7 +208,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
         <div
           style={{
             padding: spacing.md,
-            backgroundColor: colors.warmGray[50],
+            backgroundColor: surfaces.secondary,
             borderRadius: borders.radius.lg,
           }}
         >
@@ -216,14 +216,14 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
             <div style={{
               fontSize: typography.fontSize.xs,
               fontWeight: typography.fontWeight.medium,
-              color: 'var(--framer-color-text)',
+              color: framerColors.text,
               marginBottom: '2px'
             }}>
               Bandwidth Check Plugin
             </div>
             <div style={{
               fontSize: typography.fontSize.xs,
-              color: 'var(--framer-color-text-secondary)',
+              color: framerColors.textSecondary,
             }}>
               Analyze and optimize your Framer site's performance
             </div>

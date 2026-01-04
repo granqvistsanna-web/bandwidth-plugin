@@ -3,7 +3,7 @@ import type { ProjectAnalysis } from '../../types/analysis'
 import { RecommendationCard } from './RecommendationCard'
 import { formatBytes } from '../../utils/formatBytes'
 import { calculateTotalSavings } from '../../services/recommendations'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, colors, backgrounds, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 import { CollapsibleSection } from '../overview/CollapsibleSection'
 import { formatTimestamp } from '../../utils/formatTimestamp'
 
@@ -30,11 +30,11 @@ export function RecommendationsPanel({
   // Safety check: ensure analysis exists
   if (!analysis) {
     return (
-      <div style={{ padding: spacing.lg, backgroundColor: 'var(--framer-color-bg)' }}>
+      <div style={{ padding: spacing.lg, backgroundColor: backgrounds.page }}>
         <div style={{ 
           textAlign: 'center',
           padding: spacing.xl,
-          color: 'var(--framer-color-text-secondary)'
+          color: framerColors.textSecondary
         }}>
           No analysis data available. Please run a scan first.
         </div>
@@ -87,7 +87,7 @@ export function RecommendationsPanel({
     }
 
     return (
-    <div style={{ padding: spacing.lg, backgroundColor: 'var(--framer-color-bg)', minHeight: '100vh' }}>
+    <div style={{ padding: spacing.lg, backgroundColor: backgrounds.page, minHeight: '100vh' }}>
       {/* Compact Header */}
       <div style={{
         marginBottom: spacing.xl
@@ -95,7 +95,7 @@ export function RecommendationsPanel({
         <h1 style={{
           fontSize: typography.fontSize.lg,
           fontWeight: typography.fontWeight.bold,
-          color: colors.almostBlack,
+          color: framerColors.text,
           margin: 0,
           marginBottom: spacing.xs,
           lineHeight: typography.lineHeight.tight,
@@ -106,7 +106,7 @@ export function RecommendationsPanel({
         {lastScanned && (
           <div style={{
             fontSize: typography.fontSize.xs,
-            color: colors.warmGray[500]
+            color: framerColors.textSecondary
           }}>
             {loading ? 'Analyzing...' : `Scanned ${formatTimestamp(lastScanned)}`}
           </div>
@@ -119,10 +119,10 @@ export function RecommendationsPanel({
           style={{
             padding: spacing.lg,
             marginBottom: spacing.lg,
-            backgroundColor: colors.white,
+            backgroundColor: surfaces.secondary,
             borderRadius: borders.radius.lg,
-            border: `1px solid ${colors.warmGray[200]}`,
-            boxShadow: '0 1px 3px rgba(0, 0, 0, 0.06)'
+            border: `1px solid ${themeBorders.subtle}`,
+            boxShadow: themeElevation.default
           }}
         >
           <div style={{
@@ -134,7 +134,7 @@ export function RecommendationsPanel({
             <div style={{
               fontSize: '28px',
               fontWeight: typography.fontWeight.bold,
-              color: colors.almostBlack,
+              color: framerColors.text,
               lineHeight: 1,
               letterSpacing: '-0.02em'
             }}>
@@ -142,7 +142,7 @@ export function RecommendationsPanel({
             </div>
             <div style={{
               fontSize: typography.fontSize.xs,
-              color: colors.warmGray[500],
+              color: framerColors.textSecondary,
               fontWeight: typography.fontWeight.medium
             }}>
               can be saved
@@ -154,16 +154,16 @@ export function RecommendationsPanel({
             display: 'flex',
             gap: spacing.md,
             fontSize: typography.fontSize.xs,
-            color: colors.warmGray[600]
+            color: framerColors.textSecondary
           }}>
             <span style={{ fontWeight: typography.fontWeight.medium }}>
               {priorityCounts.high} high
             </span>
-            <span style={{ color: colors.warmGray[400] }}>·</span>
+            <span style={{ color: framerColors.textTertiary }}>·</span>
             <span style={{ fontWeight: typography.fontWeight.medium }}>
               {priorityCounts.medium} medium
             </span>
-            <span style={{ color: colors.warmGray[400] }}>·</span>
+            <span style={{ color: framerColors.textTertiary }}>·</span>
             <span style={{ fontWeight: typography.fontWeight.medium }}>
               {priorityCounts.low} low
             </span>
@@ -181,7 +181,7 @@ export function RecommendationsPanel({
         <label style={{
           fontSize: typography.fontSize.xs,
           fontWeight: typography.fontWeight.medium,
-          color: colors.warmGray[600]
+          color: framerColors.textSecondary
         }}>
           Show:
         </label>
@@ -193,9 +193,9 @@ export function RecommendationsPanel({
             paddingRight: spacing.lg,
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
-            color: colors.almostBlack,
-            backgroundColor: colors.white,
-            border: `1px solid ${colors.warmGray[200]}`,
+            color: framerColors.text,
+            backgroundColor: surfaces.primary,
+            border: `1px solid ${themeBorders.subtle}`,
             borderRadius: borders.radius.md,
             cursor: 'pointer',
             transition: 'all 0.15s ease',
@@ -206,11 +206,11 @@ export function RecommendationsPanel({
             minWidth: '140px'
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = colors.warmGray[400]
-            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.05)'
+            e.currentTarget.style.borderColor = framerColors.text
+            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = colors.warmGray[200]
+            e.currentTarget.style.borderColor = themeBorders.subtle
             e.currentTarget.style.boxShadow = 'none'
           }}
         >
@@ -264,14 +264,14 @@ export function RecommendationsPanel({
             <div style={{ 
               fontWeight: typography.fontWeight.semibold,
               marginBottom: spacing.sm,
-              color: 'var(--framer-color-text)',
+              color: framerColors.text,
               fontSize: typography.fontSize.md
             }}>
               No {filter} Priority Recommendations
             </div>
             <div style={{ 
               fontSize: typography.fontSize.sm,
-              color: 'var(--framer-color-text-secondary)'
+              color: framerColors.textSecondary
             }}>
               Try selecting a different priority filter to see other recommendations.
             </div>
@@ -293,7 +293,7 @@ export function RecommendationsPanel({
               fontWeight: typography.fontWeight.semibold,
               fontSize: typography.fontSize.lg,
               marginBottom: spacing.sm,
-              color: 'var(--framer-color-text)'
+              color: framerColors.text
             }}>
               Great! No Optimization Needed
             </div>
@@ -301,12 +301,12 @@ export function RecommendationsPanel({
               fontSize: typography.fontSize.sm,
               marginBottom: spacing.md,
               lineHeight: typography.lineHeight.relaxed,
-              color: 'var(--framer-color-text-secondary)'
+              color: framerColors.textSecondary
             }}>
               <p style={{ marginBottom: spacing.sm }}>Your assets are well-optimized.</p>
               <p style={{ 
                 fontSize: typography.fontSize.xs,
-                color: 'var(--framer-color-text-tertiary)'
+                color: framerColors.textTertiary
               }}>
                 Your images are properly sized and formatted. All assets are under recommended thresholds and using efficient formats like WebP or AVIF.
               </p>
@@ -319,11 +319,11 @@ export function RecommendationsPanel({
   } catch (error) {
     console.error('Error rendering RecommendationsPanel:', error)
     return (
-      <div style={{ padding: spacing.lg, backgroundColor: 'var(--framer-color-bg)' }}>
+      <div style={{ padding: spacing.lg, backgroundColor: backgrounds.page }}>
         <div style={{ 
           textAlign: 'center',
           padding: spacing.xl,
-          color: 'var(--framer-color-text)'
+          color: framerColors.text
         }}>
           <div style={{ 
             fontSize: typography.fontSize.lg,
@@ -334,14 +334,14 @@ export function RecommendationsPanel({
           </div>
           <div style={{ 
             fontSize: typography.fontSize.sm,
-            color: 'var(--framer-color-text-secondary)',
+            color: framerColors.textSecondary,
             marginBottom: spacing.md
           }}>
             {error instanceof Error ? error.message : 'An unexpected error occurred'}
           </div>
           <div style={{ 
             fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-tertiary)'
+            color: framerColors.textTertiary
           }}>
             Please try rescanning your project.
           </div>

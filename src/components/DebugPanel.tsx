@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../types/analysis'
 import { debugLog, type DebugLogEntry } from '../utils/debugLog'
-import { spacing, typography, borders, colors } from '../styles/designTokens'
+import { spacing, typography, borders, colors, surfaces, framerColors, backgrounds } from '../styles/designTokens'
 import { formatTimestamp } from '../utils/formatTimestamp'
 
 interface DebugPanelProps {
@@ -95,7 +95,7 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
   return (
     <div style={{ 
       padding: spacing.lg, 
-      backgroundColor: 'var(--framer-color-bg)',
+      backgroundColor: backgrounds.page,
       display: 'flex',
       flexDirection: 'column',
       gap: spacing.md
@@ -110,7 +110,7 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
         <h1 style={{
           fontSize: typography.fontSize.xl,
           fontWeight: typography.fontWeight.bold,
-          color: 'var(--framer-color-text)',
+          color: framerColors.text,
           margin: 0,
           lineHeight: typography.lineHeight.tight
         }}>
@@ -122,10 +122,10 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
             alignItems: 'center',
             gap: spacing.xs,
             padding: `${spacing.xs} ${spacing.sm}`,
-            backgroundColor: colors.warmGray[100],
+            backgroundColor: surfaces.tertiary,
             borderRadius: borders.radius.md,
             fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-secondary)'
+            color: framerColors.textSecondary
           }}>
             <div
               style={{
@@ -142,55 +142,55 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
         )}
       </div>
 
-      <div 
+      <div
         style={{
-          backgroundColor: colors.warmGray[100],
+          backgroundColor: surfaces.tertiary,
           borderRadius: borders.radius.lg,
           padding: spacing.md
         }}
       >
-        <h3 style={{ 
+        <h3 style={{
           fontSize: typography.fontSize.md,
           fontWeight: typography.fontWeight.semibold,
-          color: 'var(--framer-color-text)',
+          color: framerColors.text,
           marginBottom: spacing.sm
         }}>Debug Info</h3>
 
         <div className="space-y-2 text-xs font-mono">
           <div>
-            <span style={{ color: 'var(--framer-color-text-secondary)' }}>Total pages:</span>{' '}
-            <span style={{ color: 'var(--framer-color-text)' }}>{analysis.totalPages}</span>
+            <span style={{ color: framerColors.textSecondary }}>Total pages:</span>{' '}
+            <span style={{ color: framerColors.text }}>{analysis.totalPages}</span>
           </div>
           <div>
-            <span style={{ color: 'var(--framer-color-text-secondary)' }}>Total assets found:</span>{' '}
-            <span style={{ color: 'var(--framer-color-text)' }}>{assets.length}</span>
+            <span style={{ color: framerColors.textSecondary }}>Total assets found:</span>{' '}
+            <span style={{ color: framerColors.text }}>{assets.length}</span>
           </div>
           <div>
-            <span style={{ color: 'var(--framer-color-text-secondary)' }}>Total bytes:</span>{' '}
-            <span style={{ color: 'var(--framer-color-text)' }}>
+            <span style={{ color: framerColors.textSecondary }}>Total bytes:</span>{' '}
+            <span style={{ color: framerColors.text }}>
               {analysis.overallBreakpoints.desktop.totalBytes.toLocaleString()} bytes
             </span>
           </div>
         </div>
       </div>
 
-      <div 
+      <div
         style={{
-          backgroundColor: colors.warmGray[100],
+          backgroundColor: surfaces.tertiary,
           borderRadius: borders.radius.lg,
           padding: spacing.md
         }}
       >
-        <div style={{ 
+        <div style={{
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: spacing.sm
         }}>
-          <h3 style={{ 
+          <h3 style={{
             fontSize: typography.fontSize.md,
             fontWeight: typography.fontWeight.semibold,
-            color: 'var(--framer-color-text)'
+            color: framerColors.text
           }}>Debug Logs</h3>
           <div className="flex gap-2 items-center">
             <button
@@ -202,7 +202,7 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--framer-color-tint)'
-                e.currentTarget.style.color = 'var(--framer-color-text-reversed)'
+                e.currentTarget.style.color = framerColors.textReversed
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--framer-color-tint-dimmed)'
@@ -212,7 +212,7 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
             >
               Inspect Selected
             </button>
-            <label className="text-xs flex items-center gap-1" style={{ color: 'var(--framer-color-text-secondary)' }}>
+            <label className="text-xs flex items-center gap-1" style={{ color: framerColors.textSecondary }}>
               <input
                 type="checkbox"
                 checked={autoScroll}
@@ -229,7 +229,7 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
               className="text-xs px-2 py-1 rounded transition-colors"
               style={{
                 backgroundColor: 'var(--framer-color-bg-tertiary)',
-                color: 'var(--framer-color-text)'
+                color: framerColors.text
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
@@ -247,8 +247,8 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
           className="rounded p-3 font-mono text-xs max-h-96 overflow-y-auto"
           style={{ 
             fontSize: '10px',
-            backgroundColor: 'var(--framer-color-text)',
-            color: 'var(--framer-color-text-reversed)'
+            backgroundColor: framerColors.text,
+            color: framerColors.textReversed
           }}
           ref={(el: HTMLDivElement | null) => {
             if (el && autoScroll) {
@@ -257,19 +257,19 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
           }}
         >
           {logs.length === 0 ? (
-            <div style={{ color: 'var(--framer-color-text-reversed)', opacity: 0.6, fontStyle: 'italic' }}>No logs yet. Run analysis to see debug information.</div>
+            <div style={{ color: framerColors.textReversed, opacity: 0.6, fontStyle: 'italic' }}>No logs yet. Run analysis to see debug information.</div>
           ) : (
             logs.map((log, index) => (
               <div key={index} className="mb-1">
-                <span style={{ color: 'var(--framer-color-text-reversed)', opacity: 0.6 }}>[{formatTime(log.timestamp)}]</span>{' '}
+                <span style={{ color: framerColors.textReversed, opacity: 0.6 }}>[{formatTime(log.timestamp)}]</span>{' '}
                 <span className={getLogColor(log.level)}>[{log.level.toUpperCase()}]</span>{' '}
-                <span style={{ color: 'var(--framer-color-text-reversed)' }}>{log.message}</span>
+                <span style={{ color: framerColors.textReversed }}>{log.message}</span>
                 {log.data && (
                   <details className="ml-4 mt-1">
-                    <summary className="cursor-pointer" style={{ color: 'var(--framer-color-text-reversed)', opacity: 0.7 }}>
+                    <summary className="cursor-pointer" style={{ color: framerColors.textReversed, opacity: 0.7 }}>
                       Details
                     </summary>
-                    <pre className="mt-1 whitespace-pre-wrap break-all" style={{ color: 'var(--framer-color-text-reversed)', opacity: 0.7 }}>
+                    <pre className="mt-1 whitespace-pre-wrap break-all" style={{ color: framerColors.textReversed, opacity: 0.7 }}>
                       {JSON.stringify(log.data, null, 2)}
                     </pre>
                   </details>
@@ -280,50 +280,50 @@ export function DebugPanel({ analysis, lastScanned, loading }: DebugPanelProps) 
         </div>
       </div>
 
-      <div 
+      <div
         style={{
-          backgroundColor: colors.warmGray[100],
+          backgroundColor: surfaces.tertiary,
           borderRadius: borders.radius.lg,
           padding: spacing.md
         }}
       >
-        <h3 style={{ 
+        <h3 style={{
           fontSize: typography.fontSize.md,
           fontWeight: typography.fontWeight.semibold,
-          color: 'var(--framer-color-text)',
+          color: framerColors.text,
           marginBottom: spacing.sm
         }}>Assets Detail</h3>
 
         {assets.length === 0 ? (
-          <p className="text-sm" style={{ color: 'var(--framer-color-text-secondary)' }}>No assets found</p>
+          <p className="text-sm" style={{ color: framerColors.textSecondary }}>No assets found</p>
         ) : (
           <div className="space-y-3">
             {assets.slice(0, 10).map((asset, index) => (
               <div key={asset.nodeId} className="border-b pb-2" style={{ borderColor: 'var(--framer-color-divider)' }}>
                 <div className="text-xs font-mono space-y-1">
-                  <div><span style={{ color: 'var(--framer-color-text-secondary)' }}>#{index + 1}</span> <span className="font-semibold" style={{ color: 'var(--framer-color-text)' }}>{asset.nodeName}</span></div>
-                  <div style={{ color: 'var(--framer-color-text-secondary)' }}>
-                    Type: <span style={{ color: 'var(--framer-color-text)' }}>{asset.type}</span> |
-                    Format: <span style={{ color: 'var(--framer-color-text)' }}>{asset.format || 'unknown'}</span>
+                  <div><span style={{ color: framerColors.textSecondary }}>#{index + 1}</span> <span className="font-semibold" style={{ color: framerColors.text }}>{asset.nodeName}</span></div>
+                  <div style={{ color: framerColors.textSecondary }}>
+                    Type: <span style={{ color: framerColors.text }}>{asset.type}</span> |
+                    Format: <span style={{ color: framerColors.text }}>{asset.format || 'unknown'}</span>
                   </div>
-                  <div style={{ color: 'var(--framer-color-text-secondary)' }}>
-                    Dimensions: <span style={{ color: 'var(--framer-color-text)' }}>{asset.dimensions.width} × {asset.dimensions.height}px</span>
+                  <div style={{ color: framerColors.textSecondary }}>
+                    Dimensions: <span style={{ color: framerColors.text }}>{asset.dimensions.width} × {asset.dimensions.height}px</span>
                   </div>
-                  <div style={{ color: 'var(--framer-color-text-secondary)' }}>
+                  <div style={{ color: framerColors.textSecondary }}>
                     Estimated: <span className="font-semibold" style={{ color: asset.estimatedBytes === 0 ? '#ef4444' : '#22c55e' }}>
                       {asset.estimatedBytes.toLocaleString()} bytes
                     </span>
                   </div>
                   {asset.url && (
-                    <div style={{ color: 'var(--framer-color-text-secondary)' }} className="truncate">
-                      URL: <span className="text-[10px]" style={{ color: 'var(--framer-color-text)' }}>{asset.url}</span>
+                    <div style={{ color: framerColors.textSecondary }} className="truncate">
+                      URL: <span className="text-[10px]" style={{ color: framerColors.text }}>{asset.url}</span>
                     </div>
                   )}
                 </div>
               </div>
             ))}
             {assets.length > 10 && (
-              <p className="text-xs italic" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+              <p className="text-xs italic" style={{ color: framerColors.textTertiary }}>
                 ...and {assets.length - 10} more assets
               </p>
             )}

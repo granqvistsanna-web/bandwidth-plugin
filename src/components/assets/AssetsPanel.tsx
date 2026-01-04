@@ -5,7 +5,7 @@ import type { FilterState, SortConfig, AssetCounts } from './types'
 import { AssetFilters } from './AssetFilters'
 import { AssetsTable } from './AssetsTable'
 import { debugLog } from '../../utils/debugLog'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, colors, backgrounds, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 import { formatTimestamp } from '../../utils/formatTimestamp'
 
 interface AssetsPanelProps {
@@ -30,7 +30,6 @@ const DEFAULT_SORT: SortConfig = {
 
 export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanned, loading }: AssetsPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
-  const [searchQuery, setSearchQuery] = useState('')
   const [sortConfig, setSortConfig] = useState<SortConfig>(DEFAULT_SORT)
 
   // Get base assets for selected page or all pages
@@ -75,19 +74,9 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
         }
       }
 
-
-      // Search filter
-      if (searchQuery) {
-        const query = searchQuery.toLowerCase()
-        const name = (asset.nodeName || '').toLowerCase()
-        if (!name.includes(query)) {
-          return false
-        }
-      }
-
       return true
     })
-  }, [baseAssets, filters, searchQuery])
+  }, [baseAssets, filters])
 
   // Apply sorting
   const sortedAssets = useMemo(() => {
@@ -163,8 +152,8 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
 
   return (
     <div style={{
-      padding: spacing.lg,
-      backgroundColor: 'var(--framer-color-bg)',
+      padding: `${spacing.lg} ${spacing.md}`,
+      backgroundColor: backgrounds.page,
       display: 'flex',
       flexDirection: 'column',
       gap: spacing.md,
@@ -172,12 +161,12 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
     }}>
       {/* Compact Header */}
       <div style={{
-        marginBottom: spacing.xl
+        marginBottom: spacing.md
       }}>
         <h1 style={{
           fontSize: typography.fontSize.lg,
           fontWeight: typography.fontWeight.bold,
-          color: colors.almostBlack,
+          color: framerColors.text,
           margin: 0,
           marginBottom: spacing.xs,
           lineHeight: typography.lineHeight.tight,
@@ -188,24 +177,21 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
         {lastScanned && (
           <div style={{
             fontSize: typography.fontSize.xs,
-            color: colors.warmGray[500]
+            color: framerColors.textSecondary
           }}>
             {loading ? 'Analyzing...' : `Scanned ${formatTimestamp(lastScanned)}`}
           </div>
         )}
       </div>
 
-      {/* Search and Filters - responsive layout */}
+      {/* Filters - integrated into layout */}
       <div style={{
-        marginBottom: spacing.lg,
-        paddingBottom: spacing.md,
-        borderBottom: `1px solid ${colors.warmGray[100]}`
+        width: '100%',
+        marginBottom: spacing.md
       }}>
         <AssetFilters
           filters={filters}
           onFiltersChange={setFilters}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
           assetCounts={assetCounts}
           sortConfig={sortConfig}
           onSortChange={setSortConfig}
@@ -213,7 +199,7 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
       </div>
 
       {/* Results Count */}
-      {(filters.type !== 'all' || filters.format !== 'all' || filters.sizeRange.min !== 0 || filters.sizeRange.max !== Infinity || searchQuery) && (
+      {(filters.type !== 'all' || filters.format !== 'all' || filters.sizeRange.min !== 0 || filters.sizeRange.max !== Infinity) && (
         <div style={{
           padding: `${spacing.xs} ${spacing.sm}`,
           backgroundColor: 'var(--framer-color-bg-secondary)',
@@ -221,11 +207,11 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
         }}>
           <span style={{
             fontSize: typography.fontSize.xs,
-            color: 'var(--framer-color-text-secondary)'
+            color: framerColors.textSecondary
           }}>
             Showing <span style={{
               fontWeight: typography.fontWeight.semibold,
-              color: 'var(--framer-color-text)'
+              color: framerColors.text
             }}>{sortedAssets.length}</span> of {baseAssets.length}
           </span>
         </div>
@@ -246,14 +232,14 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
               <div className="text-4xl mb-4">
                 {baseAssets.length === 0 ? '📦' : '🔍'}
                 </div>
-              <div className="font-semibold text-lg mb-2" style={{ color: 'var(--framer-color-text)' }}>
+              <div className="font-semibold text-lg mb-2" style={{ color: framerColors.text }}>
                 {baseAssets.length === 0 ? 'No Assets Found' : 'No Matching Assets'}
               </div>
-              <div className="text-sm mb-4 leading-relaxed" style={{ color: 'var(--framer-color-text-secondary)' }}>
+              <div className="text-sm mb-4 leading-relaxed" style={{ color: framerColors.textSecondary }}>
                 {baseAssets.length === 0 ? (
                   <>
                     <p className="mb-2">No images or SVGs were detected in your project.</p>
-                    <p className="text-xs mb-3" style={{ color: 'var(--framer-color-text-tertiary)' }}>
+                    <p className="text-xs mb-3" style={{ color: framerColors.textTertiary }}>
                       Make sure your pages contain frames with background images or SVG elements. 
                       Images need to be set as background images on frames to be detected. 
                       <a 
@@ -269,9 +255,9 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
                   </>
                 ) : (
                   <>
-                    <p className="mb-2">No assets match your current filters or search query.</p>
-                    <p className="text-xs" style={{ color: 'var(--framer-color-text-tertiary)' }}>
-                      Try adjusting your filters, clearing the search, or selecting a different page.
+                    <p className="mb-2">No assets match your current filters.</p>
+                    <p className="text-xs" style={{ color: framerColors.textTertiary }}>
+                      Try adjusting your filters or selecting a different page.
                     </p>
                   </>
                 )}
