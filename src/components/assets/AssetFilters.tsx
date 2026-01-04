@@ -67,19 +67,19 @@ export function AssetFilters({
               padding: `6px ${spacing.sm}`,
               paddingRight: searchQuery ? '28px' : spacing.sm,
               fontSize: typography.fontSize.xs,
-              color: 'var(--framer-color-text)',
-              backgroundColor: 'var(--framer-color-bg)',
-              border: `1px solid var(--framer-color-divider)`,
+              color: colors.almostBlack,
+              backgroundColor: colors.white,
+              border: `1px solid ${colors.warmGray[200]}`,
               borderRadius: borders.radius.md,
-              transition: 'border-color 0.15s ease',
+              transition: 'all 0.15s ease',
             }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+              e.currentTarget.style.borderColor = colors.warmGray[400]
+              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.05)'
             }}
             onBlur={(e) => {
-              e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-              e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+              e.currentTarget.style.borderColor = colors.warmGray[200]
+              e.currentTarget.style.boxShadow = 'none'
             }}
           />
           {searchQuery && (
@@ -113,22 +113,28 @@ export function AssetFilters({
           onChange={handleTypeChange}
           style={{
             padding: `6px ${spacing.sm}`,
+            paddingRight: spacing.lg,
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
-            color: 'var(--framer-color-text)',
-            backgroundColor: 'var(--framer-color-bg)',
-            border: `1px solid var(--framer-color-divider)`,
+            color: colors.almostBlack,
+            backgroundColor: colors.white,
+            border: `1px solid ${colors.warmGray[200]}`,
             borderRadius: borders.radius.md,
             cursor: 'pointer',
-            minWidth: '90px',
+            minWidth: '100px',
+            transition: 'all 0.15s ease',
+            appearance: 'none',
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right 8px center',
           }}
           onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--framer-color-text-secondary)'
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
+            e.currentTarget.style.borderColor = colors.warmGray[400]
+            e.currentTarget.style.boxShadow = '0 0 0 3px rgba(0, 0, 0, 0.05)'
           }}
           onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
+            e.currentTarget.style.borderColor = colors.warmGray[200]
+            e.currentTarget.style.boxShadow = 'none'
           }}
         >
           <option value="all">All ({assetCounts.all})</option>
