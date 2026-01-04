@@ -17,12 +17,36 @@ function getSizeIndicator(bytes: number): { label: string; shade: string } {
   return { label: 'Small', shade: colors.gray[400] }
 }
 
+// Calculate potential savings for unoptimized assets
+function calculatePotentialSavings(asset: AssetInfo): number {
+  // Don't show savings for CMS assets
+  if (asset.isCMSAsset || asset.isManualEstimate) return 0
+
+  const kb = asset.estimatedBytes / 1024
+
+  // Large PNG/JPG files have high savings potential
+  if ((asset.format === 'PNG' || asset.format === 'JPG' || asset.format === 'JPEG') && kb >= 200) {
+    // Estimate 60-70% savings from converting to WebP/AVIF
+    return Math.floor(asset.estimatedBytes * 0.65)
+  }
+
+  // Oversized images (dimensions much larger than needed)
+  const area = asset.dimensions.width * asset.dimensions.height
+  if (area > 4000000 && kb >= 500) { // > 2000x2000px and > 500KB
+    // Estimate 50% savings from resizing
+    return Math.floor(asset.estimatedBytes * 0.5)
+  }
+
+  return 0
+}
+
 export const AssetsTableRow = memo(function AssetsTableRow({
   asset,
   onClick,
   style
 }: AssetsTableRowProps) {
   const sizeIndicator = getSizeIndicator(asset.estimatedBytes)
+  const potentialSavings = calculatePotentialSavings(asset)
   const isCMS = asset.isCMSAsset || asset.isManualEstimate || !!asset.cmsItemSlug
   const canClick = !isCMS && asset.nodeId && asset.nodeId.trim() !== ''
 
@@ -31,9 +55,10 @@ export const AssetsTableRow = memo(function AssetsTableRow({
       onClick={() => canClick && onClick(asset.nodeId)}
       style={{
         ...style,
-        display: 'flex',
+        display: 'grid',
+        gridTemplateColumns: '40px 1fr auto',
         alignItems: 'center',
-        gap: spacing.lg,
+        gap: spacing.md,
         padding: `${spacing.md} 0`,
         backgroundColor: 'transparent',
         borderBottom: `1px solid ${colors.warmGray[100]}`,
@@ -126,8 +151,8 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         )}
       </div>
 
-      {/* Content - single line for better scanning */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: spacing.md }}>
+      {/* Content - flexible wrapping layout */}
+      <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {/* Name */}
         <div
           style={{
@@ -136,28 +161,28 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             color: colors.almostBlack,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap' as const,
-            minWidth: '200px',
-            flex: '0 0 auto',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            lineHeight: '1.4',
           }}
           title={asset.nodeName}
         >
           {asset.nodeName || 'Unnamed'}
         </div>
 
-        {/* Metadata - inline */}
+        {/* Metadata - wraps if needed */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: spacing.sm,
-          fontSize: typography.fontSize.xs,
+          gap: spacing.xs,
+          fontSize: '10px',
           color: colors.warmGray[500],
-          flex: '1 1 auto',
-          overflow: 'hidden'
+          flexWrap: 'wrap',
+          lineHeight: '1.6'
         }}>
           <span style={{
             textTransform: 'uppercase',
-            fontSize: '10px',
             fontWeight: typography.fontWeight.semibold,
             letterSpacing: '0.05em',
             color: colors.warmGray[400]
@@ -173,7 +198,6 @@ export const AssetsTableRow = memo(function AssetsTableRow({
               <span style={{ color: colors.warmGray[300] }}>·</span>
               <span style={{
                 textTransform: 'uppercase',
-                fontSize: '10px',
                 fontWeight: typography.fontWeight.semibold,
                 letterSpacing: '0.05em',
                 color: colors.warmGray[400]
@@ -185,13 +209,39 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         </div>
       </div>
 
-      {/* Size - compact */}
-      <div style={{ flexShrink: 0, textAlign: 'right' as const, minWidth: '100px' }}>
+      {/* Size and Savings - compact right column */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-end',
+        gap: spacing.xs,
+        minWidth: '80px'
+      }}>
+        {/* Savings badge - if has potential */}
+        {potentialSavings > 0 && (
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: `2px ${spacing.xs}`,
+            backgroundColor: colors.almostBlack,
+            color: colors.white,
+            fontSize: '10px',
+            fontWeight: typography.fontWeight.bold,
+            borderRadius: borders.radius.full,
+            letterSpacing: '0.01em',
+            whiteSpace: 'nowrap'
+          }}>
+            −{formatBytes(potentialSavings)}
+          </div>
+        )}
+
+        {/* Current size */}
         <span
           style={{
             fontSize: typography.fontSize.sm,
             fontWeight: typography.fontWeight.semibold,
             color: colors.almostBlack,
+            whiteSpace: 'nowrap'
           }}
         >
           {formatBytes(asset.estimatedBytes)}

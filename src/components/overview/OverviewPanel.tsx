@@ -154,27 +154,33 @@ export function OverviewPanel({
             borderRadius: borders.radius.lg,
             padding: spacing.md
           }}>
-            {/* Header with savings amount */}
+            {/* Header with savings badge */}
             <div style={{
-              marginBottom: spacing.sm
+              marginBottom: spacing.sm,
+              display: 'flex',
+              alignItems: 'center',
+              gap: spacing.sm
             }}>
               <div style={{
-                fontSize: '20px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: `4px ${spacing.sm}`,
+                backgroundColor: colors.almostBlack,
+                color: colors.white,
+                fontSize: typography.fontSize.sm,
                 fontWeight: typography.fontWeight.bold,
-                lineHeight: '1.1',
-                color: colors.almostBlack,
-                marginBottom: '2px',
-                letterSpacing: '-0.01em'
+                borderRadius: borders.radius.full,
+                letterSpacing: '0.01em'
               }}>
-                {formatBytes(totalSavings)}
-          </div>
+                −{formatBytes(totalSavings)}
+              </div>
               <div style={{
                 fontSize: typography.fontSize.xs,
                 color: colors.warmGray[500]
               }}>
-                could be saved ({savingsPercent.toFixed(0)}% reduction)
-        </div>
-      </div>
+                can be saved ({savingsPercent.toFixed(0)}% reduction)
+              </div>
+            </div>
 
             {onNavigateToRecommendations && (
               <button
