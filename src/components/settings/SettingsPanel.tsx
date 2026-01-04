@@ -61,7 +61,7 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
           marginBottom: spacing.sm
         }}>
           <h1 style={{
-            fontSize: typography.fontSize.xl,
+            fontSize: typography.fontSize.md,
             fontWeight: typography.fontWeight.bold,
             color: framerColors.text,
             margin: 0,

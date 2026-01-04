@@ -2,9 +2,8 @@ import { useRef } from 'react'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import type { AssetsTableProps } from './types'
 import { AssetsTableRow } from './AssetsTableRow'
-import { spacing } from '../../styles/designTokens'
 
-export function AssetsTable({ assets, sortConfig, onSort, onAssetClick }: AssetsTableProps) {
+export function AssetsTable({ assets, onAssetClick }: AssetsTableProps) {
   const parentRef = useRef<HTMLDivElement>(null)
 
   const rowVirtualizer = useVirtualizer({

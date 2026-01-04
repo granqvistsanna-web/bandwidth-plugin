@@ -19,9 +19,9 @@ export function CollapsibleSection({
   return (
     <div
       style={{
-        backgroundColor: surfaces.tertiary,
-        borderRadius: borders.radius.lg,
+        borderRadius: borders.radius.md,
         overflow: 'hidden' as const,
+        marginBottom: spacing.md
       }}
     >
       {/* Header - Clickable */}
@@ -33,21 +33,18 @@ export function CollapsibleSection({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          backgroundColor: isCollapsed ? surfaces.tertiary : framerColors.bgSecondary,
-          borderBottom: isCollapsed ? 'none' : `${borders.width.thin} solid var(--framer-color-divider)`,
+          backgroundColor: 'transparent',
+          borderBottom: isCollapsed ? 'none' : `1px solid var(--framer-color-divider)`,
           border: 'none',
           cursor: 'pointer',
-          transition: 'background-color 0.15s ease',
+          transition: 'opacity 0.15s ease',
+          opacity: 1
         }}
-          onMouseEnter={(e) => {
-            if (isCollapsed) {
-              e.currentTarget.style.backgroundColor = framerColors.bgSecondary
-            }
-          }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.opacity = '0.7'
+        }}
         onMouseLeave={(e) => {
-          if (isCollapsed) {
-            e.currentTarget.style.backgroundColor = surfaces.tertiary
-          }
+          e.currentTarget.style.opacity = '1'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
@@ -56,6 +53,7 @@ export function CollapsibleSection({
               fontSize: typography.fontSize.sm,
               fontWeight: typography.fontWeight.semibold,
               color: framerColors.text,
+              margin: 0
             }}
           >
             {title}
@@ -63,16 +61,16 @@ export function CollapsibleSection({
         </div>
 
         <svg
-          width="14"
-          height="14"
+          width="12"
+          height="12"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
-          strokeWidth="2.5"
+          strokeWidth="2"
           style={{
-            color: framerColors.textTertiary,
+            color: framerColors.textSecondary,
             transform: isCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
-            transition: 'transform 0.15s ease',
+            transition: 'transform 0.2s ease',
           }}
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -81,7 +79,7 @@ export function CollapsibleSection({
 
       {/* Content - Expandable */}
       {!isCollapsed && (
-        <div style={{ padding: spacing.md }}>
+        <div style={{ padding: `${spacing.sm} ${spacing.md} ${spacing.md} ${spacing.md}` }}>
           {children}
         </div>
       )}

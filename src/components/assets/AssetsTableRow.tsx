@@ -1,21 +1,12 @@
 import { memo } from 'react'
 import type { AssetInfo } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
-import { Badge } from '../primitives/Badge'
-import { spacing, typography, colors, borders, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, themeBorders, framerColors } from '../../styles/designTokens'
 
 interface AssetsTableRowProps {
   asset: AssetInfo
   onClick: (nodeId: string) => void
   style?: React.CSSProperties
-}
-
-function getSizeIndicator(bytes: number): { label: string; shade: string } {
-  const kb = bytes / 1024
-  // Use theme-aware colors that work in both light and dark modes
-  if (kb >= 500) return { label: 'Large', shade: framerColors.text }
-  if (kb >= 200) return { label: 'Medium', shade: framerColors.textSecondary }
-  return { label: 'Small', shade: framerColors.textTertiary }
 }
 
 // Calculate potential savings for unoptimized assets
@@ -46,7 +37,6 @@ export const AssetsTableRow = memo(function AssetsTableRow({
   onClick,
   style
 }: AssetsTableRowProps) {
-  const sizeIndicator = getSizeIndicator(asset.estimatedBytes)
   const potentialSavings = calculatePotentialSavings(asset)
   const isCMS = asset.isCMSAsset || asset.isManualEstimate || !!asset.cmsItemSlug
   const canClick = !isCMS && asset.nodeId && asset.nodeId.trim() !== ''

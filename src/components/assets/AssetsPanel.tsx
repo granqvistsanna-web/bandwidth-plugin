@@ -1,11 +1,11 @@
 import { useState, useMemo } from 'react'
 import { framer } from 'framer-plugin'
-import type { ProjectAnalysis, AssetInfo } from '../../types/analysis'
+import type { ProjectAnalysis } from '../../types/analysis'
 import type { FilterState, SortConfig, AssetCounts } from './types'
 import { AssetFilters } from './AssetFilters'
 import { AssetsTable } from './AssetsTable'
 import { debugLog } from '../../utils/debugLog'
-import { spacing, typography, borders, colors, backgrounds, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
+import { spacing, typography, borders, backgrounds, framerColors } from '../../styles/designTokens'
 import { StatusIndicator } from '../common/StatusIndicator'
 
 interface AssetsPanelProps {
@@ -28,7 +28,7 @@ const DEFAULT_SORT: SortConfig = {
   direction: 'desc'
 }
 
-export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanned, loading }: AssetsPanelProps) {
+export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: AssetsPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
   const [sortConfig, setSortConfig] = useState<SortConfig>(DEFAULT_SORT)
 
@@ -167,7 +167,7 @@ export function AssetsPanel({ analysis, selectedPageId, onPageChange, lastScanne
         marginBottom: spacing.md
       }}>
         <h1 style={{
-          fontSize: typography.fontSize.xl,
+          fontSize: typography.fontSize.md,
           fontWeight: typography.fontWeight.bold,
           color: framerColors.text,
           margin: 0,

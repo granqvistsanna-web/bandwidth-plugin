@@ -207,3 +207,4 @@
 7. **Minimalism**: Remove unnecessary elements
 8. **Clarity**: Concise labels, helpful tooltips
 
+

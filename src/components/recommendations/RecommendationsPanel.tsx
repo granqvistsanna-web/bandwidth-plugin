@@ -96,7 +96,7 @@ export function RecommendationsPanel({
         marginBottom: spacing.xl
       }}>
         <h1 style={{
-          fontSize: typography.fontSize.xl,
+          fontSize: typography.fontSize.md,
           fontWeight: typography.fontWeight.bold,
           color: framerColors.text,
           margin: 0,

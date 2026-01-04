@@ -21,7 +21,7 @@ interface SidebarNavigationProps {
   lastScanned?: Date | null
 }
 
-export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading, lastScanned }: SidebarNavigationProps) {
+export function SidebarNavigation({ activeTab, onTabChange, onRefresh, loading }: SidebarNavigationProps) {
   const [isCollapsed, setIsCollapsed] = useState(true)
   const [isHovered, setIsHovered] = useState(false)
   

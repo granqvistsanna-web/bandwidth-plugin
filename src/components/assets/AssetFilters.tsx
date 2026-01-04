@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import type { AssetFiltersProps, FilterState } from './types'
-import { spacing, typography, borders, colors, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 
 export function AssetFilters({
   filters,
   onFiltersChange,
-  assetCounts,
   sortConfig,
   onSortChange
 }: AssetFiltersProps) {
@@ -58,15 +57,6 @@ export function AssetFilters({
   const isLargeFilesActive = filters.sizeRange.min === 500 * 1024
   const isUnoptimizedActive = filters.format === 'png' || filters.format === 'jpg'
   const activeFilterCount = (isLargeFilesActive ? 1 : 0) + (isUnoptimizedActive ? 1 : 0)
-
-  const clearAllFilters = () => {
-    onFiltersChange({
-      type: 'all',
-      sizeRange: { min: 0, max: Infinity },
-      format: 'all',
-      pageUsage: 'all'
-    })
-  }
 
   return (
     <div style={{ 

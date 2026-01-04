@@ -144,7 +144,7 @@ export function OverviewPanel({
           marginBottom: spacing.md
         }}>
           <h1 style={{
-            fontSize: typography.fontSize.xl,
+            fontSize: typography.fontSize.md,
             fontWeight: typography.fontWeight.bold,
             color: framerColors.text,
             margin: 0,
@@ -169,11 +169,9 @@ export function OverviewPanel({
           {/* Total Page Weight Section */}
           <div>
             <div style={{
-              fontSize: typography.fontSize.xs,
-              fontWeight: typography.fontWeight.medium,
-              color: framerColors.textSecondary,
-              textTransform: 'uppercase' as const,
-              letterSpacing: typography.letterSpacing.wider,
+              fontSize: typography.fontSize.sm,
+              fontWeight: typography.fontWeight.semibold,
+              color: framerColors.text,
               marginBottom: spacing.xs
             }}>
               Total page weight
@@ -211,11 +209,9 @@ export function OverviewPanel({
               {/* Savings Section */}
               <div>
                 <div style={{
-                  fontSize: typography.fontSize.xs,
-                  fontWeight: typography.fontWeight.medium,
-                  color: framerColors.textSecondary,
-                  textTransform: 'uppercase' as const,
-                  letterSpacing: typography.letterSpacing.wider,
+                  fontSize: typography.fontSize.sm,
+                  fontWeight: typography.fontWeight.semibold,
+                  color: framerColors.text,
                   marginBottom: spacing.xs
                 }}>
                   Potential savings
@@ -229,7 +225,7 @@ export function OverviewPanel({
                   marginBottom: spacing.md
                 }}>
                   <div style={{
-                    fontSize: typography.fontSize.lg,
+                    fontSize: typography.fontSize.md,
                     fontWeight: typography.fontWeight.bold,
                     lineHeight: typography.lineHeight.tight,
                     color: framerColors.text,
@@ -292,17 +288,15 @@ export function OverviewPanel({
           padding: spacing.lg
         }}>
           <div style={{
-            fontSize: typography.fontSize.xs,
-            fontWeight: typography.fontWeight.medium,
-            color: framerColors.textSecondary,
-            textTransform: 'uppercase' as const,
-            letterSpacing: typography.letterSpacing.wider,
+            fontSize: typography.fontSize.sm,
+            fontWeight: typography.fontWeight.semibold,
+            color: framerColors.text,
             marginBottom: spacing.xs
           }}>
             Monthly bandwidth
           </div>
           <div style={{
-            fontSize: typography.fontSize.lg,
+            fontSize: typography.fontSize.md,
             fontWeight: typography.fontWeight.bold,
             color: framerColors.text,
             lineHeight: typography.lineHeight.none,
@@ -338,11 +332,9 @@ export function OverviewPanel({
           padding: spacing.lg
         }}>
           <div style={{
-            fontSize: typography.fontSize.xs,
-            fontWeight: typography.fontWeight.medium,
-            color: framerColors.textSecondary,
-            textTransform: 'uppercase' as const,
-            letterSpacing: typography.letterSpacing.wider,
+            fontSize: typography.fontSize.sm,
+            fontWeight: typography.fontWeight.semibold,
+            color: framerColors.text,
             marginBottom: spacing.md
           }}>
             Asset breakdown
@@ -381,11 +373,9 @@ export function OverviewPanel({
             padding: spacing.lg
           }}>
             <div style={{
-              fontSize: typography.fontSize.xs,
-              fontWeight: typography.fontWeight.medium,
-              color: framerColors.textSecondary,
-              textTransform: 'uppercase' as const,
-              letterSpacing: typography.letterSpacing.wider,
+              fontSize: typography.fontSize.sm,
+              fontWeight: typography.fontWeight.semibold,
+              color: framerColors.text,
               marginBottom: spacing.sm
             }}>
               Custom code assets
@@ -399,7 +389,7 @@ export function OverviewPanel({
                   Dynamically loaded assets
                 </div>
                 <div style={{
-                  fontSize: typography.fontSize.lg,
+                  fontSize: typography.fontSize.md,
                   fontWeight: typography.fontWeight.bold,
                   color: framerColors.text
                 }}>

@@ -1,4 +1,4 @@
-import { spacing, typography, borders, colors, backgrounds, framerColors, iconSize } from '../styles/designTokens'
+import { spacing, typography, borders, backgrounds, framerColors } from '../styles/designTokens'
 import { Button } from './primitives/Button'
 import { formatTimestamp } from '../utils/formatTimestamp'
 import { ArrowPathIcon } from '@heroicons/react/24/solid'

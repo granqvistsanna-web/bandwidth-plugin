@@ -1,6 +1,6 @@
 import type { ProjectAnalysis } from '../../types/analysis'
 import { BandwidthCalculator } from '../overview/BandwidthCalculator'
-import { spacing, typography, colors, borders, surfaces, themeBorders, themeElevation, framerColors, backgrounds } from '../../styles/designTokens'
+import { spacing, typography, framerColors, backgrounds } from '../../styles/designTokens'
 import { StatusIndicator } from '../common/StatusIndicator'
 
 interface BandwidthPanelProps {
@@ -18,7 +18,7 @@ export function BandwidthPanel({ analysis, lastScanned, loading, onNavigateToRec
       display: 'flex',
       flexDirection: 'column',
       gap: spacing.md,
-      height: '100%'
+      minHeight: '100vh'
     }}>
       {/* Compact Header */}
       <div style={{
@@ -28,7 +28,7 @@ export function BandwidthPanel({ analysis, lastScanned, loading, onNavigateToRec
         marginBottom: spacing.xl
       }}>
         <h1 style={{
-          fontSize: typography.fontSize.xl,
+          fontSize: typography.fontSize.md,
           fontWeight: typography.fontWeight.bold,
           color: framerColors.text,
           margin: 0,

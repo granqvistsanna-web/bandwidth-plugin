@@ -121,3 +121,4 @@ Look at top Framer plugins in the marketplace for inspiration:
 
 **Note**: These thumbnails are critical for marketplace visibility. Take time to create high-quality, representative images that accurately show your plugin's capabilities.
 
+

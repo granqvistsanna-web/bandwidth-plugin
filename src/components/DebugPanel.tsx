@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../types/analysis'
 import { debugLog, type DebugLogEntry } from '../utils/debugLog'
-import { spacing, typography, borders, colors, surfaces, framerColors, backgrounds } from '../styles/designTokens'
+import { spacing, typography, borders, surfaces, framerColors, backgrounds } from '../styles/designTokens'
 import { StatusIndicator } from './common/StatusIndicator'
 
 interface DebugPanelProps {

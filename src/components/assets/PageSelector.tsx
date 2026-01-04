@@ -1,5 +1,5 @@
 import type { ProjectAnalysis } from '../../types/analysis'
-import { spacing, typography, borders, colors, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, themeBorders, framerColors } from '../../styles/designTokens'
 
 interface PageSelectorProps {
   analysis: ProjectAnalysis

@@ -177,12 +177,7 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
         backgroundColor: surfaces.secondary,
         borderRadius: borders.radius.lg,
         boxShadow: themeElevation.subtle,
-        marginBottom: spacing.lg,
-        borderLeft: `4px solid ${
-          riskLevel === 'danger' ? 'var(--status-error-solid)' :
-          riskLevel === 'warning' ? 'var(--status-warning-solid)' :
-          'var(--status-success-solid)'
-        }`
+        marginBottom: spacing.lg
       }}>
         <div style={{
           display: 'flex',
@@ -234,11 +229,9 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
         {/* Traffic Estimate Section */}
         <div style={{ marginBottom: spacing.lg }}>
           <div style={{
-            fontSize: typography.fontSize.xs,
+            fontSize: typography.fontSize.sm,
             fontWeight: typography.fontWeight.semibold,
             color: framerColors.text,
-            textTransform: 'uppercase' as const,
-            letterSpacing: typography.letterSpacing.wider,
             marginBottom: spacing.md
           }}>
             Traffic Estimate
@@ -437,11 +430,9 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
         {/* Plan Status Section */}
         <div>
           <div style={{
-            fontSize: typography.fontSize.xs,
+            fontSize: typography.fontSize.sm,
             fontWeight: typography.fontWeight.semibold,
             color: framerColors.text,
-            textTransform: 'uppercase' as const,
-            letterSpacing: typography.letterSpacing.wider,
             marginBottom: spacing.md
           }}>
             Plan Status
