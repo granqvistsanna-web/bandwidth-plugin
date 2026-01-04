@@ -13,13 +13,11 @@
  * Canvas mode can access CMS data by explicitly calling the CMS API entry points.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-// Note: This file uses 'any' types extensively due to the dynamic nature of CMS data
-// and the Framer plugin API which doesn't have complete TypeScript definitions for CMS operations.
-
 import { framer } from 'framer-plugin'
 import type { AssetInfo } from '../types/analysis'
+import type { FramerAPIWithCMS, FramerCMSCollection, FramerCMSItem, FramerCMSField, FramerCMSFieldValue, ImageAsset, FileAsset, ExtendedCanvasNode } from '../types/framer'
 import { debugLog } from '../utils/debugLog'
+import { handleServiceError, withEmptyArrayFallback, ErrorCode } from '../utils/errorHandler'
 
 export interface CMSCollection {
   id: string
@@ -67,32 +65,32 @@ export interface CMSBandwidthImpact {
  * Diagnostic function to inspect Framer API structure
  */
 async function diagnoseFramerAPI(): Promise<void> {
-   
-  const framerAny = framer as any
+  const framerAPI = framer as unknown as FramerAPIWithCMS
   
   debugLog.info('🔍 DIAGNOSTIC: Inspecting Framer API structure...')
   debugLog.info('🔍 framer object keys:', Object.keys(framer).slice(0, 20))
-  debugLog.info('🔍 framer.getCollections type:', typeof framerAny.getCollections)
-  debugLog.info('🔍 framer.getActiveCollection type:', typeof framerAny.getActiveCollection)
+  debugLog.info('🔍 framer.getCollections type:', typeof framerAPI.getCollections)
+  debugLog.info('🔍 framer.getActiveCollection type:', typeof framerAPI.getActiveCollection)
   
   // Try to call and see what happens
   try {
-    if (typeof framerAny.getCollections === 'function') {
-      const result = await framerAny.getCollections()
+    if (typeof framerAPI.getCollections === 'function') {
+      const result = await framerAPI.getCollections()
       debugLog.info('🔍 getCollections() result type:', typeof result)
       debugLog.info('🔍 getCollections() is array:', Array.isArray(result))
       if (Array.isArray(result) && result.length > 0) {
+        const firstCollection = result[0] as FramerCMSCollection
         debugLog.info('🔍 First collection structure:', {
-          keys: Object.keys(result[0]),
-          hasGetItems: typeof result[0].getItems === 'function',
-          hasGetFields: typeof result[0].getFields === 'function',
-          name: result[0].name,
-          id: result[0].id
+          keys: Object.keys(firstCollection),
+          hasGetItems: typeof firstCollection.getItems === 'function',
+          hasGetFields: typeof firstCollection.getFields === 'function',
+          name: firstCollection.name,
+          id: firstCollection.id
         })
       }
     }
   } catch (error) {
-    debugLog.error('🔍 Error calling getCollections():', error)
+    handleServiceError(error, 'diagnoseFramerAPI', { logLevel: 'warn' })
   }
 }
 
@@ -108,14 +106,13 @@ export async function detectCMSCollections(): Promise<CMSCollection[]> {
     await diagnoseFramerAPI()
     
     // Use official Framer CMS API - getCollections() is available in Plugin API v3.0
-     
-    const framerAny = framer as any
+    const framerAPI = framer as unknown as FramerAPIWithCMS
     
     // Explicitly call the CMS API entry point
-    if (typeof framerAny.getCollections === 'function') {
+    if (typeof framerAPI.getCollections === 'function') {
       debugLog.info('📦 Calling framer.getCollections() to access CMS...')
       try {
-        const apiCollections = await framerAny.getCollections()
+        const apiCollections = await framerAPI.getCollections()
         debugLog.info(`📦 getCollections() returned:`, {
           type: typeof apiCollections,
           isArray: Array.isArray(apiCollections),
@@ -199,9 +196,9 @@ export async function detectCMSCollections(): Promise<CMSCollection[]> {
     
     for (const node of nodesWithCollection) {
        
-      const nodeAny = node as any
-      const collectionId = nodeAny.collectionId || nodeAny.__collectionId
-      const collectionName = nodeAny.collectionName || nodeAny.__collectionName || 'CMS Collection'
+      const extendedNode = node as ExtendedCanvasNode
+      const collectionId = (extendedNode.collectionId || extendedNode.__collectionId) as string | undefined
+      const collectionName = (extendedNode.collectionName || extendedNode.__collectionName || 'CMS Collection') as string
       
       if (collectionId && !collectionMap.has(collectionId)) {
         collectionMap.set(collectionId, {
@@ -225,17 +222,16 @@ export async function detectCMSCollections(): Promise<CMSCollection[]> {
  * Collect CMS items from collections using official Framer API
  * Uses collection.getItems() to get items with fieldData
  */
-export async function collectCMSItems(collections: CMSCollection[]): Promise<Array<{ collectionId: string; items: any[] }>> {
-  const results: Array<{ collectionId: string; items: any[] }> = []
+export async function collectCMSItems(collections: CMSCollection[]): Promise<Array<{ collectionId: string; items: FramerCMSItem[] }>> {
+  const results: Array<{ collectionId: string; items: FramerCMSItem[] }> = []
   
   try {
-     
-    const framerAny = framer as any
+    const framerAPI = framer as unknown as FramerAPIWithCMS
     
     // Get all collections from API
-    if (typeof framerAny.getCollections === 'function') {
+    if (typeof framerAPI.getCollections === 'function') {
       debugLog.info(`📦 Getting API collections to match with ${collections.length} detected collections...`)
-      const apiCollections = await framerAny.getCollections()
+      const apiCollections = await framerAPI.getCollections()
       debugLog.info(`📦 API returned ${apiCollections?.length || 0} collections`)
       
       if (!Array.isArray(apiCollections) || apiCollections.length === 0) {
@@ -244,7 +240,7 @@ export async function collectCMSItems(collections: CMSCollection[]): Promise<Arr
       }
       
       // Log all API collections for debugging
-      debugLog.info('📦 API Collections:', apiCollections.map((c: any) => ({
+      debugLog.info('📦 API Collections:', (apiCollections as FramerCMSCollection[]).map((c) => ({
         id: c.id,
         name: c.name,
         hasGetItems: typeof c.getItems === 'function'
@@ -254,7 +250,7 @@ export async function collectCMSItems(collections: CMSCollection[]): Promise<Arr
         debugLog.info(`📦 Looking for collection: ${collection.name} (id: ${collection.id})`)
         
         // Find matching API collection - try multiple matching strategies
-        const apiCollection = apiCollections.find((c: any) => {
+        const apiCollection = (apiCollections as FramerCMSCollection[]).find((c) => {
           const idMatch = c.id === collection.id
           const nameMatch = c.name === collection.name
           const idStringMatch = String(c.id) === String(collection.id)
@@ -269,7 +265,7 @@ export async function collectCMSItems(collections: CMSCollection[]): Promise<Arr
         
         if (!apiCollection) {
           debugLog.warn(`⚠️ Could not find matching API collection for: ${collection.name} (id: ${collection.id})`)
-          debugLog.info('Available API collections:', apiCollections.map((c: any) => `${c.name} (${c.id})`))
+          debugLog.info('Available API collections:', (apiCollections as FramerCMSCollection[]).map((c) => `${c.name} (${c.id})`))
           continue
         }
         
@@ -348,17 +344,16 @@ export async function collectCMSItems(collections: CMSCollection[]): Promise<Arr
  * Uses isImageAsset() and isFileAsset() from the API, and asset.measure() for dimensions
  */
 export async function extractAssetsFromCMSItems(
-  cmsItems: Array<{ collectionId: string; items: any[] }>
+  cmsItems: Array<{ collectionId: string; items: FramerCMSItem[] }>
 ): Promise<CMSAsset[]> {
   const assets: CMSAsset[] = []
   
   try {
-     
-    const framerAny = framer as any
+    const framerAPI = framer as unknown as FramerAPIWithCMS
     
     // Use official Framer API helpers - isImageAsset() and isFileAsset() are provided by the API
     // These are the correct way to check if a field value is an image or file asset
-    const isImageAsset = framerAny.isImageAsset || ((value: any): boolean => {
+    const isImageAsset = framerAPI.isImageAsset || ((value: unknown): value is ImageAsset => {
       if (!value || typeof value !== 'object') return false
       // Check for ImageAsset properties - CMS fields return asset objects, not strings
       return typeof value.url === 'string' && (
@@ -369,7 +364,7 @@ export async function extractAssetsFromCMSItems(
       )
     })
     
-    const isFileAsset = framerAny.isFileAsset || ((value: any): boolean => {
+    const isFileAsset = framerAPI.isFileAsset || ((value: unknown): value is FileAsset => {
       if (!value || typeof value !== 'object') return false
       // Check for FileAsset properties - CMS fields return asset objects, not strings
       return typeof value.url === 'string' && (
@@ -383,9 +378,9 @@ export async function extractAssetsFromCMSItems(
     // Get collection names for better asset naming
     const collectionMap = new Map<string, string>()
     try {
-      if (typeof framerAny.getCollections === 'function') {
-        const apiCollections = await framerAny.getCollections()
-        for (const apiCollection of apiCollections) {
+      if (typeof framerAPI.getCollections === 'function') {
+        const apiCollections = await framerAPI.getCollections()
+        for (const apiCollection of (apiCollections || []) as FramerCMSCollection[]) {
           collectionMap.set(apiCollection.id || apiCollection.name, apiCollection.name || 'Unnamed Collection')
         }
       }
@@ -399,22 +394,23 @@ export async function extractAssetsFromCMSItems(
       
       for (const item of items) {
          
-        const itemAny = item as any
+        const itemData = item as FramerCMSItem
         
         // Try multiple possible field data locations
-        let fieldData = itemAny.fieldData || itemAny.data || itemAny.fields || {}
-        const itemId = itemAny.id || itemAny.slug || 'unknown'
-        const itemSlug = itemAny.slug || itemAny.id || 'unknown' // Extract slug from CMS item
+        let fieldData: Record<string, FramerCMSFieldValue> = itemData.fields || {}
+        const itemId = itemData.id || 'unknown'
+        const itemSlug = itemData.slug || itemData.id || 'unknown' // Extract slug from CMS item
         
         // Check if fieldData values are wrapped in { value, type } structure (new API format)
         // According to Framer docs, fieldData might be structured as { value, type } objects
-        const unwrappedFieldData: Record<string, any> = {}
+        const unwrappedFieldData: Record<string, FramerCMSFieldValue> = {}
         for (const [key, value] of Object.entries(fieldData)) {
           // Check if value is an object with { value, type } structure
           if (value && typeof value === 'object' && 'value' in value && !('url' in value)) {
             // New API format: { value: actualValue, type: 'image' | 'file' | ... }
-            unwrappedFieldData[key] = (value as any).value
-            debugLog.info(`📦 Unwrapped field ${key} from {value, type} structure (type: ${(value as any).type})`)
+            const wrappedValue = value as { value: unknown; type?: string }
+            unwrappedFieldData[key] = wrappedValue.value as FramerCMSFieldValue
+            debugLog.info(`📦 Unwrapped field ${key} from {value, type} structure (type: ${wrappedValue.type})`)
           } else {
             // Old format: direct value
             unwrappedFieldData[key] = value
@@ -436,7 +432,7 @@ export async function extractAssetsFromCMSItems(
             if (isImageAsset(fieldValue) || isFileAsset(fieldValue)) {
               foundAssetsInItem++
                
-              const asset = fieldValue as any
+              const asset = fieldValue as ImageAsset | FileAsset
               const imageUrl = asset.url
               
               if (imageUrl && typeof imageUrl === 'string') {
@@ -552,17 +548,15 @@ export async function collectCMSAssets(): Promise<CMSAsset[]> {
 
       for (const frame of allFrames) {
          
-        const frameAny = frame as any
+        const extendedFrame = frame as ExtendedCanvasNode
 
         // Check if this component has controls that look like CMS data
-        if (frameAny.controls && typeof frameAny.controls === 'object') {
-          const controls = frameAny.controls
-
+        const controls = extendedFrame.controls as Record<string, unknown> | undefined
+        if (controls && typeof controls === 'object') {
           // Look for image fields in controls
           for (const [key, value] of Object.entries(controls)) {
             if (value && typeof value === 'object') {
-               
-              const controlValue = value as any
+              const controlValue = value as Record<string, unknown>
 
               // Check if this control has an image src/url
               if (controlValue.src || controlValue.url || controlValue.value) {

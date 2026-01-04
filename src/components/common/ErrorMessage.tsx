@@ -1,4 +1,5 @@
-import { framerColors } from '../../styles/designTokens'
+import { framerColors, spacing, typography, borders } from '../../styles/designTokens'
+import { Button } from '../primitives/Button'
 
 interface ErrorMessageProps {
   error: Error
@@ -11,51 +12,40 @@ export function ErrorMessage({ error, onRetry }: ErrorMessageProps) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      height: '256px'
+      minHeight: '256px',
+      padding: spacing.lg
     }}>
       <div style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '12px',
+        gap: spacing.md,
         maxWidth: '384px',
         textAlign: 'center'
       }}>
         <div style={{ 
-          fontSize: '32px',
+          fontSize: typography.fontSize['3xl'],
           color: 'var(--status-error-solid)' 
         }}>⚠</div>
         <h3 style={{ 
-          fontWeight: 600,
-          color: framerColors.text 
+          fontWeight: typography.fontWeight.semibold,
+          fontSize: typography.fontSize.lg,
+          color: framerColors.text,
+          margin: 0
         }}>Analysis Failed</h3>
         <p style={{ 
-          fontSize: '13px',
-          color: framerColors.textSecondary 
+          fontSize: typography.fontSize.sm,
+          color: framerColors.textSecondary,
+          margin: 0
         }}>{error.message}</p>
-        <button
+        <Button
           onClick={onRetry}
-          style={{
-            marginTop: '8px',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            backgroundColor: 'var(--framer-color-tint)',
-            color: framerColors.textReversed,
-            border: 'none',
-            cursor: 'pointer',
-            fontSize: '13px',
-            fontWeight: 500,
-            transition: 'background-color 0.15s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-tint-dark)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.backgroundColor = 'var(--framer-color-tint)'
-          }}
+          variant="primary"
+          size="sm"
+          style={{ marginTop: spacing.xs }}
         >
           Try Again
-        </button>
+        </Button>
       </div>
     </div>
   )

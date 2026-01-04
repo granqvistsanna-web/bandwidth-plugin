@@ -1,4 +1,4 @@
-import { framerColors, backgrounds } from '../../styles/designTokens'
+import { framerColors, backgrounds, spacing, typography } from '../../styles/designTokens'
 
 export function LoadingSpinner() {
   return (
@@ -8,13 +8,14 @@ export function LoadingSpinner() {
       justifyContent: 'center',
       height: '100%',
       minHeight: '256px',
-      backgroundColor: backgrounds.page
+      backgroundColor: backgrounds.page,
+      padding: spacing.lg
     }}>
       <div style={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '12px'
+        gap: spacing.md
       }}>
         <div 
           style={{
@@ -27,8 +28,9 @@ export function LoadingSpinner() {
           }}
         ></div>
         <p style={{ 
-          fontSize: '13px',
-          color: framerColors.textSecondary 
+          fontSize: typography.fontSize.sm,
+          color: framerColors.textSecondary,
+          margin: 0
         }}>Analyzing bandwidth...</p>
       </div>
     </div>

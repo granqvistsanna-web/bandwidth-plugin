@@ -7,6 +7,7 @@ import { calculateCMSBandwidthImpact } from './cmsAssets'
 import { collectAllAssets, collectPageAssetsForBreakpoint, type ManualCMSEstimate } from './assetCollector'
 import { debugLog } from '../utils/debugLog'
 import { formatBytes } from '../utils/formatBytes'
+import { handleServiceError, ErrorCode } from '../utils/errorHandler'
 
 export async function analyzeProject(
   mode: AnalysisMode = 'canvas', 
@@ -196,7 +197,7 @@ export async function analyzeProject(
     const hasManualCMSEstimates = manual.length > 0
     const cmsAssetsNotFound = allCMSAssets.filter(a => 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (a as any).cmsStatus === 'not_found'
+      (a as { cmsStatus?: string }).cmsStatus === 'not_found'
     ).length
     
     // Debug: Log CMS asset count
@@ -277,7 +278,11 @@ export async function analyzeProject(
             } : undefined
           }
         } catch (error) {
-          debugLog.error('Failed to analyze published site:', error)
+          handleServiceError(error, 'analyzeProject.publishedSite', {
+            notifyUser: false,
+            logLevel: 'warn',
+            code: ErrorCode.NETWORK_ERROR
+          })
           // Fall back to canvas analysis
         }
       } else {

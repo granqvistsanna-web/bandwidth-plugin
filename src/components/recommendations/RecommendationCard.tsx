@@ -269,8 +269,8 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
           <div
             style={{
               flexShrink: 0,
-              width: '64px',
-              height: '64px',
+              width: '64px', // Fixed size for thumbnails
+              height: '64px', // Fixed size for thumbnails
               borderRadius: borders.radius.md,
               border: `1.5px solid ${themeBorders.subtle}`,
               backgroundColor: surfaces.tertiary,
@@ -390,7 +390,7 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
             </Button>
           ) : (
             <div style={{
-              padding: '10px 16px',
+              padding: `${spacing.sm} ${spacing.md}`,
               fontSize: typography.fontSize.xs,
               color: framerColors.textSecondary,
               textAlign: 'center',

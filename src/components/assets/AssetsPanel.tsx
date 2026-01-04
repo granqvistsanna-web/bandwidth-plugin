@@ -237,7 +237,7 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
               maxWidth: '384px', 
               margin: '0 auto' 
             }}>
-              <div style={{ fontSize: '2.25rem', marginBottom: spacing.md }}>
+              <div style={{ fontSize: typography.fontSize['3xl'], marginBottom: spacing.md }}>
                 {baseAssets.length === 0 ? '📦' : '🔍'}
               </div>
               <div style={{ 

@@ -71,7 +71,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         borderBottom: `1px solid ${themeBorders.subtle}`,
         cursor: canClick ? 'pointer' : 'default',
         transition: canClick ? 'background-color 0.15s ease' : 'none',
-        height: '80px',
+        minHeight: '80px', // Fixed row height for consistent table layout
         boxSizing: 'border-box',
       }}
       onMouseEnter={(e) => {
@@ -200,7 +200,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
           {asset.format && (
             <span style={{
               textTransform: 'uppercase',
-              fontSize: '10px',
+              fontSize: typography.fontSize.xxs || '10px', // Extra small for badges
               fontWeight: typography.fontWeight.semibold,
               letterSpacing: '0.05em',
               color: framerColors.textTertiary
@@ -213,7 +213,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             {asset.actualDimensions ? (
               <>
                 {Math.round(asset.actualDimensions.width)} × {Math.round(asset.actualDimensions.height)}
-                <span style={{ color: framerColors.textTertiary, margin: '0 4px' }}>→</span>
+                <span style={{ color: framerColors.textTertiary, margin: `0 ${spacing.xs}` }}>→</span>
                 {Math.round(asset.dimensions.width)} × {Math.round(asset.dimensions.height)}
               </>
             ) : (
@@ -239,7 +239,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
           <div style={{
             display: 'inline-flex',
             alignItems: 'center',
-            padding: `3px ${spacing.sm}`,
+            padding: `${spacing.xxs} ${spacing.sm}`, // 2px top/bottom for compact badge
             backgroundColor: surfaces.tertiary,
             color: framerColors.text,
             fontSize: typography.fontSize.xs,

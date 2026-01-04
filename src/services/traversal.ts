@@ -1,6 +1,8 @@
-import { framer, supportsBackgroundImage, type ImageAsset } from 'framer-plugin'
+import { framer, supportsBackgroundImage, type ImageAsset, type CanvasNode } from 'framer-plugin'
 import type { AssetInfo, Breakpoint } from '../types/analysis'
+import type { ExtendedCanvasNode } from '../types/framer'
 import { debugLog } from '../utils/debugLog'
+import { handleServiceError, withEmptyArrayFallback, withNullFallback, ErrorCode } from '../utils/errorHandler'
 
 /**
  * Check if a page is a design page (should be excluded from analysis)
@@ -36,15 +38,18 @@ function isDesignPage(page: { name?: string; type?: string }): boolean {
   return designPagePatterns.some(pattern => name.startsWith(pattern))
 }
 
-export async function getAllPages(excludeDesignPages: boolean = true) {
-  try {
+export async function getAllPages(excludeDesignPages: boolean = true): Promise<CanvasNode[]> {
+  return withEmptyArrayFallback(async () => {
     const root = await framer.getCanvasRoot()
     debugLog.info(`Canvas root found: ${root?.type || 'unknown'}`, root)
 
     // getCanvasRoot returns a single node, we need to get its children (the pages)
     if (!root) {
-      debugLog.error('No canvas root found')
-      framer.notify('No canvas root found!', { variant: 'error' })
+      handleServiceError(
+        new Error('No canvas root found'),
+        'getAllPages',
+        { notifyUser: true, code: ErrorCode.NOT_FOUND }
+      )
       return []
     }
 
@@ -64,11 +69,7 @@ export async function getAllPages(excludeDesignPages: boolean = true) {
     debugLog.success(`Found ${pages.length} page(s) for analysis`, pages.map(p => p.name || p.id))
 
     return pages
-  } catch (error) {
-    debugLog.error('Error getting canvas root', error)
-    framer.notify(`Error: ${error}`, { variant: 'error' })
-    return []
-  }
+  }, 'getAllPages')
 }
 
 export async function traverseNodeTree(
@@ -120,19 +121,22 @@ export async function traverseNodeTree(
       await new Promise(resolve => setTimeout(resolve, 0))
     }
   } catch (error) {
-    debugLog.error(`Error traversing node ${nodeId}`, error)
-    // Only show critical errors, not every traversal error
-    if (currentDepth === 0) {
-    framer.notify(`Error scanning: ${error}`, { variant: 'error' })
-    }
+    handleServiceError(
+      error,
+      `traverseNodeTree(${nodeId})`,
+      {
+        notifyUser: currentDepth === 0, // Only notify for top-level errors
+        logLevel: currentDepth === 0 ? 'error' : 'warn',
+        code: ErrorCode.API_ERROR
+      }
+    )
   }
 
   return assets
 }
 
 async function extractAssetInfo(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  node: any,
+  node: ExtendedCanvasNode,
   breakpoint: Breakpoint,
   depth: number = 0
 ): Promise<AssetInfo | null> {
@@ -156,24 +160,21 @@ async function extractAssetInfo(
     
     if (shouldLogFullStructure) {
       // Log full node structure for debugging image detection issues
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fullNodeStructure: any = {}
+      const fullNodeStructure: Record<string, unknown> = {}
       for (const key of Object.keys(node)) {
         if (key.startsWith('__')) continue
         const value = node[key]
         if (typeof value === 'string' && value.length > 100) {
           fullNodeStructure[key] = value.substring(0, 100) + '...'
         } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const objValue = value as any
+          const objValue = value as Record<string, unknown>
           fullNodeStructure[key] = { 
             type: 'object',
             keys: Object.keys(objValue).slice(0, 20),
             sample: JSON.stringify(objValue).substring(0, 200)
           }
         } else if (Array.isArray(value)) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const arrValue = value as any[]
+          const arrValue = value as unknown[]
           fullNodeStructure[key] = {
             type: 'array',
             length: arrValue.length,
@@ -244,13 +245,11 @@ async function extractAssetInfo(
     // Check for SVG type nodes
     if (node.type === 'SVG' || node.type === 'svg' || node.__class === 'SVGNode') {
       // Try to get SVG content for feature analysis
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const nodeAny = node as any
       let svgContent: string | undefined
-      if (nodeAny.svg || nodeAny.content) {
-        svgContent = nodeAny.svg || nodeAny.content
-      } else if (nodeAny.__svgContent) {
-        svgContent = nodeAny.__svgContent
+      if (node.svg || node.content) {
+        svgContent = (node.svg || node.content) as string
+      } else if (node.__svgContent) {
+        svgContent = node.__svgContent as string
       }
       
       // Get the page this node belongs to
@@ -290,8 +289,7 @@ async function extractAssetInfo(
 }
 
 function getNodeDimensions(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  node: any
+  node: ExtendedCanvasNode
 ): { width: number; height: number } {
   // Try to get node dimensions
   // Framer nodes should have width and height properties
@@ -473,9 +471,7 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
     const allPages = await getAllPagesCached()
     
     // If this node is a page, return it
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nodeAny = node as any
-    const nodeType = nodeAny.type || node.type || ''
+    const nodeType = node.type || ''
     const nodeTypeLower = nodeType.toLowerCase()
     
     // Check if this node is a page by type or by ID match
@@ -612,9 +608,7 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
       }
       
       // Check if parent is a page by type or by ID match
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const parentAny = parent as any
-      const parentType = (parentAny.type || parent.type || '').toLowerCase()
+      const parentType = (parent.type || '').toLowerCase()
       const isParentPageByType = parentType.includes('page')
       const isParentPageById = allPages.some(p => p.id === parent.id)
       
@@ -709,15 +703,12 @@ async function isNodeInDesignPage(nodeId: string): Promise<boolean> {
     if (!node) return false
     
     // If this node is a page, check if it's a design page
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nodeAny = node as any
-    if (nodeAny.type === 'Page' || nodeAny.type === 'PageNode' || node.type === 'Page') {
+    if (node.type === 'Page' || node.type === 'PageNode') {
       return isDesignPage(node)
     }
     
     // Traverse up the parent chain to find the page
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let current: any = node
+    let current: ExtendedCanvasNode | null = node
     let depth = 0
     const maxDepth = 20 // Safety limit
     
@@ -878,13 +869,11 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
         const dimensions = getNodeDimensions(node)
         
         // Try to get SVG content for feature analysis
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const nodeAny = node as any
         let svgContent: string | undefined
-        if (nodeAny.svg || nodeAny.content) {
-          svgContent = nodeAny.svg || nodeAny.content
-        } else if (nodeAny.__svgContent) {
-          svgContent = nodeAny.__svgContent
+        if (node.svg || node.content) {
+          svgContent = (node.svg || node.content) as string
+        } else if (node.__svgContent) {
+          svgContent = node.__svgContent as string
         }
         
         const asset: AssetInfo = {

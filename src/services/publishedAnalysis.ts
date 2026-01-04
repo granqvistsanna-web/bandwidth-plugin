@@ -1,6 +1,7 @@
 import { framer } from 'framer-plugin'
 import { analyzeAllJavaScriptBundles, type CodeAnalysisResult } from './codeAnalyzer'
 import { debugLog } from '../utils/debugLog'
+import { handleServiceError, withNullFallback, ErrorCode } from '../utils/errorHandler'
 
 export interface PublishedResource {
   url: string
@@ -225,7 +226,11 @@ export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAn
           }
         }
       } catch (error) {
-        debugLog.warn('Error analyzing custom code:', error)
+        handleServiceError(error, 'analyzePublishedSite.customCode', {
+          notifyUser: false,
+          logLevel: 'warn',
+          code: ErrorCode.API_ERROR
+        })
       }
     }
 
@@ -247,8 +252,13 @@ export async function analyzePublishedSite(siteUrl: string): Promise<PublishedAn
       customCode: customCodeAnalysis
     }
   } catch (error) {
-    debugLog.error('Error analyzing published site:', error)
-    throw error
+    const serviceError = handleServiceError(error, 'analyzePublishedSite', {
+      notifyUser: false,
+      logLevel: 'error',
+      code: ErrorCode.NETWORK_ERROR,
+      defaultMessage: 'Failed to analyze published site'
+    })
+    throw new Error(serviceError.message)
   }
 }
 
@@ -270,10 +280,14 @@ async function getResourceSize(url: string): Promise<number> {
 
     const contentLength = response.headers.get('Content-Length')
     return contentLength ? parseInt(contentLength, 10) : 0
-  } catch (error) {
-    debugLog.warn(`Error fetching resource ${url}:`, error)
-    return 0
-  }
+      } catch (error) {
+        handleServiceError(error, `getResourceSize(${url})`, {
+          notifyUser: false,
+          logLevel: 'warn',
+          code: ErrorCode.NETWORK_ERROR
+        })
+        return 0
+      }
 }
 
 /**
