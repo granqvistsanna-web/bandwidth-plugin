@@ -5,8 +5,7 @@ import { formatBytes } from '../../utils/formatBytes'
 import { CMSManualEstimateModal } from './CMSManualEstimateModal'
 import { Button } from '../primitives/Button'
 import type { ManualCMSEstimate } from '../../hooks/useAnalysis'
-import { debugLog } from '../../utils/debugLog'
-import { spacing, typography, borders, colors, surfaces, themeBorders, framerColors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, themeBorders, framerColors } from '../../styles/designTokens'
 
 interface CMSAssetsNoticeProps {
   analysis: ProjectAnalysis
@@ -34,7 +33,6 @@ export function CMSAssetsNotice({
   const cmsBytes = analysis.cmsAssetsBytes || 0
   const hasManualEstimates = analysis.hasManualCMSEstimates || false
   const cmsNotFound = analysis.cmsAssetsNotFound || 0
-  const bandwidthImpact = analysis.cmsBandwidthImpact
 
   return (
     <>

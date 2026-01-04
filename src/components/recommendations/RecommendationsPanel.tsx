@@ -3,7 +3,7 @@ import type { ProjectAnalysis } from '../../types/analysis'
 import { RecommendationCard } from './RecommendationCard'
 import { formatBytes } from '../../utils/formatBytes'
 import { calculateTotalSavings } from '../../services/recommendations'
-import { spacing, typography, borders, colors, backgrounds, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
+import { spacing, typography, borders, backgrounds, surfaces, themeElevation, framerColors } from '../../styles/designTokens'
 import { CollapsibleSection } from '../overview/CollapsibleSection'
 import { StatusIndicator } from '../common/StatusIndicator'
 
@@ -88,12 +88,12 @@ export function RecommendationsPanel({
 
     return (
     <div style={{ padding: spacing.lg, backgroundColor: backgrounds.page, minHeight: '100vh' }}>
-      {/* Compact Header */}
+      {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: spacing.xl
+        marginBottom: spacing.lg
       }}>
         <h1 style={{
           fontSize: typography.fontSize.md,
@@ -116,7 +116,7 @@ export function RecommendationsPanel({
         <div
           style={{
             padding: spacing.lg,
-            marginBottom: spacing.lg,
+            marginBottom: spacing.md,
             backgroundColor: surfaces.secondary,
             borderRadius: borders.radius.lg,
             boxShadow: themeElevation.subtle
@@ -168,46 +168,28 @@ export function RecommendationsPanel({
         </div>
       )}
 
-      {/* Compact Filter Dropdown */}
+      {/* Filter Dropdown */}
       <div style={{
-        marginBottom: spacing.lg,
-        display: 'flex',
-        alignItems: 'center',
-        gap: spacing.sm
+        marginBottom: spacing.md
       }}>
-        <label style={{
-          fontSize: typography.fontSize.xs,
-          fontWeight: typography.fontWeight.medium,
-          color: framerColors.textSecondary
-        }}>
-          Show:
-        </label>
         <select
           value={filter}
           onChange={(e) => setFilter(e.target.value as 'all' | 'high' | 'medium' | 'low')}
           style={{
-            padding: `${spacing.xs} ${spacing.sm}`,
-            paddingRight: spacing.lg,
+            width: '100%',
+            padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
             color: framerColors.text,
-            backgroundColor: surfaces.secondary,
+            backgroundColor: surfaces.primary,
             border: 'none',
             borderRadius: borders.radius.md,
             cursor: 'pointer',
             transition: 'all 0.15s ease',
             appearance: 'none',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
             backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 8px center',
-            minWidth: '140px',
-            boxShadow: themeElevation.subtle
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.boxShadow = themeElevation.default
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.boxShadow = themeElevation.subtle
+            backgroundPosition: 'right 8px center'
           }}
         >
           <option value="all">All ({activeRecommendations.length})</option>

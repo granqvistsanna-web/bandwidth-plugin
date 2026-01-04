@@ -1,5 +1,5 @@
 import { useState, ReactNode } from 'react'
-import { spacing, typography, borders, colors, surfaces, framerColors } from '../../styles/designTokens'
+import { spacing, typography, borders, framerColors } from '../../styles/designTokens'
 
 interface CollapsibleSectionProps {
   title: string
@@ -11,8 +11,7 @@ interface CollapsibleSectionProps {
 export function CollapsibleSection({
   title,
   children,
-  defaultCollapsed = false,
-  icon
+  defaultCollapsed = false
 }: CollapsibleSectionProps) {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
 

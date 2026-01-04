@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { debugLog } from '../utils/debugLog'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 

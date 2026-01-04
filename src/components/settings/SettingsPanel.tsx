@@ -1,14 +1,23 @@
 import { spacing, typography, borders, surfaces, backgrounds, framerColors } from '../../styles/designTokens'
 import { useTheme, type ThemeMode } from '../../hooks/useTheme'
+import { useSettings } from '../../hooks/useSettings'
 import { StatusIndicator } from '../common/StatusIndicator'
 
 interface SettingsPanelProps {
   lastScanned?: Date | null
   loading?: boolean
+  onSettingsChange?: () => void
 }
 
-export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
+export function SettingsPanel({ lastScanned, loading, onSettingsChange }: SettingsPanelProps) {
   const { theme, resolvedTheme, setTheme } = useTheme()
+  const { includeFramerOptimization, toggleFramerOptimization } = useSettings()
+
+  const handleOptimizationToggle = () => {
+    toggleFramerOptimization()
+    // Notify parent to trigger rescan
+    onSettingsChange?.()
+  }
 
   const themeOptions: { value: ThemeMode; label: string; icon: JSX.Element }[] = [
     {
@@ -51,9 +60,9 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
         margin: '0 auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: spacing.lg
+        gap: spacing.md
       }}>
-        {/* Page Header */}
+        {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -117,8 +126,8 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
                   gap: spacing.sm,
                   padding: `${spacing.md} ${spacing.sm}`,
                   minHeight: '48px',
-                  backgroundColor: isSelected ? surfaces.primary : 'transparent',
-                  border: `1px solid ${isSelected ? framerColors.text : 'var(--framer-color-divider)'}`,
+                  backgroundColor: isSelected ? 'var(--surface-tertiary)' : 'transparent',
+                  border: `1px solid ${isSelected ? 'var(--border-strong)' : 'var(--border-subtle)'}`,
                   borderRadius: borders.radius.sm,
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
@@ -126,14 +135,14 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
                 }}
                 onMouseEnter={(e) => {
                   if (!isSelected) {
-                    e.currentTarget.style.backgroundColor = surfaces.primary
-                    e.currentTarget.style.borderColor = framerColors.textSecondary
+                    e.currentTarget.style.backgroundColor = 'var(--surface-tertiary)'
+                    e.currentTarget.style.borderColor = 'var(--border-default)'
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (!isSelected) {
                     e.currentTarget.style.backgroundColor = 'transparent'
-                    e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
+                    e.currentTarget.style.borderColor = 'var(--border-subtle)'
                   }
                 }}
               >
@@ -181,6 +190,110 @@ export function SettingsPanel({ lastScanned, loading }: SettingsPanelProps) {
             )
           })}
         </div>
+        </div>
+      </div>
+
+      {/* Estimation Settings */}
+      <div>
+        <div
+          style={{
+            padding: spacing.lg,
+            backgroundColor: surfaces.secondary,
+            borderRadius: borders.radius.lg,
+          }}
+        >
+          <div style={{ marginBottom: spacing.sm }}>
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              color: framerColors.text,
+              marginBottom: '2px'
+            }}>
+              Estimation
+            </div>
+            <p
+              style={{
+                fontSize: typography.fontSize.xs,
+                color: framerColors.textSecondary,
+                lineHeight: '1.4',
+                margin: 0
+              }}
+            >
+              Configure how bandwidth is calculated
+            </p>
+          </div>
+
+          <button
+            onClick={handleOptimizationToggle}
+            style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: spacing.sm,
+              padding: `${spacing.md} ${spacing.sm}`,
+              width: '100%',
+              backgroundColor: includeFramerOptimization ? 'var(--surface-tertiary)' : 'transparent',
+              border: `1px solid ${includeFramerOptimization ? 'var(--border-strong)' : 'var(--border-subtle)'}`,
+              borderRadius: borders.radius.sm,
+              cursor: 'pointer',
+              transition: 'all 0.15s ease',
+              textAlign: 'left' as const,
+            }}
+            onMouseEnter={(e) => {
+              if (!includeFramerOptimization) {
+                e.currentTarget.style.backgroundColor = 'var(--surface-tertiary)'
+                e.currentTarget.style.borderColor = 'var(--border-default)'
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!includeFramerOptimization) {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.borderColor = 'var(--border-subtle)'
+              }
+            }}
+          >
+            {/* Checkbox */}
+            <div
+              style={{
+                width: '16px',
+                height: '16px',
+                borderRadius: '4px',
+                border: `1.5px solid ${includeFramerOptimization ? 'var(--framer-color-tint)' : 'var(--border-default)'}`,
+                backgroundColor: includeFramerOptimization ? 'var(--framer-color-tint)' : 'transparent',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                marginTop: '1px'
+              }}
+            >
+              {includeFramerOptimization && (
+                <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="white" strokeWidth={3}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div
+                style={{
+                  fontSize: typography.fontSize.xs,
+                  fontWeight: typography.fontWeight.medium,
+                  color: framerColors.text,
+                  marginBottom: '4px',
+                }}
+              >
+                Include Framer image optimization
+              </div>
+              <div
+                style={{
+                  fontSize: typography.fontSize.xs,
+                  color: framerColors.textSecondary,
+                  lineHeight: '1.4'
+                }}
+              >
+                Framer automatically converts images to WebP/AVIF when publishing. Enable for realistic estimates, disable to see source file sizes.
+              </div>
+            </div>
+          </button>
         </div>
       </div>
 

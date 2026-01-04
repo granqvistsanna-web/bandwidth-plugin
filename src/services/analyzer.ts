@@ -83,7 +83,7 @@ export async function analyzeProject(
         debugLog.info(`Found ${cmsCollections.length} CMS collections:`, cmsCollections.map(c => c.name))
 
         // Try to collect CMS items and extract assets from them using official API
-        let cmsAssets: any[] = []
+        const cmsAssets: unknown[] = []
         if (cmsCollections.length > 0) {
           debugLog.info('📦 Collecting CMS items and extracting assets from fieldData...')
           const cmsItems = await collectCMSItems(cmsCollections)
@@ -338,21 +338,23 @@ export async function analyzeProject(
     // Merge all page-specific recommendations into overall list
     // This ensures we have page info for recommendations and they're ranked globally
     const pageRecommendations = pageAnalyses.flatMap(page => page.recommendations)
-    
+
     // Create a map of recommendations by nodeId to deduplicate
-    // Prefer page-specific recommendations (with page info) over overall ones
+    // IMPORTANT: Use nodeId (not rec.id) to ensure same asset doesn't have multiple recommendations
+    // This prevents double-counting when same image appears on multiple pages
     const recommendationMap = new Map<string, Recommendation>()
-    
+
     // First, add all page-specific recommendations (they have page info)
     for (const rec of pageRecommendations) {
-      if (rec.nodeId) {
-        recommendationMap.set(rec.nodeId, rec)
-      } else {
-        // For recommendations without nodeId (like grouped SVGs), use the ID
-        recommendationMap.set(rec.id, rec)
+      // Use nodeId as primary key to ensure one recommendation per asset
+      const key = rec.nodeId || rec.id
+      const existing = recommendationMap.get(key)
+      // Keep the recommendation with higher potential savings
+      if (!existing || rec.potentialSavings > existing.potentialSavings) {
+        recommendationMap.set(key, rec)
       }
     }
-    
+
     // Then, add overall recommendations only if they don't already exist
     // This ensures we don't lose recommendations that weren't found in page-specific analysis
     for (const rec of overallRecommendations) {

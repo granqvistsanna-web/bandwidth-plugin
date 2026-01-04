@@ -1,6 +1,6 @@
 import type { BreakdownData } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
-import { spacing, typography, colors, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
+import { spacing, typography, colors, surfaces, framerColors } from '../../styles/designTokens'
 
 interface BreakdownChartProps {
   breakdown: BreakdownData

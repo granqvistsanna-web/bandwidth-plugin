@@ -93,11 +93,12 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
         case 'size':
           comparison = a.estimatedBytes - b.estimatedBytes
           break
-        case 'dimensions':
+        case 'dimensions': {
           const aArea = a.dimensions.width * a.dimensions.height
           const bArea = b.dimensions.width * b.dimensions.height
           comparison = aArea - bArea
           break
+        }
         case 'format':
           comparison = (a.format || '').localeCompare(b.format || '')
           break
@@ -152,19 +153,19 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
 
   return (
     <div style={{
-      padding: `${spacing.lg} ${spacing.md}`,
+      padding: spacing.lg,
       backgroundColor: backgrounds.page,
       display: 'flex',
       flexDirection: 'column',
       gap: spacing.md,
       height: '100%'
     }}>
-      {/* Compact Header */}
+      {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: spacing.md
+        marginBottom: spacing.xs
       }}>
         <h1 style={{
           fontSize: typography.fontSize.md,
@@ -184,8 +185,7 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
 
       {/* Filters - integrated into layout */}
       <div style={{
-        width: '100%',
-        marginBottom: spacing.md
+        width: '100%'
       }}>
         <AssetFilters
           filters={filters}
@@ -200,7 +200,7 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
       {(filters.type !== 'all' || filters.format !== 'all' || filters.sizeRange.min !== 0 || filters.sizeRange.max !== Infinity) && (
         <div style={{
           padding: `${spacing.xs} ${spacing.sm}`,
-          backgroundColor: 'var(--framer-color-bg-secondary)',
+          backgroundColor: 'var(--surface-tertiary)',
           borderRadius: borders.radius.sm
         }}>
           <span style={{

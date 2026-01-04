@@ -1,4 +1,5 @@
 import type { AssetInfo, Recommendation, BreakpointData } from '../types/analysis'
+import { getFramerOptimizationSetting } from '../hooks/useSettings'
 
 /**
  * Check if SVG content contains expensive features that can slow rendering
@@ -75,9 +76,17 @@ export function generateRecommendations(
     const format = detectFormatIssues(asset, asset.pageId || pageId, assetPageName, assetPageSlug)
     const compression = detectCompressionOpportunities(asset, asset.pageId || pageId, assetPageName, assetPageSlug)
 
-    if (oversized) recommendations.push(oversized)
-    if (format) recommendations.push(format)
-    if (compression) recommendations.push(compression)
+    // IMPORTANT: Only use ONE recommendation per asset to avoid double-counting savings
+    // Priority: oversized > format > compression (oversized usually has biggest impact)
+    // This prevents showing total savings > total page weight
+    const candidates = [oversized, format, compression].filter(Boolean) as Recommendation[]
+    if (candidates.length > 0) {
+      // Pick the recommendation with highest potential savings
+      const best = candidates.reduce((a, b) =>
+        (b.potentialSavings > a.potentialSavings) ? b : a
+      )
+      recommendations.push(best)
+    }
   }
 
   // Add grouped SVG recommendation only if there are multiple large SVGs
@@ -105,8 +114,8 @@ export function generateRecommendations(
 }
 
 function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: string, pageSlug?: string): Recommendation | null {
-  // For MVP, flag images larger than certain thresholds
   const { estimatedBytes, dimensions, format } = asset
+  const framerOptimizationEnabled = getFramerOptimizationSetting()
 
   // Skip if estimatedBytes is invalid
   if (!isFinite(estimatedBytes) || isNaN(estimatedBytes) || estimatedBytes <= 0) {
@@ -123,6 +132,11 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
   const isOptimizedFormat = format === 'webp' || format === 'avif'
   const actualWidth = Math.round(asset.actualDimensions?.width || dimensions.width)
   const actualHeight = Math.round(asset.actualDimensions?.height || dimensions.height)
+
+  // When Framer optimization is ON, be much more conservative with recommendations
+  // Framer already optimizes images significantly, so only flag truly oversized source files
+  // Use higher thresholds since estimates already assume WebP compression
+  const sizeMultiplier = framerOptimizationEnabled ? 2.5 : 1
 
   // Calculate optimal dimensions
   // Use actual dimensions if available (more accurate), otherwise use rendered dimensions
@@ -183,14 +197,22 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
     return null
   }
 
-  // Flag very large images (> 500KB)
-  // But use higher threshold (800KB) for images that are already optimized format AND at optimal dimensions
-  const oversizedThreshold = (isOptimizedFormat && isAtOptimalDimensions) ? 800 * 1024 : 500 * 1024
-  
+  // Flag very large images
+  // When Framer optimization is ON, use higher thresholds (estimates already assume WebP)
+  // When OFF, use lower thresholds for source file recommendations
+  const baseOversizedThreshold = (isOptimizedFormat && isAtOptimalDimensions) ? 800 * 1024 : 500 * 1024
+  const oversizedThreshold = baseOversizedThreshold * sizeMultiplier
+
   if (estimatedBytes > oversizedThreshold) {
     // For already-optimized images at optimal size, use higher target
-    const targetBytes = (isOptimizedFormat && isAtOptimalDimensions) ? 500 * 1024 : 300 * 1024
+    const baseTargetBytes = (isOptimizedFormat && isAtOptimalDimensions) ? 500 * 1024 : 300 * 1024
+    const targetBytes = baseTargetBytes * sizeMultiplier
     let potentialSavings = estimatedBytes - targetBytes
+
+    // When Framer optimization is ON, reduce savings estimate (Framer already helps)
+    if (framerOptimizationEnabled) {
+      potentialSavings = Math.round(potentialSavings * 0.3) // Only 30% of theoretical savings
+    }
     // Ensure positive integer
     potentialSavings = Math.max(1, Math.round(potentialSavings))
 
@@ -245,8 +267,10 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
     }
   }
 
-  // Flag medium-large images (200-500KB)
-  if (estimatedBytes > 200 * 1024) {
+  // Flag medium-large images
+  // When Framer optimization is ON, use higher threshold
+  const mediumThreshold = 200 * 1024 * sizeMultiplier
+  if (estimatedBytes > mediumThreshold) {
     // Check if already at optimal dimensions (recalculate for this threshold)
     const mediumBaseWidth = actualWidth > 0 ? actualWidth : dimensions.width
     const mediumBaseHeight = actualHeight > 0 ? actualHeight : dimensions.height
@@ -264,8 +288,13 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
       return null
     }
 
-    const targetBytes = 150 * 1024
+    const targetBytes = 150 * 1024 * sizeMultiplier
     let potentialSavings = estimatedBytes - targetBytes
+
+    // When Framer optimization is ON, reduce savings estimate
+    if (framerOptimizationEnabled) {
+      potentialSavings = Math.round(potentialSavings * 0.3)
+    }
     // Ensure positive integer
     potentialSavings = Math.max(1, Math.round(potentialSavings))
 
@@ -301,6 +330,7 @@ function detectOversizedImages(asset: AssetInfo, pageId?: string, pageName?: str
 
 function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string, pageSlug?: string): Recommendation | null {
   const { format, estimatedBytes, type } = asset
+  const framerOptimizationEnabled = getFramerOptimizationSetting()
 
   // Skip if estimatedBytes is invalid
   if (!isFinite(estimatedBytes) || isNaN(estimatedBytes) || estimatedBytes <= 0) {
@@ -313,14 +343,18 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
   // Skip if already WebP or AVIF (these are already optimized formats)
   if (format === 'webp' || format === 'avif') return null
 
-  // Detect PNG photos that should be JPEG/WebP
+  // IMPORTANT: When Framer optimization is ON, Framer automatically converts
+  // images to WebP/AVIF on publish. Format recommendations don't apply.
+  if (framerOptimizationEnabled) {
+    return null
+  }
+
+  // Detect PNG photos that should be JPEG/WebP (only when Framer optimization is OFF)
   if (format === 'png' && estimatedBytes > 100 * 1024) {
-    let potentialSavings = estimatedBytes * 0.6 // 60% savings with JPEG
-    // Ensure positive integer
+    let potentialSavings = estimatedBytes * 0.6 // 60% savings with WebP
     potentialSavings = Math.max(1, Math.round(potentialSavings))
     const actualWidth = Math.round(asset.actualDimensions?.width || asset.dimensions.width)
     const actualHeight = Math.round(asset.actualDimensions?.height || asset.dimensions.height)
-    // Don't reduce below rendered size, cap at 1920px for modern displays
     const minWidth = Math.max(actualWidth, asset.dimensions.width)
     const optimalWidth = Math.min(minWidth, 1920)
     const optimalHeight = Math.max(1, Math.round((optimalWidth / actualWidth) * actualHeight))
@@ -334,7 +368,7 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
       currentBytes: estimatedBytes,
       potentialSavings,
       description: `PNG format used for photo (${actualWidth}x${actualHeight}px)`,
-        actionable: 'Replace with AVIF/WebP format (max 1920px width) for 60% smaller file',
+      actionable: 'Replace with AVIF/WebP format (max 1920px width) for 60% smaller file',
       url: asset.url,
       pageId: asset.pageId || pageId,
       pageName: asset.pageName || pageName,
@@ -347,14 +381,12 @@ function detectFormatIssues(asset: AssetInfo, pageId?: string, pageName?: string
     }
   }
 
-  // Suggest WebP for large JPEGs (but not if already WebP/AVIF)
-  if ((format === 'jpeg' || format === 'jpg') && estimatedBytes > 200 * 1024 && format !== 'webp' && format !== 'avif') {
+  // Suggest WebP for large JPEGs (only when Framer optimization is OFF)
+  if ((format === 'jpeg' || format === 'jpg') && estimatedBytes > 200 * 1024) {
     let potentialSavings = estimatedBytes * 0.3 // 30% savings with WebP
-    // Ensure positive integer
     potentialSavings = Math.max(1, Math.round(potentialSavings))
     const actualWidth = Math.round(asset.actualDimensions?.width || asset.dimensions.width)
     const actualHeight = Math.round(asset.actualDimensions?.height || asset.dimensions.height)
-    // Don't reduce below rendered size, cap at 1920px for modern displays
     const minWidth = Math.max(actualWidth, asset.dimensions.width)
     const optimalWidth = Math.min(minWidth, 1920)
     const optimalHeight = Math.max(1, Math.round((optimalWidth / actualWidth) * actualHeight))
@@ -460,6 +492,7 @@ function detectSVGOptimization(
 
 function detectCompressionOpportunities(asset: AssetInfo, pageId?: string, pageName?: string, pageSlug?: string): Recommendation | null {
   const { estimatedBytes, format, type } = asset
+  const framerOptimizationEnabled = getFramerOptimizationSetting()
 
   // Skip SVGs - they're handled separately
   if (type === 'svg') return null
@@ -472,10 +505,15 @@ function detectCompressionOpportunities(asset: AssetInfo, pageId?: string, pageN
     return null
   }
 
-  // General compression for medium images
+  // When Framer optimization is ON, skip compression recommendations
+  // Framer already applies compression when converting to WebP
+  if (framerOptimizationEnabled) {
+    return null
+  }
+
+  // General compression for medium images (only when Framer optimization is OFF)
   if (estimatedBytes > 150 * 1024 && estimatedBytes <= 200 * 1024) {
     let potentialSavings = estimatedBytes * 0.25
-    // Ensure positive integer
     potentialSavings = Math.max(1, Math.round(potentialSavings))
 
     return {

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { framer } from 'framer-plugin'
 import type { Recommendation } from '../../types/analysis'
-import { Badge } from '../primitives/Badge'
 import { Button } from '../primitives/Button'
 import { formatBytes } from '../../utils/formatBytes'
 import { optimizeImage } from '../../services/imageOptimizer'
@@ -295,12 +294,6 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
     }
   }
 
-  const typeLabels = {
-    oversized: 'Oversized',
-    format: 'Format',
-    compression: 'Compression'
-  }
-
   const isCMS = recommendation.isCMSAsset || !!recommendation.cmsItemSlug
   const canSelect = !isCMS && recommendation.nodeId && recommendation.nodeId.trim() !== ''
   const hasPreview = recommendation.url && !recommendation.url.includes('.svg')
@@ -331,7 +324,7 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
       <div style={{
         display: 'flex',
         gap: spacing.md,
-        marginBottom: spacing.lg
+        marginBottom: spacing.md
       }}>
         {/* Thumbnail - Left Side */}
         {hasPreview && (
@@ -401,38 +394,6 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
             lineHeight: '1.5'
           }}>
             {recommendation.actionable || recommendation.description}
-            {(recommendation.pageSlug || recommendation.pageName) && (
-              <>
-                {' · '}
-                {recommendation.pageUrl ? (
-                  <a
-                    href={recommendation.pageUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: framerColors.textSecondary,
-                      textDecoration: 'none',
-                      borderBottom: `1px solid ${themeBorders.subtle}`,
-                      transition: 'all 0.15s ease',
-                      paddingBottom: '1px'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = framerColors.text
-                      e.currentTarget.style.borderBottomColor = framerColors.text
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = framerColors.textSecondary
-                      e.currentTarget.style.borderBottomColor = themeBorders.subtle
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {recommendation.pageSlug || recommendation.pageName}
-                  </a>
-                ) : (
-                  <span>{recommendation.pageSlug || recommendation.pageName}</span>
-                )}
-              </>
-            )}
             {isCMS && <span style={{ color: framerColors.textTertiary }}> · CMS</span>}
           </div>
         </div>
@@ -612,31 +573,46 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
           paddingTop: spacing.sm,
           borderTop: `1px solid ${themeBorders.subtle}`
         }}>
-          <Button
+          <button
             onClick={() => setIsExpanded(!isExpanded)}
-            variant="ghost"
-            size="sm"
-            icon={
-              <svg
-                width="12"
-                height="12"
-                viewBox="0 0 12 12"
-                fill="none"
-                style={{
-                  transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.15s ease'
-                }}
-              >
-                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            }
             style={{
-              padding: `${spacing.xs} 0`,
-              minHeight: 'auto',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: spacing.xs,
+              padding: `${spacing.xs} ${spacing.sm}`,
+              backgroundColor: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.medium,
+              color: framerColors.textSecondary,
+              borderRadius: borders.radius.md,
+              transition: 'all 0.15s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = surfaces.tertiary
+              e.currentTarget.style.color = framerColors.text
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent'
+              e.currentTarget.style.color = framerColors.textSecondary
             }}
           >
-            Show technical details
-          </Button>
+            <span>Show technical details</span>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              fill="none"
+              style={{
+                transition: 'transform 0.15s ease',
+                flexShrink: 0
+              }}
+            >
+              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
         </div>
       )}
 
@@ -706,11 +682,27 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
-                alignItems: 'center'
+                alignItems: 'center',
+                paddingBottom: (recommendation.pageSlug || recommendation.pageName) ? spacing.xs : 0,
+                borderBottom: (recommendation.pageSlug || recommendation.pageName) ? `1px solid ${themeBorders.subtle}` : 'none'
               }}>
                 <span style={{ color: framerColors.textTertiary }}>Format:</span>
                 <span style={{ fontWeight: typography.fontWeight.medium, color: framerColors.text }}>
                   {recommendation.url.split('.').pop()?.toUpperCase() || 'Unknown'}
+                </span>
+              </div>
+            )}
+
+            {/* Page Location (if available) */}
+            {(recommendation.pageSlug || recommendation.pageName) && (
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <span style={{ color: framerColors.textTertiary }}>Page:</span>
+                <span style={{ fontWeight: typography.fontWeight.medium, color: framerColors.text }}>
+                  {recommendation.pageSlug || recommendation.pageName}
                 </span>
               </div>
             )}
@@ -724,31 +716,47 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
             paddingTop: spacing.md,
             borderTop: `1px solid ${themeBorders.subtle}`
           }}>
-            <Button
+            <button
               onClick={() => setIsExpanded(false)}
-              variant="ghost"
-              size="sm"
-              icon={
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 12 12"
-                  fill="none"
-                  style={{
-                    transform: 'rotate(180deg)',
-                    transition: 'transform 0.15s ease'
-                  }}
-                >
-                  <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-              }
               style={{
-                padding: `${spacing.xs} 0`,
-                minHeight: 'auto',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: spacing.xs,
+                padding: `${spacing.xs} ${spacing.sm}`,
+                backgroundColor: 'transparent',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: typography.fontSize.xs,
+                fontWeight: typography.fontWeight.medium,
+                color: framerColors.textSecondary,
+                borderRadius: borders.radius.md,
+                transition: 'all 0.15s ease'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = surfaces.tertiary
+                e.currentTarget.style.color = framerColors.text
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent'
+                e.currentTarget.style.color = framerColors.textSecondary
               }}
             >
-              Hide details
-            </Button>
+              <span>Hide details</span>
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 12 12"
+                fill="none"
+                style={{
+                  transform: 'rotate(180deg)',
+                  transition: 'transform 0.15s ease',
+                  flexShrink: 0
+                }}
+              >
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
           </div>
         </div>
       )}

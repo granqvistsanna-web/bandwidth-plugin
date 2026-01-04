@@ -47,17 +47,19 @@ export const AssetsTableRow = memo(function AssetsTableRow({
       style={{
         ...style,
         display: 'flex',
-        alignItems: 'flex-start',
-        gap: spacing.md,
+        alignItems: 'center',
+        gap: spacing.sm,
         padding: `${spacing.md} 0`,
         backgroundColor: 'transparent',
         borderBottom: `1px solid ${themeBorders.subtle}`,
         cursor: canClick ? 'pointer' : 'default',
         transition: canClick ? 'background-color 0.15s ease' : 'none',
+        height: '80px',
+        boxSizing: 'border-box',
       }}
       onMouseEnter={(e) => {
         if (canClick) {
-          e.currentTarget.style.backgroundColor = framerColors.bgSecondary
+          e.currentTarget.style.backgroundColor = 'var(--hover-surface)'
         }
       }}
       onMouseLeave={(e) => {
@@ -170,33 +172,21 @@ export const AssetsTableRow = memo(function AssetsTableRow({
           flexWrap: 'wrap',
           lineHeight: '1.6'
         }}>
-          <span style={{
-            textTransform: 'uppercase',
-            fontSize: '10px',
-            fontWeight: typography.fontWeight.semibold,
-            letterSpacing: '0.05em',
-            color: framerColors.textTertiary
-          }}>
-            {asset.type}
-          </span>
-          <span style={{ color: framerColors.textTertiary }}>·</span>
+          {asset.format && (
+            <span style={{
+              textTransform: 'uppercase',
+              fontSize: '10px',
+              fontWeight: typography.fontWeight.semibold,
+              letterSpacing: '0.05em',
+              color: framerColors.textTertiary
+            }}>
+              {asset.format}
+            </span>
+          )}
+          {asset.format && <span style={{ color: framerColors.textTertiary }}>·</span>}
           <span style={{ fontWeight: typography.fontWeight.medium, whiteSpace: 'nowrap' }}>
             {Math.round(asset.dimensions.width)} × {Math.round(asset.dimensions.height)}
           </span>
-          {asset.format && (
-            <>
-              <span style={{ color: framerColors.textTertiary }}>·</span>
-              <span style={{
-                textTransform: 'uppercase',
-                fontSize: '10px',
-                fontWeight: typography.fontWeight.semibold,
-                letterSpacing: '0.05em',
-                color: framerColors.textTertiary
-              }}>
-                {asset.format}
-              </span>
-            </>
-          )}
         </div>
       </div>
 

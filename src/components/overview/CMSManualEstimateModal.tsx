@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { framer } from 'framer-plugin'
 import { formatBytes } from '../../utils/formatBytes'
 import { debugLog } from '../../utils/debugLog'
+import { Button } from '../primitives/Button'
+import { framerColors, backgrounds } from '../../styles/designTokens'
 
 interface CMSManualEstimateModalProps {
   onClose: () => void
@@ -79,7 +81,8 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
         const estimates = existing ? JSON.parse(existing) : []
         
         if (isEditMode && estimateToEdit) {
-          const index = estimates.findIndex((est: any) => est.id === estimateToEdit.id)
+           
+          const index = estimates.findIndex((est: { id: string }) => est.id === estimateToEdit.id)
           if (index !== -1) {
             estimates[index] = { ...estimateToEdit, ...estimateData }
             localStorage.setItem(estimatesKey, JSON.stringify(estimates))
@@ -205,11 +208,17 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
               <select
                 value={format}
                 onChange={(e) => setFormat(e.target.value)}
-                className="w-full px-3 py-2 rounded border text-sm"
+                className="w-full rounded text-sm"
                 style={{
+                  padding: '8px 24px 8px 12px',
                   backgroundColor: 'var(--framer-color-bg-secondary)',
-                  borderColor: 'var(--framer-color-divider)',
-                  color: framerColors.text
+                  border: 'none',
+                  color: framerColors.text,
+                  cursor: 'pointer',
+                  appearance: 'none',
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+                  backgroundRepeat: 'no-repeat',
+                  backgroundPosition: 'right 8px center'
                 }}
               >
                 <option value="jpeg">JPEG</option>
@@ -285,8 +294,9 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                 </div>
               )}
               {!showDeleteConfirm ? (
-                <button
-                  type="button"
+                <Button
+                  variant="ghost"
+                  fullWidth
                   disabled={isDeleting || !onRemoveEstimate}
                   onClick={(e) => {
                     e.preventDefault()
@@ -312,49 +322,29 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                     setShowDeleteConfirm(true)
                     setDeleteError(null)
                   }}
-                  className="w-full px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{
-                backgroundColor: onRemoveEstimate ? 'transparent' : 'var(--framer-color-bg-secondary)',
-                color: onRemoveEstimate ? framerColors.text : framerColors.textTertiary,
-                border: `1px solid ${onRemoveEstimate ? 'var(--framer-color-divider)' : 'var(--framer-color-divider)'}`,
-                cursor: onRemoveEstimate && !isDeleting ? 'pointer' : 'not-allowed'
-              }}
-              onMouseEnter={(e) => {
-                if (!isDeleting && onRemoveEstimate) {
-                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                  e.currentTarget.style.borderColor = framerColors.textSecondary
-                }
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent'
-                e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-              }}
                 >
                   {isDeleting ? 'Deleting...' : onRemoveEstimate ? 'Delete Estimate' : 'Delete Unavailable'}
-                </button>
+                </Button>
               ) : (
                 <div className="flex flex-col gap-2">
                   <div className="p-3 rounded text-sm" style={{ backgroundColor: 'var(--framer-color-bg-secondary)', color: framerColors.text }}>
                     Delete "{estimateToEdit?.collectionName}"? This cannot be undone.
                   </div>
                   <div className="flex gap-2">
-                    <button
-                      type="button"
+                    <Button
+                      variant="secondary"
+                      fullWidth
                       onClick={(e) => {
                         e.preventDefault()
                         e.stopPropagation()
                         setShowDeleteConfirm(false)
                       }}
-                      className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-                      style={{
-                        backgroundColor: 'var(--framer-color-bg-tertiary)',
-                        color: framerColors.text
-                      }}
                     >
                       Cancel
-                    </button>
-                    <button
-                      type="button"
+                    </Button>
+                    <Button
+                      variant="primary"
+                      fullWidth
                       disabled={isDeleting || !onRemoveEstimate}
                       onClick={(e) => {
                         e.preventDefault()
@@ -392,78 +382,30 @@ export function CMSManualEstimateModal({ onClose, onEstimateAdded, estimateToEdi
                           framer.notify(`Failed to delete estimate: ${errorMessage}`, { variant: 'error', durationMs: 3000 })
                         }
                       }}
-                      className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      style={{
-                        backgroundColor: backgrounds.page,
-                        color: framerColors.text,
-                        border: '1px solid var(--framer-color-divider)',
-                        cursor: isDeleting ? 'not-allowed' : 'pointer'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (!isDeleting) {
-                          e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                          e.currentTarget.style.borderColor = framerColors.textSecondary
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (!isDeleting) {
-                          e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
-                          e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-                        }
-                      }}
                     >
                       {isDeleting ? 'Deleting...' : 'Confirm Delete'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               )}
             </>
           )}
           <div className="flex gap-2">
-            <button
+            <Button
+              variant="secondary"
+              fullWidth
               onClick={onClose}
-              className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: 'var(--framer-color-bg-tertiary)',
-                color: framerColors.text
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-tertiary)'
-              }}
             >
               Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
+            </Button>
+            <Button
+              variant="primary"
+              fullWidth
               disabled={isSubmitting || !collectionName.trim()}
-              className="flex-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              style={{
-                backgroundColor: isSubmitting || !collectionName.trim()
-                  ? 'var(--framer-color-bg-tertiary)'
-                  : 'var(--framer-color-bg)',
-                color: isSubmitting || !collectionName.trim()
-                  ? framerColors.textTertiary
-                  : framerColors.text,
-                border: '1px solid var(--framer-color-divider)'
-              }}
-              onMouseEnter={(e) => {
-                if (!isSubmitting && collectionName.trim()) {
-                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg-secondary)'
-                  e.currentTarget.style.borderColor = framerColors.textSecondary
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isSubmitting && collectionName.trim()) {
-                  e.currentTarget.style.backgroundColor = 'var(--framer-color-bg)'
-                  e.currentTarget.style.borderColor = 'var(--framer-color-divider)'
-                }
-              }}
+              onClick={handleSubmit}
             >
               {isSubmitting ? (isEditMode ? 'Updating...' : 'Adding...') : (isEditMode ? 'Update Estimate' : 'Add Estimate')}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

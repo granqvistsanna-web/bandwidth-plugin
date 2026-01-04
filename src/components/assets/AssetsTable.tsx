@@ -9,7 +9,7 @@ export function AssetsTable({ assets, onAssetClick }: AssetsTableProps) {
   const rowVirtualizer = useVirtualizer({
     count: assets.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 100, // 64px thumbnail + 24px padding (12px top + 12px bottom) + ~12px for compact text
+    estimateSize: () => 80, // 48px thumbnail + 16px padding (8px top + 8px bottom) + ~16px for text
     overscan: 5,
   })
 

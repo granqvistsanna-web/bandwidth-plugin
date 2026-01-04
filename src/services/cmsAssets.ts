@@ -1,17 +1,21 @@
 /**
  * CMS Asset Detection using Official Framer Plugin API v3.0
- * 
+ *
  * IMPORTANT: This module uses the official Framer CMS API - no extra installation needed.
- * 
+ *
  * Requirements:
  * 1. Plugin must call CMS API methods explicitly: framer.getCollections(), collection.getItems(), collection.getFields()
  * 2. CMS collections must exist in the project with image/file fields
  * 3. Field values are asset objects (ImageAsset/FileAsset), NOT strings - must use isImageAsset()/isFileAsset()
  * 4. Plugin runs in canvas mode - CMS API is available as long as methods are called correctly
- * 
+ *
  * The CMS API is available in framer-plugin v3.0+ and does NOT require a separate "cms" mode.
  * Canvas mode can access CMS data by explicitly calling the CMS API entry points.
  */
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+// Note: This file uses 'any' types extensively due to the dynamic nature of CMS data
+// and the Framer plugin API which doesn't have complete TypeScript definitions for CMS operations.
 
 import { framer } from 'framer-plugin'
 import type { AssetInfo } from '../types/analysis'
@@ -63,7 +67,7 @@ export interface CMSBandwidthImpact {
  * Diagnostic function to inspect Framer API structure
  */
 async function diagnoseFramerAPI(): Promise<void> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   const framerAny = framer as any
   
   debugLog.info('🔍 DIAGNOSTIC: Inspecting Framer API structure...')
@@ -104,7 +108,7 @@ export async function detectCMSCollections(): Promise<CMSCollection[]> {
     await diagnoseFramerAPI()
     
     // Use official Framer CMS API - getCollections() is available in Plugin API v3.0
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const framerAny = framer as any
     
     // Explicitly call the CMS API entry point
@@ -194,7 +198,7 @@ export async function detectCMSCollections(): Promise<CMSCollection[]> {
     const collectionMap = new Map<string, CMSCollection>()
     
     for (const node of nodesWithCollection) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const nodeAny = node as any
       const collectionId = nodeAny.collectionId || nodeAny.__collectionId
       const collectionName = nodeAny.collectionName || nodeAny.__collectionName || 'CMS Collection'
@@ -225,7 +229,7 @@ export async function collectCMSItems(collections: CMSCollection[]): Promise<Arr
   const results: Array<{ collectionId: string; items: any[] }> = []
   
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const framerAny = framer as any
     
     // Get all collections from API
@@ -349,7 +353,7 @@ export async function extractAssetsFromCMSItems(
   const assets: CMSAsset[] = []
   
   try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+     
     const framerAny = framer as any
     
     // Use official Framer API helpers - isImageAsset() and isFileAsset() are provided by the API
@@ -394,7 +398,7 @@ export async function extractAssetsFromCMSItems(
       debugLog.info(`📦 Processing collection: ${collectionName} with ${items.length} items`)
       
       for (const item of items) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const itemAny = item as any
         
         // Try multiple possible field data locations
@@ -431,7 +435,7 @@ export async function extractAssetsFromCMSItems(
             // CMS fields return asset objects, not plain text URLs - must use isImageAsset()/isFileAsset()
             if (isImageAsset(fieldValue) || isFileAsset(fieldValue)) {
               foundAssetsInItem++
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+               
               const asset = fieldValue as any
               const imageUrl = asset.url
               
@@ -547,7 +551,7 @@ export async function collectCMSAssets(): Promise<CMSAsset[]> {
       let componentCMSAssets = 0
 
       for (const frame of allFrames) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+         
         const frameAny = frame as any
 
         // Check if this component has controls that look like CMS data
@@ -557,7 +561,7 @@ export async function collectCMSAssets(): Promise<CMSAsset[]> {
           // Look for image fields in controls
           for (const [key, value] of Object.entries(controls)) {
             if (value && typeof value === 'object') {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+               
               const controlValue = value as any
 
               // Check if this control has an image src/url
@@ -833,19 +837,19 @@ function extractCollectionNameFromUrl(url: string): string {
   
   // Common CMS URL patterns - expanded to include blog, posts, articles, etc.
   const patterns = [
-    /\/blog\/([^\/]+)/,
-    /\/posts\/([^\/]+)/,
-    /\/articles\/([^\/]+)/,
-    /\/news\/([^\/]+)/,
-    /\/cms\/([^\/]+)/,
-    /\/collection\/([^\/]+)/,
-    /\/content\/([^\/]+)/,
-    /\/uploads\/([^\/]+)/,
-    /\/media\/([^\/]+)/,
-    /\/assets\/([^\/]+)/,
-    /\/images\/([^\/]+)/,
-    /\/blog-images\/([^\/]+)/,
-    /\/post-images\/([^\/]+)/
+    /\/blog\/([^/]+)/,
+    /\/posts\/([^/]+)/,
+    /\/articles\/([^/]+)/,
+    /\/news\/([^/]+)/,
+    /\/cms\/([^/]+)/,
+    /\/collection\/([^/]+)/,
+    /\/content\/([^/]+)/,
+    /\/uploads\/([^/]+)/,
+    /\/media\/([^/]+)/,
+    /\/assets\/([^/]+)/,
+    /\/images\/([^/]+)/,
+    /\/blog-images\/([^/]+)/,
+    /\/post-images\/([^/]+)/
   ]
   
   for (const pattern of patterns) {

@@ -20,12 +20,12 @@ export function BandwidthPanel({ analysis, lastScanned, loading, onNavigateToRec
       gap: spacing.md,
       minHeight: '100vh'
     }}>
-      {/* Compact Header */}
+      {/* Header */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: spacing.xl
+        marginBottom: spacing.sm
       }}>
         <h1 style={{
           fontSize: typography.fontSize.md,

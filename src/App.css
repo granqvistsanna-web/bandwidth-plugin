@@ -106,6 +106,10 @@ body {
   /* Hover states */
   --hover-surface: #F5F5F5;
   --hover-border: #D4D4D4;
+
+  /* Tooltip */
+  --tooltip-bg: #171717;
+  --tooltip-text: #FFFFFF;
 }
 
 /* Semantic Status Colors - Dark Mode */
@@ -171,4 +175,8 @@ body {
   /* Hover states */
   --hover-surface: #3A3A38;
   --hover-border: #737373;
+
+  /* Tooltip */
+  --tooltip-bg: #FAFAFA;
+  --tooltip-text: #171717;
 }

@@ -112,3 +112,4 @@ Bandwidth Check helps you understand and optimize your Framer project's bandwidt
 **Note**: This plugin helps you optimize your project before publishing. For actual published site analysis, use the published mode feature.
 
 
+

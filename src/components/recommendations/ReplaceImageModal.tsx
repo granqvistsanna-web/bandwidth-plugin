@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { findAllNodesUsingAsset } from '../../services/assetReplacer'
 import { debugLog } from '../../utils/debugLog'
-import { spacing, typography, borders, surfaces, backgrounds, framerColors, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, framerColors, colors } from '../../styles/designTokens'
 
 interface ReplaceImageModalProps {
   isOpen: boolean

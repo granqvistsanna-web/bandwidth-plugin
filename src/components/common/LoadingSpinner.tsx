@@ -1,4 +1,4 @@
-import { framerColors } from '../../styles/designTokens'
+import { framerColors, backgrounds } from '../../styles/designTokens'
 
 export function LoadingSpinner() {
   return (
@@ -6,7 +6,9 @@ export function LoadingSpinner() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      height: '256px'
+      height: '100%',
+      minHeight: '256px',
+      backgroundColor: backgrounds.page
     }}>
       <div style={{
         display: 'flex',

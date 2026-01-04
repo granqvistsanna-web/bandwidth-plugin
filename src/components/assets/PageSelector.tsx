@@ -36,20 +36,19 @@ export function PageSelector({ analysis, selectedPageId, onPageChange }: PageSel
         onChange={(e) => onPageChange(e.target.value === 'all' ? null : e.target.value)}
         style={{
           flex: 1,
-          padding: `6px ${spacing.md}`,
+          padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
           fontSize: typography.fontSize.xs,
           fontWeight: typography.fontWeight.medium,
           color: framerColors.text,
-          backgroundColor: surfaces.primary,
+          backgroundColor: surfaces.tertiary,
+          border: 'none',
           borderRadius: borders.radius.md,
           cursor: 'pointer',
           transition: 'all 0.15s ease',
-        }}
-        onFocus={(e) => {
-          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
-        }}
-        onBlur={(e) => {
-          e.currentTarget.style.boxShadow = 'none'
+          appearance: 'none',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: 'right 8px center'
         }}
       >
         <option value="all">All Pages ({analysis.overallBreakpoints.desktop.assets.length} assets)</option>

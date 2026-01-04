@@ -1,6 +1,5 @@
 import { formatBytes } from '../../utils/formatBytes'
-import { Button } from '../primitives/Button'
-import { spacing, typography, borders, surfaces } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, framerColors } from '../../styles/designTokens'
 import { calculateLoadTime, formatLoadTime } from '../../utils/loadTime'
 
 interface HeroCardProps {
@@ -15,12 +14,8 @@ interface HeroCardProps {
 
 export function HeroCard({
   currentBytes,
-  optimizedBytes,
   savingsBytes,
-  savingsPercent,
-  recommendationsCount,
-  pageCount,
-  onOptimizeClick
+  savingsPercent
 }: HeroCardProps) {
   const hasSavings = savingsBytes > 0
   
@@ -237,6 +232,7 @@ export function HeroCard({
     </div>
   )
 }
+
 
 
 

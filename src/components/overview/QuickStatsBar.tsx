@@ -1,4 +1,4 @@
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, backgrounds, framerColors } from '../../styles/designTokens'
 
 interface QuickStatsBarProps {
   totalAssets: number

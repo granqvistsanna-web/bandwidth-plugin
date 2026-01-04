@@ -5,6 +5,7 @@ import type { ProjectAnalysis } from '../../types/analysis'
 import { spacing, typography, borders, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 import { CollapsibleSection } from './CollapsibleSection'
 import { Button } from '../primitives/Button'
+import { InfoTooltip } from '../common/InfoTooltip'
 
 interface BandwidthCalculatorProps {
   analysis: ProjectAnalysis
@@ -34,41 +35,51 @@ const FRAMER_PLANS = {
 type PlanKey = keyof typeof FRAMER_PLANS
 
 export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: BandwidthCalculatorProps) {
-  const pages = analysis.pages || []
+  // Memoize pages to prevent unnecessary re-renders
+  const pages = useMemo(() => analysis.pages || [], [analysis.pages])
   const pageCount = pages.length
-  
+
   // Set intelligent defaults based on project size
   const getDefaultPageviews = () => {
     if (pageCount < 10) return 5000
     if (pageCount < 50) return 25000
     return 100000
   }
-  
+
   const getDefaultPagesPerVisit = () => {
     if (pageCount < 10) return 2.5
     if (pageCount < 50) return 3.5
     return 4.5
   }
-  
+
   const [monthlyPageviews, setMonthlyPageviews] = useState(getDefaultPageviews())
   const [averagePagesPerVisit, setAveragePagesPerVisit] = useState(getDefaultPagesPerVisit())
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>('basic')
   const [pageviewsMode, setPageviewsMode] = useState<'preset' | 'custom'>('preset')
   const [pagesPerVisitMode, setPagesPerVisitMode] = useState<'preset' | 'custom'>('preset')
 
-  // Safety check for overallBreakpoints
-  if (!analysis.overallBreakpoints) {
-    return (
-      <div style={{ padding: spacing.lg, color: framerColors.text }}>
-        <p>Analysis data is incomplete. Please rescan the project.</p>
-      </div>
-    )
-  }
+  // Memoize breakpoint data with fallbacks to prevent unnecessary re-renders
+  const defaultBreakpointData = useMemo(() => ({ totalBytes: 0, assets: [] as const }), [])
+  const mobileData = useMemo(
+    () => analysis.overallBreakpoints?.mobile || defaultBreakpointData,
+    [analysis.overallBreakpoints?.mobile, defaultBreakpointData]
+  )
+  const tabletData = useMemo(
+    () => analysis.overallBreakpoints?.tablet || defaultBreakpointData,
+    [analysis.overallBreakpoints?.tablet, defaultBreakpointData]
+  )
+  const desktopData = useMemo(
+    () => analysis.overallBreakpoints?.desktop || defaultBreakpointData,
+    [analysis.overallBreakpoints?.desktop, defaultBreakpointData]
+  )
+  const hasValidData = analysis.overallBreakpoints !== null && analysis.overallBreakpoints !== undefined
 
-  const { mobile: mobileData, tablet: tabletData, desktop: desktopData } = analysis.overallBreakpoints
-  
   // Calculate device-weighted bandwidth (Framer serves different image sizes per device)
   const { bytesPerVisit, bandwidthPer1000, monthlyBandwidthGB } = useMemo(() => {
+    if (!hasValidData) {
+      return { bytesPerVisit: 0, bandwidthPer1000: 0, monthlyBandwidthGB: 0 }
+    }
+
     if (pages.length === 0) {
       // Fallback: use device-weighted overall breakpoint data
       const weightedBytes = calculateDeviceWeightedBandwidth({
@@ -86,7 +97,7 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
         monthlyBandwidthGB
       }
     }
-    
+
     // Strategy: Use the heaviest page + weighted average of other pages
     // Calculate device-weighted bytes for each page
     const sortedPages = [...pages].sort((a, b) => {
@@ -94,10 +105,10 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
       const bWeighted = calculateDeviceWeightedBandwidth(b.breakpoints)
       return bWeighted - aWeighted
     })
-    
+
     const heaviestPage = sortedPages[0]
     const otherPages = sortedPages.slice(1)
-    
+
     // Calculate average device-weighted bytes for other pages
     const avgOtherPageBytes = otherPages.length > 0
       ? otherPages.reduce((sum, page) => {
@@ -105,31 +116,31 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
           return sum + weighted
         }, 0) / otherPages.length
       : 0
-    
+
     // Calculate device-weighted bytes per visit:
     // - Always includes the heaviest page (usually landing page)
     // - Plus (averagePagesPerVisit - 1) × average of other pages
     const heaviestPageWeighted = calculateDeviceWeightedBandwidth(heaviestPage.breakpoints)
     const additionalPages = Math.max(0, averagePagesPerVisit - 1)
     const bytesPerVisit = heaviestPageWeighted + (additionalPages * avgOtherPageBytes)
-    
+
     // Convert to GB for display
     const bytesPerVisitMB = bytesPerVisit / (1024 * 1024)
     const bytesPerVisitGB = bytesPerVisit / (1024 * 1024 * 1024)
     const bandwidthPer1000 = (bytesPerVisitMB * 1000) / 1024
     const monthlyBandwidthGB = bytesPerVisitGB * monthlyPageviews
-    
+
     return {
       bytesPerVisit,
       bandwidthPer1000,
       monthlyBandwidthGB
     }
-  }, [mobileData.totalBytes, tabletData.totalBytes, desktopData.totalBytes, monthlyPageviews, averagePagesPerVisit, pages])
+  }, [hasValidData, mobileData, tabletData, desktopData, monthlyPageviews, averagePagesPerVisit, pages])
 
   const planLimit = FRAMER_PLANS[selectedPlan].bandwidthGB
   const usagePercent = (monthlyBandwidthGB / planLimit) * 100
   const overageGB = Math.max(0, monthlyBandwidthGB - planLimit)
-  
+
   // Suggest appropriate plan based on estimate
   const suggestedPlan = useMemo(() => {
     if (monthlyBandwidthGB <= FRAMER_PLANS.free.bandwidthGB) return 'free'
@@ -141,7 +152,17 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
   // Auto-select suggested plan on initial load
   useEffect(() => {
     setSelectedPlan(suggestedPlan)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Empty deps = run once on mount
+
+  // Safety check for overallBreakpoints - now after all hooks
+  if (!hasValidData) {
+    return (
+      <div style={{ padding: spacing.lg, color: framerColors.text }}>
+        <p>Analysis data is incomplete. Please rescan the project.</p>
+      </div>
+    )
+  }
 
   // Determine risk level
   let riskLevel: 'safe' | 'warning' | 'danger' = 'safe'
@@ -166,7 +187,7 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
     <div style={{
       display: 'flex',
       flexDirection: 'column',
-      gap: spacing.lg,
+      gap: spacing.md,
       width: '100%',
       maxWidth: '900px',
       margin: '0 auto'
@@ -176,8 +197,7 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
         padding: spacing.lg,
         backgroundColor: surfaces.secondary,
         borderRadius: borders.radius.lg,
-        boxShadow: themeElevation.subtle,
-        marginBottom: spacing.lg
+        boxShadow: themeElevation.subtle
       }}>
         <div style={{
           display: 'flex',
@@ -223,8 +243,7 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
         padding: spacing.lg,
         backgroundColor: surfaces.secondary,
         borderRadius: borders.radius.lg,
-        boxShadow: themeElevation.subtle,
-        marginBottom: spacing.lg
+        boxShadow: themeElevation.subtle
       }}>
         {/* Traffic Estimate Section */}
         <div style={{ marginBottom: spacing.lg }}>
@@ -243,19 +262,14 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
             color: framerColors.text,
-            marginBottom: spacing.xs,
-            display: 'block'
+            marginBottom: spacing.sm,
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.xs
           }}>
             Monthly pageviews
+            <InfoTooltip text="Total page loads per month. Check Google Analytics or similar." />
           </label>
-          <div style={{
-            fontSize: typography.fontSize.xs,
-            color: framerColors.textSecondary,
-            marginBottom: spacing.xs,
-            lineHeight: typography.lineHeight.relaxed
-          }}>
-            Check your analytics for actual data. New sites typically start at 1–5K.
-          </div>
           <select
             value={pageviewsMode === 'custom' ? 'custom' : monthlyPageviews}
             onChange={(e) => {
@@ -269,27 +283,19 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             }}
             style={{
               width: '100%',
-              padding: `6px 32px 6px ${spacing.sm}`,
+              padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
               fontSize: typography.fontSize.xs,
               fontWeight: typography.fontWeight.medium,
               color: framerColors.text,
-              backgroundColor: surfaces.primary,
-              border: `1px solid ${themeBorders.subtle}`,
+              backgroundColor: surfaces.tertiary,
+              border: 'none',
               borderRadius: borders.radius.md,
               cursor: 'pointer',
               transition: 'all 0.15s ease',
               appearance: 'none',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 12px center'
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = framerColors.text
-              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = themeBorders.subtle
-              e.currentTarget.style.boxShadow = 'none'
+              backgroundPosition: 'right 8px center'
             }}
           >
             <option value="1000">1K pageviews</option>
@@ -338,10 +344,13 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
             color: framerColors.text,
-            marginBottom: spacing.xs,
-            display: 'block'
+            marginBottom: spacing.sm,
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.xs
           }}>
             Pages per visit
+            <InfoTooltip text="Average pages viewed per session. Typically 2-4 for most sites." />
           </label>
           <select
             value={pagesPerVisitMode === 'custom' ? 'custom' : averagePagesPerVisit}
@@ -356,27 +365,19 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             }}
             style={{
               width: '100%',
-              padding: `6px 32px 6px ${spacing.sm}`,
+              padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
               fontSize: typography.fontSize.xs,
               fontWeight: typography.fontWeight.medium,
               color: framerColors.text,
-              backgroundColor: surfaces.primary,
-              border: `1px solid ${themeBorders.subtle}`,
+              backgroundColor: surfaces.tertiary,
+              border: 'none',
               borderRadius: borders.radius.md,
               cursor: 'pointer',
               transition: 'all 0.15s ease',
               appearance: 'none',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 12px center'
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = framerColors.text
-              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = themeBorders.subtle
-              e.currentTarget.style.boxShadow = 'none'
+              backgroundPosition: 'right 8px center'
             }}
           >
             <option value="1.0">Landing only (1.0)</option>
@@ -433,36 +434,32 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             fontSize: typography.fontSize.sm,
             fontWeight: typography.fontWeight.semibold,
             color: framerColors.text,
-            marginBottom: spacing.md
+            marginBottom: spacing.md,
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.xs
           }}>
             Plan Status
+            <InfoTooltip text="Your Framer plan's monthly bandwidth allowance." />
           </div>
           <select
             value={selectedPlan}
             onChange={(e) => setSelectedPlan(e.target.value as PlanKey)}
             style={{
               width: '100%',
-              padding: `6px 32px 6px ${spacing.sm}`,
+              padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
               fontSize: typography.fontSize.xs,
               fontWeight: typography.fontWeight.medium,
               color: framerColors.text,
-              backgroundColor: surfaces.primary,
-              border: `1px solid ${themeBorders.subtle}`,
+              backgroundColor: surfaces.tertiary,
+              border: 'none',
               borderRadius: borders.radius.md,
               cursor: 'pointer',
               transition: 'all 0.15s ease',
               appearance: 'none',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1.5L6 6.5L11 1.5' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+              backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
               backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 12px center'
-            }}
-            onFocus={(e) => {
-              e.currentTarget.style.borderColor = framerColors.text
-              e.currentTarget.style.boxShadow = '0 0 0 3px rgba(128, 128, 128, 0.1)'
-            }}
-            onBlur={(e) => {
-              e.currentTarget.style.borderColor = themeBorders.subtle
-              e.currentTarget.style.boxShadow = 'none'
+              backgroundPosition: 'right 8px center'
             }}
           >
             {(Object.keys(FRAMER_PLANS) as PlanKey[]).map((plan) => (

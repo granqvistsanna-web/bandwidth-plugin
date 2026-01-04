@@ -1,10 +1,14 @@
 import type { AssetInfo, Breakpoint, BreakpointData } from '../types/analysis'
 import { getPixelDensity } from '../utils/formatBytes'
+import { getFramerOptimizationSetting } from '../hooks/useSettings'
 
 export function estimateImageBytes(
   asset: AssetInfo,
-  breakpoint: Breakpoint
+  breakpoint: Breakpoint,
+  includeFramerOptimization?: boolean
 ): number {
+  // Use provided setting or read from localStorage
+  const useOptimization = includeFramerOptimization ?? getFramerOptimizationSetting()
   // SVGs are vector-based, not pixel-based - use simple estimation
   if (asset.type === 'svg') {
     // Most Framer SVG icons/elements are very small (1-5 KB)
@@ -52,7 +56,7 @@ export function estimateImageBytes(
   const rawBytes = totalPixels * 4
 
   // Apply compression ratio based on format
-  const compressionRatio = getCompressionRatio(asset.format || 'unknown', asset.type)
+  const compressionRatio = getCompressionRatio(asset.format || 'unknown', asset.type, useOptimization)
 
   const estimatedBytes = rawBytes * compressionRatio
 
@@ -64,46 +68,63 @@ export function estimateImageBytes(
   return estimatedBytes
 }
 
-function getCompressionRatio(format: string, type: string): number {
+function getCompressionRatio(format: string, type: string, includeFramerOptimization: boolean): number {
   if (type === 'svg') return 0.05 // SVGs are very efficient
 
-  const ratios: Record<string, number> = {
-    'jpeg': 0.15,  // ~85% compression (quality 80)
-    'jpg': 0.15,
-    'png': 0.40,   // ~60% compression
-    'webp': 0.10,  // ~90% compression (WebP is very efficient)
-    'avif': 0.08,  // ~92% compression (AVIF is even more efficient)
-    'svg': 0.05,   // Very efficient for vectors
-    'gif': 0.30,
-    'unknown': 0.30 // Conservative estimate
+  if (includeFramerOptimization) {
+    // Framer automatically converts images to WebP/AVIF when publishing
+    // Use WebP-equivalent compression ratios for realistic estimates
+    const optimizedRatios: Record<string, number> = {
+      'jpeg': 0.10,  // Framer serves as WebP (~90% compression)
+      'jpg': 0.10,   // Framer serves as WebP
+      'png': 0.12,   // Framer serves as WebP (slightly higher for transparency)
+      'webp': 0.10,  // Already WebP
+      'avif': 0.08,  // Already AVIF (most efficient)
+      'svg': 0.05,   // SVGs are very efficient
+      'gif': 0.15,   // Framer may convert animated GIFs
+      'unknown': 0.12 // Assume Framer optimization
+    }
+    return optimizedRatios[format] || optimizedRatios.unknown
+  } else {
+    // Source file sizes without Framer's automatic optimization
+    const sourceRatios: Record<string, number> = {
+      'jpeg': 0.15,  // Standard JPEG compression
+      'jpg': 0.15,
+      'png': 0.40,   // PNG is larger (lossless)
+      'webp': 0.10,  // WebP is efficient
+      'avif': 0.08,  // AVIF is most efficient
+      'svg': 0.05,
+      'gif': 0.30,   // GIF can be large
+      'unknown': 0.30 // Conservative estimate
+    }
+    return sourceRatios[format] || sourceRatios.unknown
   }
-
-  return ratios[format] || ratios.unknown
 }
 
 export function estimateBaseOverhead(): number {
-  // Base HTML structure: ~10KB
-  const baseHTML = 10 * 1024
+  // Base HTML structure: ~5KB (Framer generates optimized HTML)
+  const baseHTML = 5 * 1024
 
-  // Framer's runtime CSS: ~40KB (estimated)
-  const framerCSS = 40 * 1024
+  // Framer's runtime CSS: ~25KB (compressed, cached)
+  const framerCSS = 25 * 1024
 
-  // Custom CSS from page styles: ~5-10KB
-  const customCSS = 10 * 1024
+  // Custom CSS from page styles: ~5KB
+  const customCSS = 5 * 1024
 
-  // Framer JS runtime: ~100KB (but often cached, so count 50%)
-  const framerRuntime = 50 * 1024
+  // Framer JS runtime: ~30KB effective (heavily cached via CDN)
+  // First visit may be ~100KB but subsequent visits use cache
+  const framerRuntime = 30 * 1024
 
   return baseHTML + framerCSS + customCSS + framerRuntime
 }
 
 export function estimateFontWeight(uniqueFontFamilies: number): number {
-  // Average web font file size: ~100KB per family (with variants)
-  const bytesPerFont = 100 * 1024
+  // WOFF2 fonts are very efficient (~20-40KB per family)
+  // Google Fonts subsets to only used characters
+  // Framer caches fonts aggressively
+  const bytesPerFont = 30 * 1024
 
-  // Google Fonts uses WOFF2 format which is efficient
-  // Also typically includes subset
-  return uniqueFontFamilies * bytesPerFont * 0.6
+  return uniqueFontFamilies * bytesPerFont
 }
 
 export function calculateBreakpointData(

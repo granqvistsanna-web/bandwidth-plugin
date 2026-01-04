@@ -371,12 +371,16 @@ function detectImageFormat(url: string): string {
 // Cache of all pages for faster lookup
 let pagesCache: Array<{ id: string; name: string }> | null = null
 
+// Cache of page children for faster descendant checking
+const pageChildrenCache = new Map<string, string[]>()
+
 /**
  * Clear the pages cache (call this at the start of a new analysis)
  */
 export function clearPagesCache(): void {
   pagesCache = null
-  debugLog.info('Cleared pages cache')
+  pageChildrenCache.clear()
+  debugLog.info('Cleared pages cache and page children cache')
 }
 
 /**
@@ -403,6 +407,25 @@ async function getAllPagesCached(): Promise<Array<{ id: string; name: string }>>
 }
 
 /**
+ * Get children of a page and cache them for faster lookups
+ */
+async function getPageChildrenCached(pageId: string): Promise<string[]> {
+  if (pageChildrenCache.has(pageId)) {
+    return pageChildrenCache.get(pageId)!
+  }
+  
+  try {
+    const children = await framer.getChildren(pageId)
+    const childIds = children.map(c => c.id)
+    pageChildrenCache.set(pageId, childIds)
+    return childIds
+  } catch (error) {
+    debugLog.warn(`Error getting children for page ${pageId}:`, error)
+    return []
+  }
+}
+
+/**
  * Check if a node is a descendant of a page by recursively checking children
  * Uses cached children for performance
  */
@@ -415,8 +438,9 @@ async function isNodeDescendantOfPage(nodeId: string, pageId: string, currentDep
       if (childId === nodeId) {
         return true
       }
-      // Recursively check grandchildren (but limit depth to avoid performance issues)
-      if (currentDepth < 3) { // Only check 3 levels deep for performance
+      // Recursively check grandchildren - use the maxDepth parameter to control depth
+      // This allows callers to specify how deep to search
+      if (currentDepth < maxDepth - 1) {
         const isGrandchild = await isNodeDescendantOfPage(nodeId, childId, currentDepth + 1, maxDepth)
         if (isGrandchild) {
           return true
@@ -424,7 +448,8 @@ async function isNodeDescendantOfPage(nodeId: string, pageId: string, currentDep
       }
     }
   } catch (error) {
-    // Ignore errors
+    // Ignore errors and continue
+    debugLog.warn(`isNodeDescendantOfPage: Error checking descendants of page ${pageId} at depth ${currentDepth}:`, error)
   }
   
   return false
@@ -475,10 +500,10 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
             // URL parsing failed, ignore
           }
         }
-      } catch (error) {
+      } catch {
         // Ignore publish info errors - page name is the important part
       }
-      
+
       return { id: node.id, name: pageName, url: pageUrl, slug: pageSlug }
     }
     
@@ -524,7 +549,7 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
       
       // Get parent ID - parent might be a reference object or just an ID
       // Try multiple ways to get parent ID
-      let parentId = current.parent?.id || current.parent
+      const parentId = current.parent?.id || current.parent
       
       // If no parent in the node object, the node might not have parent info loaded
       // This can happen with nodes from getNodesWithAttributeSet()
@@ -534,16 +559,19 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
         // Use a recursive helper to check if node is descendant of page
         let foundPage: { id: string; name: string } | null = null
         
+        // Try with increased depth for better detection (up to 10 levels)
         for (const page of allPages) {
           try {
             // Check if node is a direct or indirect child of this page
-            const isDescendant = await isNodeDescendantOfPage(current.id, page.id, 0, 5) // Max 5 levels deep
+            // Increase depth to 10 for better detection of deeply nested nodes
+            const isDescendant = await isNodeDescendantOfPage(current.id, page.id, 0, 10)
             if (isDescendant) {
               foundPage = page
               break
             }
           } catch (error) {
             // Continue checking other pages
+            debugLog.warn(`getPageForNode: Error checking if node is descendant of page ${page.name}:`, error)
           }
         }
         
@@ -552,6 +580,27 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
           return { id: foundPage.id, name: foundPage.name, slug: foundPage.name }
         }
         
+        // If still not found, try a more aggressive search: check if node ID appears in any page's children
+        // This handles cases where the node might be in a component or shared element
+        debugLog.info(`getPageForNode: Trying aggressive search for node ${nodeId} across all pages...`)
+        for (const page of allPages) {
+          try {
+            // Get all children recursively (with caching)
+            const allChildIds = await getAllDescendantIds(page.id, 0, 15) // Go deeper, up to 15 levels
+            if (allChildIds.includes(current.id)) {
+              foundPage = page
+              debugLog.info(`getPageForNode: Found node ${nodeId} in page ${page.name} via aggressive search`)
+              break
+            }
+          } catch {
+            // Continue checking other pages
+          }
+        }
+
+        if (foundPage) {
+          return { id: foundPage.id, name: foundPage.name, slug: foundPage.name }
+        }
+
         debugLog.warn(`getPageForNode: No parent ID for node ${nodeId} at depth ${depth}. Node type: ${current.type || 'unknown'}, Node name: ${current.name || 'unnamed'}`)
         break
       }
@@ -601,12 +650,54 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
       depth++
     }
     
-    debugLog.warn(`getPageForNode: Could not find page for node ${nodeId} after traversing ${depth} levels. Node type: ${(node as any).type || 'unknown'}, Node name: ${(node as any).name || 'unnamed'}`)
+    // Final fallback: try aggressive search across all pages
+    // Note: allPages is already declared earlier in this function
+    debugLog.info(`getPageForNode: Trying final fallback search for node ${nodeId}...`)
+    for (const page of allPages) {
+      try {
+        const allChildIds = await getAllDescendantIds(page.id, 0, 20) // Very deep search as last resort
+        if (allChildIds.includes(node.id)) {
+          debugLog.info(`getPageForNode: Found node ${nodeId} in page ${page.name} via final fallback search`)
+          return { id: page.id, name: page.name, slug: page.name }
+        }
+      } catch {
+        // Continue checking other pages
+      }
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    debugLog.warn(`getPageForNode: Could not find page for node ${nodeId} after traversing ${depth} levels and final fallback. Node type: ${(node as any).type || 'unknown'}, Node name: ${(node as any).name || 'unnamed'}`)
     return null
   } catch (error) {
     debugLog.warn(`Error getting page for node ${nodeId}:`, error)
     return null
   }
+}
+
+/**
+ * Get all descendant IDs of a page recursively (for aggressive page detection)
+ */
+async function getAllDescendantIds(pageId: string, currentDepth: number, maxDepth: number): Promise<string[]> {
+  if (currentDepth >= maxDepth) return []
+  
+  const descendantIds: string[] = []
+  
+  try {
+    const childIds = await getPageChildrenCached(pageId)
+    descendantIds.push(...childIds)
+    
+    // Recursively get grandchildren (but limit depth to avoid performance issues)
+    if (currentDepth < 10) { // Only go 10 levels deep for performance
+      for (const childId of childIds) {
+        const grandchildIds = await getAllDescendantIds(childId, currentDepth + 1, maxDepth)
+        descendantIds.push(...grandchildIds)
+      }
+    }
+  } catch {
+    // Ignore errors and return what we have
+  }
+
+  return descendantIds
 }
 
 /**

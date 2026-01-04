@@ -119,13 +119,15 @@ export function OverviewPanel({
     }
   }
 
-  const totalSavings = recommendations.reduce((sum, r) => sum + r.potentialSavings, 0)
+  const rawTotalSavings = recommendations.reduce((sum, r) => sum + r.potentialSavings, 0)
   const currentTotal = breakpointData.totalBytes
+  // Safety: Cap savings at 90% of total to prevent impossible values (e.g., 1GB savings on 872MB total)
+  const totalSavings = Math.min(rawTotalSavings, currentTotal * 0.9)
   const savingsPercent = currentTotal > 0 ? (totalSavings / currentTotal) * 100 : 0
 
   return (
     <div style={{
-      padding: `${spacing.lg} ${spacing.lg} ${spacing.xl} ${spacing.lg}`,
+      padding: spacing.lg,
       backgroundColor: backgrounds.page,
       minHeight: '100vh'
     }}>
@@ -134,14 +136,14 @@ export function OverviewPanel({
         margin: '0 auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: spacing.lg
+        gap: spacing.md
       }}>
-        {/* Compact Header */}
+        {/* Header */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: spacing.md
+          marginBottom: spacing.sm
         }}>
           <h1 style={{
             fontSize: typography.fontSize.md,

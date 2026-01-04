@@ -1,5 +1,5 @@
 import { formatBytes } from '../../utils/formatBytes'
-import { spacing, typography, borders, colors } from '../../styles/designTokens'
+import { spacing, typography, borders, framerColors } from '../../styles/designTokens'
 import type { ProjectAnalysis } from '../../types/analysis'
 
 interface DeviceBreakdownCardsProps {
@@ -92,5 +92,6 @@ export function DeviceBreakdownCards({ analysis }: DeviceBreakdownCardsProps) {
     </div>
   )
 }
+
 
 

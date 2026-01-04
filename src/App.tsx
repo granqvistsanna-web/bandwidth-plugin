@@ -130,9 +130,10 @@ export function App() {
                                 />
                             )}
                             {activeTab === 'settings' && (
-                                <SettingsPanel 
+                                <SettingsPanel
                                     lastScanned={lastScanned}
                                     loading={loading}
+                                    onSettingsChange={runAnalysis}
                                 />
                             )}
                             {activeTab === 'debug' && (
