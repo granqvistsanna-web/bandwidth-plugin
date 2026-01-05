@@ -473,56 +473,31 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
             {recommendation.nodeName || 'Unnamed'}
           </div>
 
-          {/* Route Info - Shows the Site Page route (not breakpoint artboard) */}
+          {/* Route Info - Shows the Site Page route */}
           {(() => {
-            // Use pageSlug if available (proper route), otherwise fall back to pageName
             const routeSlug = recommendation.pageSlug || ''
             const routeName = recommendation.pageName || ''
 
-            // Format display text - show route slug if available
             let displayText = ''
             if (routeSlug) {
-              // Route slug is already formatted like "/about" or "/"
               displayText = routeSlug === '/' ? '/ (Home)' : routeSlug
             } else if (routeName) {
-              // Fall back to page name, format as slug
               displayText = routeName.toLowerCase() === 'home' ? '/ (Home)' :
                            `/${routeName.toLowerCase().replace(/\s+/g, '-')}`
             } else {
-              displayText = 'Unknown route'
+              return null
             }
 
             return (
               <div style={{
-                fontSize: typography.fontSize.xs,
-                color: framerColors.textSecondary,
-                lineHeight: typography.lineHeight.normal,
-                display: 'flex',
-                alignItems: 'center',
-                gap: spacing.xxs
+                fontSize: '11px',
+                color: framerColors.textTertiary,
+                fontFamily: 'monospace',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
               }}>
-                {/* Route icon */}
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  style={{ flexShrink: 0, opacity: 0.7 }}
-                >
-                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
-                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
-                </svg>
-                <span style={{
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
-                  fontFamily: 'monospace',
-                  fontSize: '11px'
-                }}>
-                  {displayText}
-                </span>
+                {displayText}
               </div>
             )
           })()}
