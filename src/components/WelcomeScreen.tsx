@@ -209,7 +209,7 @@ function ValueProp({ icon, title, description }: { icon: React.ReactNode; title:
       padding: spacing.md,
       backgroundColor: 'var(--framer-color-bg-secondary)',
       borderRadius: borders.radius.sm,
-      border: '1px solid var(--border-subtle)'
+      border: '1px solid var(--framer-color-divider)'
     }}>
       <div style={{
         color: colors.accent.primary,

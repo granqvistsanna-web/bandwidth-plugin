@@ -296,7 +296,7 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
               {BANDWIDTH_CALIBRATION.labels.worstCase}
             </div>
           </div>
-          <InfoTooltip text={`${BANDWIDTH_CALIBRATION.labels.worstCaseSubtext}. Realistic estimate accounts for Framer CDN, browser caching, and responsive images.`} />
+          <InfoTooltip text={`${BANDWIDTH_CALIBRATION.labels.worstCaseSubtext}. Realistic estimate accounts for Framer CDN, browser caching, and responsive images.`} position="left" />
         </div>
       </div>
 
