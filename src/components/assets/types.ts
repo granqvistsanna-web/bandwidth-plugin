@@ -40,11 +40,6 @@ export interface AssetsTableProps {
   onAssetClick: (nodeId: string) => void
 }
 
-export interface AssetsTableHeaderProps {
-  sortConfig: SortConfig
-  onSort: (config: SortConfig) => void
-}
-
 export interface AssetsTableRowProps {
   asset: AssetInfo
   onClick: (nodeId: string) => void
