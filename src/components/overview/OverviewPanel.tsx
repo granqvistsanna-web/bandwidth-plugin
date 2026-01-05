@@ -9,6 +9,7 @@ import { calculateDeviceWeightedBandwidth } from '../../utils/deviceBandwidth'
 import { spacing, typography, borders, colors, backgrounds, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 import { StatusIndicator } from '../common/StatusIndicator'
 import { ClipboardDocumentIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid'
+import { debugLog } from '../../utils/debugLog'
 
 interface OverviewPanelProps {
   analysis: ProjectAnalysis

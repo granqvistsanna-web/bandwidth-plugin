@@ -32,37 +32,10 @@ function getFormatColor(format: string | undefined): { bg: string; text: string 
   }
 }
 
-// Calculate potential savings for unoptimized assets
-// Memoized outside component to avoid recalculation
-function calculatePotentialSavings(asset: AssetInfo): number {
-  // Don't show savings for CMS assets
-  if (asset.isCMSAsset || asset.isManualEstimate) return 0
-
-  const kb = asset.estimatedBytes / 1024
-
-  // Large PNG/JPG files have high savings potential
-  if ((asset.format === 'PNG' || asset.format === 'JPG' || asset.format === 'JPEG') && kb >= 200) {
-    // Estimate 60-70% savings from converting to WebP/AVIF
-    return Math.floor(asset.estimatedBytes * 0.65)
-  }
-
-  // Oversized images (dimensions much larger than needed)
-  const area = asset.dimensions.width * asset.dimensions.height
-  if (area > 4000000 && kb >= 500) { // > 2000x2000px and > 500KB
-    // Estimate 50% savings from resizing
-    return Math.floor(asset.estimatedBytes * 0.5)
-  }
-
-  return 0
-}
-
 export const AssetsTableRow = memo(function AssetsTableRow({
   asset,
   onClick
 }: AssetsTableRowProps) {
-  // Memoize expensive calculations
-  const potentialSavings = useMemo(() => calculatePotentialSavings(asset), [asset])
-
   const isCMS = asset.isCMSAsset || asset.isManualEstimate || !!asset.cmsItemSlug
   const canClick = !isCMS && asset.nodeId && asset.nodeId.trim() !== ''
 
