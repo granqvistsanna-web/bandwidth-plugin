@@ -10,19 +10,6 @@ const DEFAULT_SETTINGS: PluginSettings = {
   includeFramerOptimization: true // Default: assume Framer optimizes images
 }
 
-function getInitialSettings(): PluginSettings {
-  try {
-    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY)
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      return { ...DEFAULT_SETTINGS, ...parsed }
-    }
-  } catch (error) {
-    console.warn('Failed to load settings from localStorage:', error)
-  }
-  return DEFAULT_SETTINGS
-}
-
 export function useSettings() {
   const [settings, setSettings] = useState<PluginSettings>(() => {
     // Initialize from localStorage on first render (lazy initialization)

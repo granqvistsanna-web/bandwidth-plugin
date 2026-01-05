@@ -1,7 +1,7 @@
 import { framer } from 'framer-plugin'
 import { analyzeAllJavaScriptBundles, type CodeAnalysisResult } from './codeAnalyzer'
 import { debugLog } from '../utils/debugLog'
-import { handleServiceError, withNullFallback, ErrorCode } from '../utils/errorHandler'
+import { handleServiceError, ErrorCode } from '../utils/errorHandler'
 
 export interface PublishedResource {
   url: string
@@ -30,16 +30,27 @@ export interface PublishedAnalysisResult {
 export async function getPublishedUrl(): Promise<string | null> {
   try {
     const publishInfo = await framer.getPublishInfo()
-    debugLog.info('Publish info:', publishInfo)
 
-    // Check if site is published
-    if (!publishInfo || !publishInfo.url) {
-      return null
+    // Try multiple possible URL locations
+    let siteUrl: string | null = null
+
+    if (publishInfo?.url) {
+      siteUrl = publishInfo.url
+    } else if (publishInfo?.production?.url) {
+      siteUrl = publishInfo.production.url
+    } else if (publishInfo?.staging?.url) {
+      siteUrl = publishInfo.staging.url
+    } else if (publishInfo?.currentPageUrl) {
+      try {
+        const urlObj = new URL(publishInfo.currentPageUrl)
+        siteUrl = urlObj.origin
+      } catch {
+        // Ignore parsing errors
+      }
     }
 
-    return publishInfo.url
-  } catch (error) {
-    debugLog.error('Error getting publish info:', error)
+    return siteUrl
+  } catch {
     return null
   }
 }

@@ -8,6 +8,37 @@ import { collectAllAssets, collectPageAssetsForBreakpoint, type ManualCMSEstimat
 import { debugLog } from '../utils/debugLog'
 import { formatBytes } from '../utils/formatBytes'
 import { handleServiceError, ErrorCode } from '../utils/errorHandler'
+import { resolveNodeRoute, clearRoutesCache } from '../utils/assetPageUsage'
+
+/**
+ * Enrich a recommendation with proper route info (Site Page, not breakpoint artboard)
+ */
+async function enrichWithRouteInfo(rec: Recommendation): Promise<Recommendation> {
+  // Skip if no nodeId or if it's a grouped recommendation
+  if (!rec.nodeId || rec.nodeId === '' || rec.nodeId.startsWith('svg-optimization-grouped')) {
+    return rec
+  }
+
+  try {
+    const result = await resolveNodeRoute(rec.nodeId)
+
+    if (result.found && result.routeInfo) {
+      return {
+        ...rec,
+        pageName: result.routeInfo.route.name,
+        pageSlug: result.routeInfo.route.slug,
+        breakpoint: result.routeInfo.breakpoint,
+        // Keep pageId as-is (WebPageNode ID if we had it)
+        isCMSAsset: rec.isCMSAsset || result.routeInfo.isCMSDetailPage
+      }
+    }
+  } catch (error) {
+    // Silently fail - keep original page info
+    debugLog.warn(`Failed to resolve route for node ${rec.nodeId}:`, error)
+  }
+
+  return rec
+}
 
 export async function analyzeProject(
   mode: AnalysisMode = 'canvas', 
@@ -16,9 +47,10 @@ export async function analyzeProject(
 ): Promise<ProjectAnalysis> {
   try {
     debugLog.info('🚀 Starting project analysis...')
-    // Clear pages cache at the start of analysis
+    // Clear caches at the start of analysis
     const { clearPagesCache } = await import('./traversal')
     clearPagesCache()
+    clearRoutesCache() // Clear routes cache for fresh route resolution
     
     const allPages = await getAllPages(true) // Exclude design pages by default
     
@@ -44,7 +76,7 @@ export async function analyzeProject(
     // Collect all assets organized by source and breakpoint
     const assetCollection = await collectAllAssets(excludedPageIds, manualCMSEstimates)
     
-    const { canvas, cms, manual, allUnique } = assetCollection
+    const { canvas, cms, manual } = assetCollection
 
     debugLog.success(`✅ Collected assets: ${canvas.desktop.length} desktop, ${canvas.tablet.length} tablet, ${canvas.mobile.length} mobile canvas assets`)
     debugLog.success(`✅ CMS assets: ${cms.length}, Manual estimates: ${manual.length}`)
@@ -148,14 +180,46 @@ export async function analyzeProject(
     // This prevents double-counting when same image appears on multiple pages
     const recommendationMap = new Map<string, Recommendation>()
 
-    // First, add all page-specific recommendations (they have page info)
+    // Track which pages use each asset (by URL for cross-page tracking)
+    const urlToPages = new Map<string, { pageId: string; pageName: string }[]>()
+
+    // First pass: collect all page info for each URL
     for (const rec of pageRecommendations) {
-      // Use nodeId as primary key to ensure one recommendation per asset
+      if (rec.url && rec.pageId && rec.pageName) {
+        const pages = urlToPages.get(rec.url) || []
+        // Only add if not already in the list
+        if (!pages.some(p => p.pageId === rec.pageId)) {
+          pages.push({ pageId: rec.pageId, pageName: rec.pageName })
+        }
+        urlToPages.set(rec.url, pages)
+      }
+    }
+
+    // Second pass: add page-specific recommendations with usedInPages populated
+    for (const rec of pageRecommendations) {
       const key = rec.nodeId || rec.id
       const existing = recommendationMap.get(key)
-      // Keep the recommendation with higher potential savings
+
+      // Get all pages where this URL is used
+      const pagesForUrl = rec.url ? urlToPages.get(rec.url) : undefined
+      const usedInPages = pagesForUrl && pagesForUrl.length > 0 ? pagesForUrl :
+                          (rec.pageId && rec.pageName ? [{ pageId: rec.pageId, pageName: rec.pageName }] : undefined)
+
+      // Keep the recommendation with higher potential savings, but merge page info
       if (!existing || rec.potentialSavings > existing.potentialSavings) {
-        recommendationMap.set(key, rec)
+        recommendationMap.set(key, { ...rec, usedInPages })
+      } else if (existing && usedInPages) {
+        // Merge page info if we have more pages
+        const existingPages = existing.usedInPages || []
+        const mergedPages = [...existingPages]
+        for (const page of usedInPages) {
+          if (!mergedPages.some(p => p.pageId === page.pageId)) {
+            mergedPages.push(page)
+          }
+        }
+        if (mergedPages.length > existingPages.length) {
+          recommendationMap.set(key, { ...existing, usedInPages: mergedPages })
+        }
       }
     }
 
@@ -164,12 +228,16 @@ export async function analyzeProject(
     for (const rec of overallRecommendations) {
       const key = rec.nodeId || rec.id
       if (!recommendationMap.has(key)) {
-        recommendationMap.set(key, rec)
+        // Try to get page info from URL mapping
+        const pagesForUrl = rec.url ? urlToPages.get(rec.url) : undefined
+        const usedInPages = pagesForUrl && pagesForUrl.length > 0 ? pagesForUrl :
+                            (rec.pageId && rec.pageName ? [{ pageId: rec.pageId, pageName: rec.pageName }] : undefined)
+        recommendationMap.set(key, { ...rec, usedInPages })
       }
     }
     
     // Convert back to array and sort globally by impact (stable sort)
-    const allRecommendations = Array.from(recommendationMap.values())
+    const sortedRecommendations = Array.from(recommendationMap.values())
       .sort((a, b) => {
         // Primary sort: by potential savings (descending)
         if (b.potentialSavings !== a.potentialSavings) {
@@ -191,12 +259,19 @@ export async function analyzeProject(
         return (a.nodeId || a.id).localeCompare(b.nodeId || b.id)
       })
 
+    // Enrich recommendations with proper route info (Site Page, not breakpoint artboard)
+    // This uses WebPageNode.path to get the actual route slug like /about, /services
+    debugLog.info('🔗 Enriching recommendations with route info...')
+    const allRecommendations = await Promise.all(
+      sortedRecommendations.map(rec => enrichWithRouteInfo(rec))
+    )
+    debugLog.success(`✅ Enriched ${allRecommendations.length} recommendations with route info`)
+
     // Calculate CMS asset statistics
     const allCMSAssets = [...cms, ...manual]
     const cmsAssetsBytes = allCMSAssets.reduce((sum, asset) => sum + asset.estimatedBytes, 0)
     const hasManualCMSEstimates = manual.length > 0
-    const cmsAssetsNotFound = allCMSAssets.filter(a => 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cmsAssetsNotFound = allCMSAssets.filter(a =>
       (a as { cmsStatus?: string }).cmsStatus === 'not_found'
     ).length
     

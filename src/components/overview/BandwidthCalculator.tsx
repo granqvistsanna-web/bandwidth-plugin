@@ -1,11 +1,13 @@
 import { useState, useMemo, useEffect } from 'react'
 import { formatBytes } from '../../utils/formatBytes'
 import { calculateDeviceWeightedBandwidth, getBreakpointInfo } from '../../utils/deviceBandwidth'
+import { calculateMonthlyBandwidth, BANDWIDTH_CALIBRATION } from '../../services/bandwidth'
 import type { ProjectAnalysis } from '../../types/analysis'
-import { spacing, typography, borders, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
+import { spacing, typography, borders, surfaces, themeBorders, themeElevation, framerColors, status } from '../../styles/designTokens'
 import { CollapsibleSection } from './CollapsibleSection'
 import { Button } from '../primitives/Button'
 import { InfoTooltip } from '../common/InfoTooltip'
+import { getFramerOptimizationSetting } from '../../hooks/useSettings'
 
 interface BandwidthCalculatorProps {
   analysis: ProjectAnalysis
@@ -34,29 +36,62 @@ const FRAMER_PLANS = {
 
 type PlanKey = keyof typeof FRAMER_PLANS
 
+// localStorage keys for persisting user settings
+const STORAGE_KEYS = {
+  pageviews: 'bandwidth-calc-pageviews',
+  pagesPerVisit: 'bandwidth-calc-pages-per-visit',
+  plan: 'bandwidth-calc-plan',
+  pageviewsMode: 'bandwidth-calc-pageviews-mode',
+  pagesPerVisitMode: 'bandwidth-calc-pages-per-visit-mode'
+}
+
+function getStoredNumber(key: string, defaultValue: number): number {
+  try {
+    const stored = localStorage.getItem(key)
+    if (stored) return parseFloat(stored)
+  } catch { /* ignore */ }
+  return defaultValue
+}
+
+function getStoredString<T extends string>(key: string, defaultValue: T): T {
+  try {
+    const stored = localStorage.getItem(key)
+    if (stored) return stored as T
+  } catch { /* ignore */ }
+  return defaultValue
+}
+
 export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: BandwidthCalculatorProps) {
   // Memoize pages to prevent unnecessary re-renders
   const pages = useMemo(() => analysis.pages || [], [analysis.pages])
-  const pageCount = pages.length
 
-  // Set intelligent defaults based on project size
-  const getDefaultPageviews = () => {
-    if (pageCount < 10) return 5000
-    if (pageCount < 50) return 25000
-    return 100000
-  }
+  // Load persisted values or use defaults (1K pageviews, 2.5 pages/visit)
+  const [monthlyPageviews, setMonthlyPageviews] = useState(() =>
+    getStoredNumber(STORAGE_KEYS.pageviews, 1000)
+  )
+  const [averagePagesPerVisit, setAveragePagesPerVisit] = useState(() =>
+    getStoredNumber(STORAGE_KEYS.pagesPerVisit, 2.5)
+  )
+  const [selectedPlan, setSelectedPlan] = useState<PlanKey>(() =>
+    getStoredString(STORAGE_KEYS.plan, 'basic')
+  )
+  const [pageviewsMode, setPageviewsMode] = useState<'preset' | 'custom'>(() =>
+    getStoredString(STORAGE_KEYS.pageviewsMode, 'preset')
+  )
+  const [pagesPerVisitMode, setPagesPerVisitMode] = useState<'preset' | 'custom'>(() =>
+    getStoredString(STORAGE_KEYS.pagesPerVisitMode, 'preset')
+  )
 
-  const getDefaultPagesPerVisit = () => {
-    if (pageCount < 10) return 2.5
-    if (pageCount < 50) return 3.5
-    return 4.5
-  }
-
-  const [monthlyPageviews, setMonthlyPageviews] = useState(getDefaultPageviews())
-  const [averagePagesPerVisit, setAveragePagesPerVisit] = useState(getDefaultPagesPerVisit())
-  const [selectedPlan, setSelectedPlan] = useState<PlanKey>('basic')
-  const [pageviewsMode, setPageviewsMode] = useState<'preset' | 'custom'>('preset')
-  const [pagesPerVisitMode, setPagesPerVisitMode] = useState<'preset' | 'custom'>('preset')
+  // Persist values to localStorage when they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.pageviews, String(monthlyPageviews))
+      localStorage.setItem(STORAGE_KEYS.pagesPerVisit, String(averagePagesPerVisit))
+      localStorage.setItem(STORAGE_KEYS.plan, selectedPlan)
+      localStorage.setItem(STORAGE_KEYS.pageviewsMode, pageviewsMode)
+      localStorage.setItem(STORAGE_KEYS.pagesPerVisitMode, pagesPerVisitMode)
+    } catch { /* ignore */ }
+  }, [monthlyPageviews, averagePagesPerVisit, selectedPlan, pageviewsMode, pagesPerVisitMode])
 
   // Memoize breakpoint data with fallbacks to prevent unnecessary re-renders
   const defaultBreakpointData = useMemo(() => ({ totalBytes: 0, assets: [] as const }), [])
@@ -74,68 +109,64 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
   )
   const hasValidData = analysis.overallBreakpoints !== null && analysis.overallBreakpoints !== undefined
 
+  // Get Framer optimization setting
+  const framerOptimizationEnabled = getFramerOptimizationSetting()
+
   // Calculate device-weighted bandwidth (Framer serves different image sizes per device)
-  const { bytesPerVisit, bandwidthPer1000, monthlyBandwidthGB } = useMemo(() => {
+  const monthlyEstimate = useMemo(() => {
     if (!hasValidData) {
-      return { bytesPerVisit: 0, bandwidthPer1000: 0, monthlyBandwidthGB: 0 }
+      return calculateMonthlyBandwidth(0, monthlyPageviews, framerOptimizationEnabled)
     }
+
+    let calculatedBytesPerVisit: number
 
     if (pages.length === 0) {
       // Fallback: use device-weighted overall breakpoint data
-      const weightedBytes = calculateDeviceWeightedBandwidth({
+      calculatedBytesPerVisit = calculateDeviceWeightedBandwidth({
         mobile: mobileData,
         tablet: tabletData,
         desktop: desktopData
       })
-      const pageWeightMB = weightedBytes / (1024 * 1024)
-      const pageWeightGB = weightedBytes / (1024 * 1024 * 1024)
-      const bandwidthPer1000 = (pageWeightMB * 1000) / 1024
-      const monthlyBandwidthGB = pageWeightGB * monthlyPageviews
-      return {
-        bytesPerVisit: weightedBytes,
-        bandwidthPer1000,
-        monthlyBandwidthGB
-      }
+    } else {
+      // Strategy: Use the heaviest page + weighted average of other pages
+      // Calculate device-weighted bytes for each page
+      const sortedPages = [...pages].sort((a, b) => {
+        const aWeighted = calculateDeviceWeightedBandwidth(a.breakpoints)
+        const bWeighted = calculateDeviceWeightedBandwidth(b.breakpoints)
+        return bWeighted - aWeighted
+      })
+
+      const heaviestPage = sortedPages[0]
+      const otherPages = sortedPages.slice(1)
+
+      // Calculate average device-weighted bytes for other pages
+      const avgOtherPageBytes = otherPages.length > 0
+        ? otherPages.reduce((sum, page) => {
+            const weighted = calculateDeviceWeightedBandwidth(page.breakpoints)
+            return sum + weighted
+          }, 0) / otherPages.length
+        : 0
+
+      // Calculate device-weighted bytes per visit:
+      // - Always includes the heaviest page (usually landing page)
+      // - Plus (averagePagesPerVisit - 1) × average of other pages
+      const heaviestPageWeighted = calculateDeviceWeightedBandwidth(heaviestPage.breakpoints)
+      const additionalPages = Math.max(0, averagePagesPerVisit - 1)
+      calculatedBytesPerVisit = heaviestPageWeighted + (additionalPages * avgOtherPageBytes)
     }
 
-    // Strategy: Use the heaviest page + weighted average of other pages
-    // Calculate device-weighted bytes for each page
-    const sortedPages = [...pages].sort((a, b) => {
-      const aWeighted = calculateDeviceWeightedBandwidth(a.breakpoints)
-      const bWeighted = calculateDeviceWeightedBandwidth(b.breakpoints)
-      return bWeighted - aWeighted
-    })
+    // Calculate tiered monthly estimates (realistic + worst-case)
+    return calculateMonthlyBandwidth(
+      calculatedBytesPerVisit,
+      monthlyPageviews,
+      framerOptimizationEnabled
+    )
+  }, [hasValidData, mobileData, tabletData, desktopData, monthlyPageviews, averagePagesPerVisit, pages, framerOptimizationEnabled])
 
-    const heaviestPage = sortedPages[0]
-    const otherPages = sortedPages.slice(1)
-
-    // Calculate average device-weighted bytes for other pages
-    const avgOtherPageBytes = otherPages.length > 0
-      ? otherPages.reduce((sum, page) => {
-          const weighted = calculateDeviceWeightedBandwidth(page.breakpoints)
-          return sum + weighted
-        }, 0) / otherPages.length
-      : 0
-
-    // Calculate device-weighted bytes per visit:
-    // - Always includes the heaviest page (usually landing page)
-    // - Plus (averagePagesPerVisit - 1) × average of other pages
-    const heaviestPageWeighted = calculateDeviceWeightedBandwidth(heaviestPage.breakpoints)
-    const additionalPages = Math.max(0, averagePagesPerVisit - 1)
-    const bytesPerVisit = heaviestPageWeighted + (additionalPages * avgOtherPageBytes)
-
-    // Convert to GB for display
-    const bytesPerVisitMB = bytesPerVisit / (1024 * 1024)
-    const bytesPerVisitGB = bytesPerVisit / (1024 * 1024 * 1024)
-    const bandwidthPer1000 = (bytesPerVisitMB * 1000) / 1024
-    const monthlyBandwidthGB = bytesPerVisitGB * monthlyPageviews
-
-    return {
-      bytesPerVisit,
-      bandwidthPer1000,
-      monthlyBandwidthGB
-    }
-  }, [hasValidData, mobileData, tabletData, desktopData, monthlyPageviews, averagePagesPerVisit, pages])
+  // Extract values for display
+  const monthlyBandwidthGB = monthlyEstimate.realistic / (1024 * 1024 * 1024)
+  const worstCaseBandwidthGB = monthlyEstimate.worstCase / (1024 * 1024 * 1024)
+  const bandwidthPer1000 = (monthlyEstimate.perVisitorRealistic * 1000) / (1024 * 1024 * 1024)
 
   const planLimit = FRAMER_PLANS[selectedPlan].bandwidthGB
   const usagePercent = (monthlyBandwidthGB / planLimit) * 100
@@ -192,7 +223,7 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
       maxWidth: '900px',
       margin: '0 auto'
     }}>
-      {/* Hero: Monthly Bandwidth */}
+      {/* Hero: Monthly Bandwidth - Tiered Estimates */}
       <div style={{
         padding: spacing.lg,
         backgroundColor: surfaces.secondary,
@@ -210,9 +241,9 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             color: riskLevel === 'danger' ? 'var(--status-error-solid)' :
                    riskLevel === 'warning' ? 'var(--status-warning-solid)' :
                    'var(--status-success-solid)',
-            backgroundColor: riskLevel === 'danger' ? 'rgba(239, 68, 68, 0.1)' :
-                              riskLevel === 'warning' ? 'rgba(245, 158, 11, 0.1)' :
-                              'rgba(34, 197, 94, 0.1)',
+            backgroundColor: riskLevel === 'danger' ? status.error.bg :
+                              riskLevel === 'warning' ? status.warning.bg :
+                              status.success.bg,
             padding: `${spacing.xxs} ${spacing.sm}`,
             borderRadius: borders.radius.full,
             whiteSpace: 'nowrap' as const
@@ -220,25 +251,52 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             {riskTitle}
           </div>
         </div>
-        
-        {/* Title below badge */}
+
+        {/* Realistic Estimate - Primary */}
         <div style={{
           fontSize: typography.fontSize['2xl'],
           fontWeight: typography.fontWeight.bold,
           color: framerColors.text,
           lineHeight: typography.lineHeight.tight,
           letterSpacing: typography.letterSpacing.tighter,
-          marginBottom: spacing.xs
+          marginBottom: spacing.xxs
         }}>
-          {monthlyBandwidthGB.toFixed(2)} GB/month
+          ~{monthlyBandwidthGB.toFixed(2)} GB/month
         </div>
-        
-        {/* Description at bottom */}
+
+        {/* Realistic label */}
         <div style={{
           fontSize: typography.fontSize.xs,
-          color: framerColors.textSecondary
+          color: framerColors.textSecondary,
+          marginBottom: spacing.md
         }}>
-          Based on {monthlyPageviews.toLocaleString()} pageviews
+          {BANDWIDTH_CALIBRATION.labels.realistic} • {monthlyPageviews.toLocaleString()} pageviews
+        </div>
+
+        {/* Worst Case - Secondary */}
+        <div style={{
+          paddingTop: spacing.md,
+          borderTop: `1px solid ${themeBorders.subtle}`,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'baseline'
+        }}>
+          <div>
+            <div style={{
+              fontSize: typography.fontSize.sm,
+              fontWeight: typography.fontWeight.medium,
+              color: framerColors.textSecondary
+            }}>
+              {worstCaseBandwidthGB.toFixed(2)} GB/month
+            </div>
+            <div style={{
+              fontSize: typography.fontSize.xs,
+              color: framerColors.textTertiary
+            }}>
+              {BANDWIDTH_CALIBRATION.labels.worstCase}
+            </div>
+          </div>
+          <InfoTooltip text={`${BANDWIDTH_CALIBRATION.labels.worstCaseSubtext}. Realistic estimate accounts for Framer CDN, browser caching, and responsive images.`} />
         </div>
       </div>
 
@@ -274,42 +332,62 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             Monthly pageviews
             <InfoTooltip text="Total page loads per month. Check Google Analytics or similar." />
           </label>
-          <select
-            value={pageviewsMode === 'custom' ? 'custom' : monthlyPageviews}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === 'custom') {
-                setPageviewsMode('custom')
-              } else {
-                setPageviewsMode('preset')
-                setMonthlyPageviews(parseInt(value))
-              }
-            }}
-            style={{
-              width: '100%',
-              padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
-              fontSize: typography.fontSize.xs,
-              fontWeight: typography.fontWeight.medium,
-              color: framerColors.text,
-              backgroundColor: surfaces.tertiary,
-              border: 'none',
-              borderRadius: borders.radius.md,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              appearance: 'none',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 8px center'
-            }}
-          >
-            <option value="1000">1K pageviews</option>
-            <option value="5000">5K pageviews</option>
-            <option value="10000">10K pageviews</option>
-            <option value="25000">25K pageviews</option>
-            <option value="50000">50K pageviews</option>
-            <option value="100000">100K pageviews</option>
-            <option value="custom">Custom</option>
-          </select>
+          <div style={{ position: 'relative' }}>
+            <select
+              value={pageviewsMode === 'custom' ? 'custom' : monthlyPageviews}
+              onChange={(e) => {
+                const value = e.target.value
+                if (value === 'custom') {
+                  setPageviewsMode('custom')
+                } else {
+                  setPageviewsMode('preset')
+                  setMonthlyPageviews(parseInt(value))
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
+                fontSize: typography.fontSize.xs,
+                fontWeight: typography.fontWeight.medium,
+                color: framerColors.text,
+                backgroundColor: surfaces.tertiary,
+                border: 'none',
+                borderRadius: borders.radius.md,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                appearance: 'none'
+              }}
+            >
+              <option value="1000">1K pageviews</option>
+              <option value="5000">5K pageviews</option>
+              <option value="10000">10K pageviews</option>
+              <option value="25000">25K pageviews</option>
+              <option value="50000">50K pageviews</option>
+              <option value="100000">100K pageviews</option>
+              <option value="custom">Custom</option>
+            </select>
+            <svg
+              width="8"
+              height="5"
+              viewBox="0 0 8 5"
+              fill="none"
+              style={{
+                position: 'absolute',
+                right: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none'
+              }}
+            >
+              <path
+                d="M1 1L4 4L7 1"
+                stroke={framerColors.textSecondary}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
           {pageviewsMode === 'custom' && (
             <input
               type="number"
@@ -356,41 +434,61 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             Pages per visit
             <InfoTooltip text="Average pages viewed per session. Typically 2-4 for most sites." />
           </label>
-          <select
-            value={pagesPerVisitMode === 'custom' ? 'custom' : averagePagesPerVisit}
-            onChange={(e) => {
-              const value = e.target.value
-              if (value === 'custom') {
-                setPagesPerVisitMode('custom')
-              } else {
-                setPagesPerVisitMode('preset')
-                setAveragePagesPerVisit(parseFloat(value))
-              }
-            }}
-            style={{
-              width: '100%',
-              padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
-              fontSize: typography.fontSize.xs,
-              fontWeight: typography.fontWeight.medium,
-              color: framerColors.text,
-              backgroundColor: surfaces.tertiary,
-              border: 'none',
-              borderRadius: borders.radius.md,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              appearance: 'none',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 8px center'
-            }}
-          >
-            <option value="1.0">Landing only (1.0)</option>
-            <option value="2.5">Light (2.5)</option>
-            <option value="3.5">Typical (3.5)</option>
-            <option value="4.5">Moderate (4.5)</option>
-            <option value="6.0">Deep (6.0)</option>
-            <option value="custom">Custom</option>
-          </select>
+          <div style={{ position: 'relative' }}>
+            <select
+              value={pagesPerVisitMode === 'custom' ? 'custom' : averagePagesPerVisit}
+              onChange={(e) => {
+                const value = e.target.value
+                if (value === 'custom') {
+                  setPagesPerVisitMode('custom')
+                } else {
+                  setPagesPerVisitMode('preset')
+                  setAveragePagesPerVisit(parseFloat(value))
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
+                fontSize: typography.fontSize.xs,
+                fontWeight: typography.fontWeight.medium,
+                color: framerColors.text,
+                backgroundColor: surfaces.tertiary,
+                border: 'none',
+                borderRadius: borders.radius.md,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                appearance: 'none'
+              }}
+            >
+              <option value="1.0">Landing only (1.0)</option>
+              <option value="2.5">Light (2.5)</option>
+              <option value="3.5">Typical (3.5)</option>
+              <option value="4.5">Moderate (4.5)</option>
+              <option value="6.0">Deep (6.0)</option>
+              <option value="custom">Custom</option>
+            </select>
+            <svg
+              width="8"
+              height="5"
+              viewBox="0 0 8 5"
+              fill="none"
+              style={{
+                position: 'absolute',
+                right: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none'
+              }}
+            >
+              <path
+                d="M1 1L4 4L7 1"
+                stroke={framerColors.textSecondary}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
           {pagesPerVisitMode === 'custom' && (
             <input
               type="number"
@@ -446,32 +544,52 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
             Plan Status
             <InfoTooltip text="Your Framer plan's monthly bandwidth allowance." />
           </div>
-          <select
-            value={selectedPlan}
-            onChange={(e) => setSelectedPlan(e.target.value as PlanKey)}
-            style={{
-              width: '100%',
-              padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
-              fontSize: typography.fontSize.xs,
-              fontWeight: typography.fontWeight.medium,
-              color: framerColors.text,
-              backgroundColor: surfaces.tertiary,
-              border: 'none',
-              borderRadius: borders.radius.md,
-              cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              appearance: 'none',
-              backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-              backgroundRepeat: 'no-repeat',
-              backgroundPosition: 'right 8px center'
-            }}
-          >
-            {(Object.keys(FRAMER_PLANS) as PlanKey[]).map((plan) => (
-              <option key={plan} value={plan}>
-                {FRAMER_PLANS[plan].name} - {FRAMER_PLANS[plan].bandwidthGB} GB/month
-              </option>
-            ))}
-          </select>
+          <div style={{ position: 'relative' }}>
+            <select
+              value={selectedPlan}
+              onChange={(e) => setSelectedPlan(e.target.value as PlanKey)}
+              style={{
+                width: '100%',
+                padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
+                fontSize: typography.fontSize.xs,
+                fontWeight: typography.fontWeight.medium,
+                color: framerColors.text,
+                backgroundColor: surfaces.tertiary,
+                border: 'none',
+                borderRadius: borders.radius.md,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                appearance: 'none'
+              }}
+            >
+              {(Object.keys(FRAMER_PLANS) as PlanKey[]).map((plan) => (
+                <option key={plan} value={plan}>
+                  {FRAMER_PLANS[plan].name} - {FRAMER_PLANS[plan].bandwidthGB} GB/month
+                </option>
+              ))}
+            </select>
+            <svg
+              width="8"
+              height="5"
+              viewBox="0 0 8 5"
+              fill="none"
+              style={{
+                position: 'absolute',
+                right: '8px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none'
+              }}
+            >
+              <path
+                d="M1 1L4 4L7 1"
+                stroke={framerColors.textSecondary}
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
 
           {/* Usage Progress Bar */}
           {monthlyBandwidthGB > 0 && (
@@ -551,133 +669,138 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
         </div>
       </div>
 
-      {/* Technical Details */}
+      {/* Calculation Breakdown */}
       <div style={{
-        padding: spacing.lg,
         backgroundColor: surfaces.secondary,
         borderRadius: borders.radius.lg,
-        boxShadow: themeElevation.subtle
+        boxShadow: themeElevation.subtle,
+        overflow: 'hidden'
       }}>
         <CollapsibleSection
-          title="Details"
+          title="Calculation breakdown"
           defaultCollapsed={true}
         >
+          {/* Stats row */}
           <div style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: spacing.md
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: spacing.sm,
+            marginBottom: spacing.md
           }}>
-            <div>
+            <div style={{
+              padding: spacing.md,
+              backgroundColor: surfaces.tertiary,
+              borderRadius: borders.radius.md
+            }}>
               <div style={{
                 fontSize: typography.fontSize.xs,
                 color: framerColors.textSecondary,
                 marginBottom: spacing.xs
               }}>
-                Per visit
+                Data per visit
               </div>
               <div style={{
-                fontSize: typography.fontSize.md,
+                fontSize: typography.fontSize.sm,
                 fontWeight: typography.fontWeight.semibold,
                 color: framerColors.text
               }}>
-                {formatBytes(bytesPerVisit)}
+                {formatBytes(monthlyEstimate.perVisitorRealistic)}
               </div>
             </div>
-            <div>
+            <div style={{
+              padding: spacing.md,
+              backgroundColor: surfaces.tertiary,
+              borderRadius: borders.radius.md
+            }}>
               <div style={{
                 fontSize: typography.fontSize.xs,
                 color: framerColors.textSecondary,
                 marginBottom: spacing.xs
               }}>
-                Per 1,000 views
+                Per 1K pageviews
               </div>
               <div style={{
-                fontSize: typography.fontSize.md,
+                fontSize: typography.fontSize.sm,
                 fontWeight: typography.fontWeight.semibold,
                 color: framerColors.text
               }}>
-                {bandwidthPer1000.toFixed(3)} GB
+                {bandwidthPer1000.toFixed(2)} GB
               </div>
             </div>
           </div>
+
+          {/* Calibration note */}
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: framerColors.textTertiary,
+            lineHeight: typography.lineHeight.relaxed
+          }}>
+            Estimate uses {(monthlyEstimate.calibrationFactor * 100).toFixed(0)}% calibration factor
+            {framerOptimizationEnabled
+              ? ' accounting for Framer CDN, browser caching, and lazy loading.'
+              : ' for browser caching only.'}
+          </div>
         </CollapsibleSection>
 
+        <div style={{ height: '1px', backgroundColor: themeBorders.subtle }} />
+
         <CollapsibleSection
-          title="Breakpoint Estimates"
+          title="Device breakdown"
           defaultCollapsed={true}
         >
           <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: spacing.md
+            gap: spacing.sm
           }}>
-            <div style={{
-              fontSize: typography.fontSize.xs,
-              color: framerColors.textSecondary,
-              lineHeight: typography.lineHeight.relaxed,
-              marginBottom: spacing.sm
-            }}>
-              Framer serves different image sizes based on viewport. Each breakpoint shows the estimated page weight for that device type.
-            </div>
-
-            {(['mobile', 'tablet', 'desktop'] as const).map((breakpoint) => {
+            {(['desktop', 'tablet', 'mobile'] as const).map((breakpoint) => {
               const data = analysis.overallBreakpoints[breakpoint]
               const info = getBreakpointInfo(breakpoint)
-              const pageWeightMB = data.totalBytes / (1024 * 1024)
-              const monthlyGB = (pageWeightMB * monthlyPageviews) / 1024
 
               return (
                 <div
                   key={breakpoint}
                   style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     padding: spacing.md,
                     backgroundColor: surfaces.tertiary,
                     borderRadius: borders.radius.md
                   }}
                 >
-                  <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'baseline',
-                    marginBottom: spacing.xs
-                  }}>
-                    <div>
-                      <div style={{
-                        fontSize: typography.fontSize.sm,
-                        fontWeight: typography.fontWeight.semibold,
-                        color: framerColors.text,
-                        marginBottom: spacing.xxs
-                      }}>
-                        {info.label} ({info.width})
-                      </div>
-                      <div style={{
-                        fontSize: typography.fontSize.xs,
-                        color: framerColors.textSecondary
-                      }}>
-                        {info.description} • {info.distribution}
-                      </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: spacing.sm }}>
+                    <div style={{
+                      fontSize: typography.fontSize.xs,
+                      fontWeight: typography.fontWeight.medium,
+                      color: framerColors.text
+                    }}>
+                      {info.label}
                     </div>
                     <div style={{
-                      textAlign: 'right'
+                      fontSize: typography.fontSize.xs,
+                      color: framerColors.textTertiary
                     }}>
-                      <div style={{
-                        fontSize: typography.fontSize.sm,
-                        fontWeight: typography.fontWeight.bold,
-                        color: framerColors.text
-                      }}>
-                        {formatBytes(data.totalBytes)}
-                      </div>
-                      <div style={{
-                        fontSize: typography.fontSize.xs,
-                        color: framerColors.textSecondary
-                      }}>
-                        {monthlyGB.toFixed(2)} GB/month
-                      </div>
+                      {info.distribution}
                     </div>
+                  </div>
+                  <div style={{
+                    fontSize: typography.fontSize.xs,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: framerColors.text
+                  }}>
+                    {formatBytes(data.totalBytes)}
                   </div>
                 </div>
               )
             })}
+          </div>
+          <div style={{
+            fontSize: typography.fontSize.xs,
+            color: framerColors.textTertiary,
+            marginTop: spacing.md
+          }}>
+            Framer serves optimized images per device size
           </div>
         </CollapsibleSection>
       </div>

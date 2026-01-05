@@ -9,7 +9,7 @@ export interface DebugLogEntry {
 
 class DebugLogger {
   private logs: DebugLogEntry[] = []
-  private maxLogs = 500
+  private maxLogs = 1000 // Increased from 500 to capture CMS detection logs
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   log(level: DebugLogEntry['level'], message: string, data?: any) {

@@ -18,6 +18,7 @@ interface RecommendationCardProps {
 
 export function RecommendationCard({ recommendation, onIgnore, isIgnored = false }: RecommendationCardProps) {
   const [isOptimizing, setIsOptimizing] = useState(false)
+  const [isSelecting, setIsSelecting] = useState(false)
   const [showReplaceModal, setShowReplaceModal] = useState(false)
   const [optimizationProgress, setOptimizationProgress] = useState<string>('')
   const [isExpanded, setIsExpanded] = useState(false)
@@ -139,7 +140,7 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
   const handleNavigate = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    
+
     debugLog.info('Select in Canvas clicked:', {
       nodeId: recommendation.nodeId,
       nodeName: recommendation.nodeName,
@@ -154,16 +155,18 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
       return
     }
 
+    setIsSelecting(true)
+
     try {
       // If recommendation has page info, try to navigate to that page first
       if (recommendation.pageId && recommendation.pageName) {
         try {
           debugLog.info(`Navigating to page: ${recommendation.pageName} (${recommendation.pageId})`)
-          
+
           // Try to get the page node and set it as selection to navigate
           // Framer doesn't have a direct navigateToPage API, but selecting the page node should work
           const pageNode = await framer.getNode(recommendation.pageId)
-          
+
           if (pageNode) {
             // Select the page to navigate to it
             await framer.setSelection([recommendation.pageId])
@@ -180,41 +183,41 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
           framer.notify(`Could not navigate to page "${recommendation.pageName}". Selecting node directly...`, { variant: 'info', durationMs: 2000 })
         }
       }
-      
+
       debugLog.info('Attempting to select node:', {
         nodeId: recommendation.nodeId,
         nodeName: recommendation.nodeName
       })
-      
+
       // Verify the node exists
       const node = await framer.getNode(recommendation.nodeId)
-      
+
       if (!node) {
         const pageInfo = recommendation.pageName ? ` on page "${recommendation.pageName}"` : ''
         framer.notify(`Node "${recommendation.nodeName}"${pageInfo} not found. It may have been moved or deleted. Try rescanning.`, { variant: 'error' })
         return
       }
-      
+
       debugLog.info('Node found:', {
         id: node.id,
         name: node.name,
         type: node.type
       })
-      
+
       // Attempt selection
       await framer.setSelection([recommendation.nodeId])
-      
+
       debugLog.info('Selection successful')
       const pageInfo = recommendation.pageName ? ` on "${recommendation.pageName}"` : ''
       framer.notify(`Selected "${recommendation.nodeName}"${pageInfo} in canvas`, { variant: 'success', durationMs: 2000 })
     } catch (error) {
       debugLog.error('Selection failed:', error)
-      
+
       // Try to get more info about the error
       try {
         const node = await framer.getNode(recommendation.nodeId)
         const pageInfo = recommendation.pageName ? ` on page "${recommendation.pageName}"` : ''
-        
+
         if (node) {
           // Node exists but selection failed - this is unusual
           framer.notify(`Found node but couldn't select it${pageInfo}. Try selecting "${recommendation.nodeName}" manually in the canvas, or click Rescan to refresh the analysis.`, { variant: 'error', durationMs: 4000 })
@@ -226,6 +229,8 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
         const pageInfo = recommendation.pageName ? ` on page "${recommendation.pageName}"` : ''
         framer.notify(`Could not find "${recommendation.nodeName}"${pageInfo}. It may have been moved or deleted. Click Rescan to refresh, or look for it manually in the canvas.`, { variant: 'error', durationMs: 4000 })
       }
+    } finally {
+      setIsSelecting(false)
     }
   }
 
@@ -325,19 +330,59 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
             {recommendation.nodeName || 'Unnamed'}
           </div>
 
-          {/* Page Name - Visible under title */}
-          {(recommendation.pageName || recommendation.pageSlug) && (
-            <div style={{
-              fontSize: typography.fontSize.xs,
-              color: framerColors.textSecondary,
-              lineHeight: typography.lineHeight.normal,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}>
-              {recommendation.pageName || recommendation.pageSlug}
-            </div>
-          )}
+          {/* Route Info - Shows the Site Page route (not breakpoint artboard) */}
+          {(() => {
+            // Use pageSlug if available (proper route), otherwise fall back to pageName
+            const routeSlug = recommendation.pageSlug || ''
+            const routeName = recommendation.pageName || ''
+
+            // Format display text - show route slug if available
+            let displayText = ''
+            if (routeSlug) {
+              // Route slug is already formatted like "/about" or "/"
+              displayText = routeSlug === '/' ? '/ (Home)' : routeSlug
+            } else if (routeName) {
+              // Fall back to page name, format as slug
+              displayText = routeName.toLowerCase() === 'home' ? '/ (Home)' :
+                           `/${routeName.toLowerCase().replace(/\s+/g, '-')}`
+            } else {
+              displayText = 'Unknown route'
+            }
+
+            return (
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                color: framerColors.textSecondary,
+                lineHeight: typography.lineHeight.normal,
+                display: 'flex',
+                alignItems: 'center',
+                gap: spacing.xxs
+              }}>
+                {/* Route icon */}
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  style={{ flexShrink: 0, opacity: 0.7 }}
+                >
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                </svg>
+                <span style={{
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  fontFamily: 'monospace',
+                  fontSize: '11px'
+                }}>
+                  {displayText}
+                </span>
+              </div>
+            )
+          })()}
 
           {/* Recommendation Details - Improved Readability */}
           <div style={{
@@ -385,8 +430,20 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
               variant="secondary"
               size="sm"
               fullWidth
+              disabled={isSelecting}
+              icon={isSelecting ? (
+                <svg style={{
+                  width: iconSize.sm,
+                  height: iconSize.sm,
+                  animation: 'spin 1s linear infinite',
+                  flexShrink: 0
+                }} fill="none" viewBox="0 0 24 24">
+                  <circle style={{ opacity: 0.25 }} cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path style={{ opacity: 0.75 }} fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              ) : undefined}
             >
-              Select in Canvas
+              {isSelecting ? 'Selecting...' : 'Select in Canvas'}
             </Button>
           ) : (
             <div style={{
@@ -555,16 +612,57 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
               </div>
             )}
 
-            {/* Page Location (if available) */}
-            {(recommendation.pageSlug || recommendation.pageName) && (
+            {/* Route Location - Shows the Site Page route */}
+            {(() => {
+              const routeSlug = recommendation.pageSlug || ''
+              const routeName = recommendation.pageName || ''
+
+              // Format the route display
+              let displayRoute = ''
+              if (routeSlug) {
+                displayRoute = routeSlug === '/' ? '/ (Home)' : routeSlug
+              } else if (routeName) {
+                displayRoute = routeName.toLowerCase() === 'home' ? '/ (Home)' :
+                              `/${routeName.toLowerCase().replace(/\s+/g, '-')}`
+              }
+
+              if (!displayRoute) return null
+
+              return (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  paddingBottom: recommendation.breakpoint ? spacing.xs : 0,
+                  borderBottom: recommendation.breakpoint ? `1px solid ${themeBorders.subtle}` : 'none'
+                }}>
+                  <span style={{ color: framerColors.textTertiary }}>Route:</span>
+                  <span style={{
+                    fontWeight: typography.fontWeight.medium,
+                    color: framerColors.text,
+                    fontFamily: 'monospace',
+                    fontSize: '11px'
+                  }}>
+                    {displayRoute}
+                  </span>
+                </div>
+              )
+            })()}
+
+            {/* Breakpoint - Shows which breakpoint frame the asset is in */}
+            {recommendation.breakpoint && (
               <div style={{
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center'
               }}>
-                <span style={{ color: framerColors.textTertiary }}>Page:</span>
-                <span style={{ fontWeight: typography.fontWeight.medium, color: framerColors.text }}>
-                  {recommendation.pageSlug || recommendation.pageName}
+                <span style={{ color: framerColors.textTertiary }}>Breakpoint:</span>
+                <span style={{
+                  fontWeight: typography.fontWeight.medium,
+                  color: framerColors.text,
+                  fontSize: typography.fontSize.xs
+                }}>
+                  {recommendation.breakpoint}
                 </span>
               </div>
             )}

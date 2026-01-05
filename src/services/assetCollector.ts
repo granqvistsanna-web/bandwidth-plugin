@@ -56,16 +56,20 @@ export async function collectAllAssets(
     collectAllAssetsEfficient('mobile', true, excludedPageIds)
   ])
 
-  debugLog.info(`Collected ${desktopCanvas.length} desktop, ${tabletCanvas.length} tablet, ${mobileCanvas.length} mobile canvas assets`)
+  debugLog.success(`✅ Canvas collection complete: ${desktopCanvas.length} desktop, ${tabletCanvas.length} tablet, ${mobileCanvas.length} mobile`)
 
   // Collect CMS assets (not breakpoint-specific - CMS assets are the same across breakpoints)
   // Pass desktop canvas URLs for published site comparison
+  debugLog.info('📦 Starting CMS asset detection...')
+
   const canvasImageUrls = new Set(
     desktopCanvas
       .filter(a => a.url)
       .map(a => a.url!)
   )
   const cmsAssets = await collectCMSAssetsWithDeduplication(manualCMSEstimates, canvasImageUrls)
+
+  debugLog.success(`📦 CMS detection complete: ${cmsAssets.assets.length} assets found`)
 
   // Convert manual estimates to AssetInfo
   const manualAssets = convertManualEstimatesToAssets(manualCMSEstimates, cmsAssets.autoDetectedCollections)
@@ -106,55 +110,50 @@ async function collectCMSAssetsWithDeduplication(
 
   // Method 1: Official CMS API
   try {
-    debugLog.info('📦 Detecting CMS collections using official Framer API...')
     const cmsCollections = await detectCMSCollections()
-    debugLog.info(`Found ${cmsCollections.length} CMS collections`)
 
     if (cmsCollections.length > 0) {
       const cmsItems = await collectCMSItems(cmsCollections)
       const totalItems = cmsItems.reduce((sum, c) => sum + c.items.length, 0)
-      
+
       if (totalItems > 0) {
         const itemAssets = await extractAssetsFromCMSItems(cmsItems)
         cmsAssets.push(...itemAssets)
         debugLog.success(`✅ Extracted ${itemAssets.length} assets from ${totalItems} CMS items`)
       }
     }
-  } catch (error) {
-    debugLog.warn('Error using official CMS API:', error)
+  } catch {
+    debugLog.warn('CMS API detection failed, trying heuristic method')
   }
 
-  // Method 2: Heuristic detection
+  // Method 2: Heuristic detection (fallback)
   try {
-    debugLog.info('📦 Collecting CMS assets using heuristic detection...')
     const heuristicAssets = await collectCMSAssets()
     cmsAssets.push(...heuristicAssets)
-  } catch (error) {
-    debugLog.warn('Error in heuristic CMS detection:', error)
+  } catch {
+    // Heuristic detection failed silently
   }
 
-  // Method 3: Published site analysis (most accurate)
+  // Method 3: Published site analysis (most accurate for CMS-only assets)
   try {
     const publishedUrl = await getPublishedUrl()
     if (publishedUrl) {
-      debugLog.info('🌐 Extracting CMS assets from published site...')
       const publishedData = await analyzePublishedSite(publishedUrl)
       const publishedImages = publishedData.resources
         .filter(r => r.type === 'image')
         .map(r => ({ url: r.url, actualBytes: r.actualBytes }))
-      
+
       const cmsAssetsFromPublished = await extractCMSAssetsFromPublishedSite(
         publishedImages,
         canvasImageUrls
       )
-      
+
       if (cmsAssetsFromPublished.length > 0) {
         cmsAssets.push(...cmsAssetsFromPublished)
-        debugLog.success(`✅ Extracted ${cmsAssetsFromPublished.length} CMS assets from published site`)
       }
     }
-  } catch (error) {
-    debugLog.warn('Could not extract CMS assets from published site:', error)
+  } catch {
+    // Published site analysis failed silently
   }
 
   const cmsAssetInfos = convertCMSAssetsToAssetInfo(cmsAssets)

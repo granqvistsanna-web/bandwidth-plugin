@@ -29,7 +29,7 @@ export function getThumbnailUrl(originalUrl: string, maxSize: number = 64): stri
       url.searchParams.set('fit', 'cover') // Maintain aspect ratio
       
       return url.toString()
-    } catch (error) {
+    } catch {
       // If URL parsing fails, return original
       return originalUrl
     }
@@ -39,7 +39,7 @@ export function getThumbnailUrl(originalUrl: string, maxSize: number = 64): stri
   // Many CDNs support similar query parameters
   try {
     const url = new URL(originalUrl)
-    
+
     // Try common thumbnail parameters
     if (!url.searchParams.has('w') && !url.searchParams.has('width')) {
       url.searchParams.set('w', maxSize.toString())
@@ -50,9 +50,9 @@ export function getThumbnailUrl(originalUrl: string, maxSize: number = 64): stri
     if (!url.searchParams.has('q') && !url.searchParams.has('quality')) {
       url.searchParams.set('q', '30')
     }
-    
+
     return url.toString()
-  } catch (error) {
+  } catch {
     // If URL parsing fails, return original
     return originalUrl
   }

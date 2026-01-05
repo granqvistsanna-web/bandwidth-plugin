@@ -15,9 +15,8 @@
 
 import { framer } from 'framer-plugin'
 import type { AssetInfo } from '../types/analysis'
-import type { FramerAPIWithCMS, FramerCMSCollection, FramerCMSItem, FramerCMSField, FramerCMSFieldValue, ImageAsset, FileAsset, ExtendedCanvasNode } from '../types/framer'
+import type { FramerAPIWithCMS, FramerCMSCollection, FramerCMSItem, FramerCMSFieldValue, ImageAsset, FileAsset, ExtendedCanvasNode } from '../types/framer'
 import { debugLog } from '../utils/debugLog'
-import { handleServiceError, withEmptyArrayFallback, ErrorCode } from '../utils/errorHandler'
 
 export interface CMSCollection {
   id: string
@@ -62,134 +61,59 @@ export interface CMSBandwidthImpact {
 }
 
 /**
- * Diagnostic function to inspect Framer API structure
- */
-async function diagnoseFramerAPI(): Promise<void> {
-  const framerAPI = framer as unknown as FramerAPIWithCMS
-  
-  debugLog.info('🔍 DIAGNOSTIC: Inspecting Framer API structure...')
-  debugLog.info('🔍 framer object keys:', Object.keys(framer).slice(0, 20))
-  debugLog.info('🔍 framer.getCollections type:', typeof framerAPI.getCollections)
-  debugLog.info('🔍 framer.getActiveCollection type:', typeof framerAPI.getActiveCollection)
-  
-  // Try to call and see what happens
-  try {
-    if (typeof framerAPI.getCollections === 'function') {
-      const result = await framerAPI.getCollections()
-      debugLog.info('🔍 getCollections() result type:', typeof result)
-      debugLog.info('🔍 getCollections() is array:', Array.isArray(result))
-      if (Array.isArray(result) && result.length > 0) {
-        const firstCollection = result[0] as FramerCMSCollection
-        debugLog.info('🔍 First collection structure:', {
-          keys: Object.keys(firstCollection),
-          hasGetItems: typeof firstCollection.getItems === 'function',
-          hasGetFields: typeof firstCollection.getFields === 'function',
-          name: firstCollection.name,
-          id: firstCollection.id
-        })
-      }
-    }
-  } catch (error) {
-    handleServiceError(error, 'diagnoseFramerAPI', { logLevel: 'warn' })
-  }
-}
-
-/**
  * Detect CMS collections using official Framer API
  * Uses framer.getCollections() from API 3.0
  */
 export async function detectCMSCollections(): Promise<CMSCollection[]> {
   const collections: CMSCollection[] = []
-  
+
   try {
-    // Run diagnostic first
-    await diagnoseFramerAPI()
-    
-    // Use official Framer CMS API - getCollections() is available in Plugin API v3.0
     const framerAPI = framer as unknown as FramerAPIWithCMS
-    
-    // Explicitly call the CMS API entry point
+
     if (typeof framerAPI.getCollections === 'function') {
-      debugLog.info('📦 Calling framer.getCollections() to access CMS...')
-      try {
-        const apiCollections = await framerAPI.getCollections()
-        debugLog.info(`📦 getCollections() returned:`, {
-          type: typeof apiCollections,
-          isArray: Array.isArray(apiCollections),
-          length: Array.isArray(apiCollections) ? apiCollections.length : 'N/A'
-        })
-        
-        if (Array.isArray(apiCollections)) {
-          if (apiCollections.length === 0) {
-            debugLog.warn('⚠️ getCollections() returned an empty array - no CMS collections found in project')
-          }
-          
-          for (const collection of apiCollections) {
-            debugLog.info(`📦 Processing collection: ${collection.name || 'Unnamed'} (id: ${collection.id || 'no-id'})`)
-            
-            // Get fields to identify image/file fields
-            let fieldNames: string[] = []
-            try {
-              if (typeof collection.getFields === 'function') {
-                debugLog.info(`📦 Getting fields for collection: ${collection.name}...`)
-                const fields = await collection.getFields()
-                debugLog.info(`📦 getFields() returned:`, {
-                  type: typeof fields,
-                  isArray: Array.isArray(fields),
-                  length: Array.isArray(fields) ? fields.length : 'N/A'
-                })
-                
-                if (Array.isArray(fields)) {
-                  fieldNames = fields
-                    .filter((field: any) => {
-                      // Check if field is image or file type
-                      const fieldType = field.type || field.fieldType || field.kind
-                      const isImageOrFile = fieldType === 'image' || fieldType === 'file' || 
-                                           fieldType === 'ImageAsset' || fieldType === 'FileAsset' ||
-                                           fieldType === 'Image' || fieldType === 'File'
-                      if (isImageOrFile) {
-                        debugLog.info(`  ✅ Found image/file field: ${field.name || field.key} (type: ${fieldType})`)
-                      }
-                      return isImageOrFile
-                    })
-                    .map((field: any) => field.name || field.key)
-                  
-                  debugLog.info(`📦 Collection ${collection.name} has ${fieldNames.length} image/file fields:`, fieldNames)
-                } else {
-                  debugLog.warn(`⚠️ getFields() did not return an array for collection ${collection.name}`)
-                }
-              } else {
-                debugLog.warn(`⚠️ Collection ${collection.name} does not have getFields() method`)
+      const apiCollections = await framerAPI.getCollections()
+
+      if (Array.isArray(apiCollections) && apiCollections.length > 0) {
+        debugLog.info(`📦 Found ${apiCollections.length} CMS collections`)
+
+        for (const collection of apiCollections) {
+          // Get fields to identify image/file fields
+          let fieldNames: string[] = []
+          try {
+            if (typeof collection.getFields === 'function') {
+              const fields = await collection.getFields()
+
+              if (Array.isArray(fields)) {
+                fieldNames = fields
+                  .filter((field: unknown) => {
+                    const f = field as { type?: string; fieldType?: string; kind?: string }
+                    const fieldType = f.type || f.fieldType || f.kind
+                    return fieldType === 'image' || fieldType === 'file' ||
+                           fieldType === 'ImageAsset' || fieldType === 'FileAsset' ||
+                           fieldType === 'Image' || fieldType === 'File'
+                  })
+                  .map((field: unknown) => {
+                    const f = field as { name?: string; key?: string }
+                    return f.name || f.key || ''
+                  })
               }
-            } catch (error) {
-              debugLog.warn(`Could not get fields for collection ${collection.name}:`, error)
             }
-            
-            collections.push({
-              id: collection.id || collection.name,
-              name: collection.name || 'Unnamed Collection',
-              itemCount: collection.itemCount || 0,
-              fieldNames: fieldNames.length > 0 ? fieldNames : undefined
-            })
+          } catch {
+            // Field detection failed silently
           }
-          debugLog.success(`✅ Found ${collections.length} CMS collections via official API`)
-          return collections
-        } else {
-          debugLog.warn(`⚠️ getCollections() did not return an array. Got:`, typeof apiCollections)
+
+          collections.push({
+            id: collection.id || collection.name,
+            name: collection.name || 'Unnamed Collection',
+            itemCount: collection.itemCount || 0,
+            fieldNames: fieldNames.length > 0 ? fieldNames : undefined
+          })
         }
-      } catch (error) {
-        debugLog.error('❌ Error calling getCollections():', error)
-        debugLog.error('Error details:', {
-          message: error instanceof Error ? error.message : String(error),
-          stack: error instanceof Error ? error.stack : undefined
-        })
+        return collections
       }
-    } else {
-      debugLog.warn('⚠️ framer.getCollections is not a function - CMS API may not be available')
     }
-    
+
     // Fallback: Try to find collections by looking for nodes with collectionId attribute
-    debugLog.info('⚠️ Official CMS API not available, trying heuristic detection...')
     const nodesWithCollection = await framer.getNodesWithAttributeSet('collectionId')
     
     const collectionMap = new Map<string, CMSCollection>()
@@ -224,118 +148,50 @@ export async function detectCMSCollections(): Promise<CMSCollection[]> {
  */
 export async function collectCMSItems(collections: CMSCollection[]): Promise<Array<{ collectionId: string; items: FramerCMSItem[] }>> {
   const results: Array<{ collectionId: string; items: FramerCMSItem[] }> = []
-  
+
   try {
     const framerAPI = framer as unknown as FramerAPIWithCMS
-    
-    // Get all collections from API
-    if (typeof framerAPI.getCollections === 'function') {
-      debugLog.info(`📦 Getting API collections to match with ${collections.length} detected collections...`)
-      const apiCollections = await framerAPI.getCollections()
-      debugLog.info(`📦 API returned ${apiCollections?.length || 0} collections`)
-      
-      if (!Array.isArray(apiCollections) || apiCollections.length === 0) {
-        debugLog.warn('⚠️ getCollections() returned empty or invalid result')
-        return results
+
+    if (typeof framerAPI.getCollections !== 'function') {
+      return results
+    }
+
+    const apiCollections = await framerAPI.getCollections()
+
+    if (!Array.isArray(apiCollections) || apiCollections.length === 0) {
+      return results
+    }
+
+    for (const collection of collections) {
+      // Find matching API collection
+      const apiCollection = (apiCollections as FramerCMSCollection[]).find((c) => {
+        return c.id === collection.id ||
+               c.name === collection.name ||
+               String(c.id) === String(collection.id) ||
+               (c.name || '').toLowerCase() === (collection.name || '').toLowerCase()
+      })
+
+      if (!apiCollection || typeof apiCollection.getItems !== 'function') {
+        continue
       }
-      
-      // Log all API collections for debugging
-      debugLog.info('📦 API Collections:', (apiCollections as FramerCMSCollection[]).map((c) => ({
-        id: c.id,
-        name: c.name,
-        hasGetItems: typeof c.getItems === 'function'
-      })))
-      
-      for (const collection of collections) {
-        debugLog.info(`📦 Looking for collection: ${collection.name} (id: ${collection.id})`)
-        
-        // Find matching API collection - try multiple matching strategies
-        const apiCollection = (apiCollections as FramerCMSCollection[]).find((c) => {
-          const idMatch = c.id === collection.id
-          const nameMatch = c.name === collection.name
-          const idStringMatch = String(c.id) === String(collection.id)
-          const nameLowerMatch = (c.name || '').toLowerCase() === (collection.name || '').toLowerCase()
-          
-          if (idMatch || nameMatch || idStringMatch || nameLowerMatch) {
-            debugLog.info(`✅ Matched collection: ${c.name} (id: ${c.id}) with ${collection.name} (id: ${collection.id})`)
-            return true
-          }
-          return false
-        })
-        
-        if (!apiCollection) {
-          debugLog.warn(`⚠️ Could not find matching API collection for: ${collection.name} (id: ${collection.id})`)
-          debugLog.info('Available API collections:', (apiCollections as FramerCMSCollection[]).map((c) => `${c.name} (${c.id})`))
-          continue
-        }
-        
-        if (typeof apiCollection.getItems !== 'function') {
-          debugLog.warn(`⚠️ Collection ${apiCollection.name} does not have getItems() method`)
-          continue
-        }
-        
-        try {
-          debugLog.info(`📦 Calling getItems() on collection: ${apiCollection.name}...`)
-          const items = await apiCollection.getItems()
-          
-          // Detailed diagnostic logging
-          debugLog.info(`📦 getItems() returned:`, {
-            type: typeof items,
-            isArray: Array.isArray(items),
-            length: Array.isArray(items) ? items.length : 'N/A',
-            constructor: items?.constructor?.name
-          })
-          
-          if (Array.isArray(items) && items.length > 0) {
-            const firstItem = items[0]
-            debugLog.info(`📦 First item structure:`, {
-              keys: Object.keys(firstItem),
-              hasFieldData: 'fieldData' in firstItem,
-              hasData: 'data' in firstItem,
-              hasFields: 'fields' in firstItem,
-              fieldDataKeys: firstItem.fieldData ? Object.keys(firstItem.fieldData) : [],
-              fieldDataSample: firstItem.fieldData ? Object.entries(firstItem.fieldData).slice(0, 3).map(([k, v]) => ({
-                key: k,
-                valueType: typeof v,
-                valueIsObject: typeof v === 'object' && v !== null,
-                valueKeys: typeof v === 'object' && v !== null ? Object.keys(v).slice(0, 5) : []
-              })) : []
-            })
-          }
-          
-          if (Array.isArray(items)) {
-            if (items.length === 0) {
-              debugLog.warn(`⚠️ Collection ${apiCollection.name} has no items`)
-            } else {
-              results.push({
-                collectionId: collection.id,
-                items: items
-              })
-              debugLog.success(`✅ Collected ${items.length} items from collection: ${collection.name}`)
-            }
-          } else {
-            debugLog.warn(`⚠️ getItems() did not return an array for collection ${apiCollection.name}. Got:`, typeof items)
-          }
-        } catch (error) {
-          debugLog.error(`❌ Error getting items from collection ${collection.name}:`, error)
-          debugLog.error('Error details:', {
-            message: error instanceof Error ? error.message : String(error),
-            stack: error instanceof Error ? error.stack : undefined
+
+      try {
+        const items = await apiCollection.getItems()
+
+        if (Array.isArray(items) && items.length > 0) {
+          results.push({
+            collectionId: collection.id,
+            items: items
           })
         }
+      } catch {
+        // Item collection failed for this collection
       }
-    } else {
-      debugLog.warn('⚠️ framer.getCollections is not a function - CMS API may not be available')
     }
   } catch (error) {
-    debugLog.error('❌ Error collecting CMS items:', error)
-    debugLog.error('Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
-    })
+    debugLog.warn('Error collecting CMS items:', error instanceof Error ? error.message : String(error))
   }
-  
-  debugLog.info(`📦 Total CMS items collected: ${results.reduce((sum, r) => sum + r.items.length, 0)} items from ${results.length} collections`)
+
   return results
 }
 
@@ -373,8 +229,6 @@ export async function extractAssetsFromCMSItems(
       )
     })
     
-    debugLog.info('📦 Using isImageAsset() and isFileAsset() helpers from Framer API')
-    
     // Get collection names for better asset naming
     const collectionMap = new Map<string, string>()
     try {
@@ -384,78 +238,59 @@ export async function extractAssetsFromCMSItems(
           collectionMap.set(apiCollection.id || apiCollection.name, apiCollection.name || 'Unnamed Collection')
         }
       }
-    } catch (error) {
-      debugLog.warn('Could not get collection names:', error)
+    } catch {
+      // Collection name lookup failed
     }
-    
+
     for (const { collectionId, items } of cmsItems) {
       const collectionName = collectionMap.get(collectionId) || collectionId
-      debugLog.info(`📦 Processing collection: ${collectionName} with ${items.length} items`)
-      
+
       for (const item of items) {
-         
         const itemData = item as FramerCMSItem
-        
+
         // Try multiple possible field data locations
-        let fieldData: Record<string, FramerCMSFieldValue> = itemData.fields || {}
+        let fieldData: Record<string, FramerCMSFieldValue> =
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          itemData.fieldData || itemData.fields || (itemData as any).data || {}
         const itemId = itemData.id || 'unknown'
-        const itemSlug = itemData.slug || itemData.id || 'unknown' // Extract slug from CMS item
-        
-        // Check if fieldData values are wrapped in { value, type } structure (new API format)
-        // According to Framer docs, fieldData might be structured as { value, type } objects
+        const itemSlug = itemData.slug || itemData.id || 'unknown'
+
+        // Unwrap fieldData values if wrapped in { value, type } structure
         const unwrappedFieldData: Record<string, FramerCMSFieldValue> = {}
         for (const [key, value] of Object.entries(fieldData)) {
-          // Check if value is an object with { value, type } structure
           if (value && typeof value === 'object' && 'value' in value && !('url' in value)) {
-            // New API format: { value: actualValue, type: 'image' | 'file' | ... }
             const wrappedValue = value as { value: unknown; type?: string }
             unwrappedFieldData[key] = wrappedValue.value as FramerCMSFieldValue
-            debugLog.info(`📦 Unwrapped field ${key} from {value, type} structure (type: ${wrappedValue.type})`)
           } else {
-            // Old format: direct value
             unwrappedFieldData[key] = value
           }
         }
         fieldData = unwrappedFieldData
-        
-        debugLog.info(`📦 Processing item: ${itemId} (slug: ${itemSlug})`)
-        debugLog.info(`📦 Item fieldData keys:`, Object.keys(fieldData))
-        
-        let foundAssetsInItem = 0
-        
+
         // Iterate through all fields in fieldData
-        // fieldData contains the actual CMS field values - they are asset objects, not strings
         for (const [fieldName, fieldValue] of Object.entries(fieldData)) {
           try {
-            // CRITICAL: Use official API helpers to check if field value is an image or file asset
-            // CMS fields return asset objects, not plain text URLs - must use isImageAsset()/isFileAsset()
+            // Check if field value is an image or file asset
             if (isImageAsset(fieldValue) || isFileAsset(fieldValue)) {
-              foundAssetsInItem++
-               
               const asset = fieldValue as ImageAsset | FileAsset
               const imageUrl = asset.url
-              
+
               if (imageUrl && typeof imageUrl === 'string') {
-                // Try to get actual dimensions and bytes using ImageAsset.measure()
                 let estimatedDimensions = { width: 0, height: 0 }
                 let estimatedBytes = 0
-                
-                // Use official API to measure the image if it's an ImageAsset
+
+                // Try to measure the image
                 if (isImageAsset(asset) && typeof asset.measure === 'function') {
                   try {
                     const size = await asset.measure()
                     estimatedDimensions = { width: size.width, height: size.height }
                     estimatedBytes = estimateImageBytes(estimatedDimensions)
-                    debugLog.info(`✅ Measured CMS image: ${collectionName} → ${fieldName} (${size.width}×${size.height}, ${(estimatedBytes / 1024).toFixed(1)} KB)`)
-                  } catch (error) {
-                    debugLog.warn(`Could not measure CMS image ${fieldName}:`, error)
+                  } catch {
                     // Fall back to URL-based estimation
                     try {
                       estimatedDimensions = await estimateImageDimensions(imageUrl)
                       estimatedBytes = estimateImageBytes(estimatedDimensions)
-                    } catch (dimError) {
-                      debugLog.warn(`Could not estimate dimensions from URL for ${fieldName}:`, dimError)
-                      // Final fallback: use default dimensions
+                    } catch {
                       estimatedDimensions = { width: 1920, height: 1080 }
                       estimatedBytes = estimateImageBytes(estimatedDimensions)
                     }
@@ -465,20 +300,18 @@ export async function extractAssetsFromCMSItems(
                   try {
                     estimatedDimensions = await estimateImageDimensions(imageUrl)
                     estimatedBytes = estimateImageBytes(estimatedDimensions)
-                  } catch (dimError) {
-                    debugLog.warn(`Could not estimate dimensions from URL for ${fieldName}:`, dimError)
-                    // Final fallback: use default dimensions
+                  } catch {
                     estimatedDimensions = { width: 1920, height: 1080 }
                     estimatedBytes = estimateImageBytes(estimatedDimensions)
                   }
                 }
-                
+
                 assets.push({
                   id: `cms-${collectionId}-${itemId}-${fieldName}`,
                   collectionId,
                   collectionName,
                   itemId,
-                  itemSlug, // Add slug to CMS asset
+                  itemSlug,
                   estimatedBytes,
                   estimatedDimensions,
                   format: detectImageFormat(imageUrl),
@@ -487,48 +320,23 @@ export async function extractAssetsFromCMSItems(
                   status: 'found',
                   fieldName
                 })
-                debugLog.info(`✅ Found ${foundAssetsInItem} asset(s) in item ${itemId} so far`)
-              }
-            } else {
-              // Log why this field was skipped (only for first few items to reduce noise)
-              if (foundAssetsInItem < 1) {
-                if (fieldValue === null || fieldValue === undefined) {
-                  debugLog.info(`  ⏭️ Skipped field ${fieldName}: null/undefined`)
-                } else if (typeof fieldValue === 'string') {
-                  debugLog.info(`  ⏭️ Skipped field ${fieldName}: string value (not an asset object)`)
-                } else {
-                  debugLog.info(`  ⏭️ Skipped field ${fieldName}: not recognized as image/file asset`)
-                }
               }
             }
-          } catch (fieldError) {
-            // Catch errors per field so one bad field doesn't stop processing the whole item
-            debugLog.warn(`Error processing field ${fieldName} in item ${itemId}:`, fieldError)
+          } catch {
+            // Skip this field
             continue
           }
         }
-        
-        if (foundAssetsInItem === 0) {
-          debugLog.warn(`⚠️ Item ${itemId} has no image/file assets in its fields`)
-        } else {
-          debugLog.info(`✅ Found ${foundAssetsInItem} assets in item ${itemId}`)
-        }
       }
     }
-    
-    const totalItems = cmsItems.reduce((sum, c) => sum + c.items.length, 0)
-    debugLog.success(`✅ Extracted ${assets.length} assets from ${totalItems} CMS items using official API`)
-    
-    if (assets.length === 0 && totalItems > 0) {
-      debugLog.warn('⚠️ No assets extracted despite having CMS items. Possible issues:')
-      debugLog.warn('  1. Items may not have image/file fields')
-      debugLog.warn('  2. Field values may not be asset objects (check fieldData structure)')
-      debugLog.warn('  3. isImageAsset()/isFileAsset() helpers may not be working correctly')
+
+    if (assets.length > 0) {
+      debugLog.success(`✅ Extracted ${assets.length} CMS assets`)
     }
   } catch (error) {
-    debugLog.warn('Error extracting assets from CMS items:', error)
+    debugLog.warn('Error extracting assets from CMS items:', error instanceof Error ? error.message : String(error))
   }
-  
+
   return assets
 }
 
@@ -538,77 +346,60 @@ export async function extractAssetsFromCMSItems(
  */
 export async function collectCMSAssets(): Promise<CMSAsset[]> {
   const allAssets: CMSAsset[] = []
-  
+
   try {
-    // Method 1: Check component controls for CMS-like data (like Team Card with image controls)
-    debugLog.info('🔍 Checking component controls for CMS data...')
-    try {
-      const allFrames = await framer.getNodesWithType('Frame')
-      let componentCMSAssets = 0
+    // Check component controls for CMS-like data
+    const allFrames = await framer.getNodesWithType('Frame')
 
-      for (const frame of allFrames) {
-         
-        const extendedFrame = frame as ExtendedCanvasNode
+    for (const frame of allFrames) {
+      const extendedFrame = frame as ExtendedCanvasNode
+      const controls = extendedFrame.controls as Record<string, unknown> | undefined
 
-        // Check if this component has controls that look like CMS data
-        const controls = extendedFrame.controls as Record<string, unknown> | undefined
-        if (controls && typeof controls === 'object') {
-          // Look for image fields in controls
-          for (const [key, value] of Object.entries(controls)) {
-            if (value && typeof value === 'object') {
-              const controlValue = value as Record<string, unknown>
+      if (controls && typeof controls === 'object') {
+        for (const [key, value] of Object.entries(controls)) {
+          if (value && typeof value === 'object') {
+            const controlValue = value as Record<string, unknown>
 
-              // Check if this control has an image src/url
-              if (controlValue.src || controlValue.url || controlValue.value) {
-                let imageUrl: string | undefined
+            if (controlValue.src || controlValue.url || controlValue.value) {
+              let imageUrl: string | undefined
 
-                if (controlValue.src) {
-                  imageUrl = typeof controlValue.src === 'string' ? controlValue.src : undefined
-                } else if (controlValue.url) {
-                  imageUrl = typeof controlValue.url === 'string' ? controlValue.url : undefined
-                } else if (controlValue.value && typeof controlValue.value === 'string' && controlValue.value.startsWith('data:framer/asset-reference')) {
-                  // Framer asset reference - extract the URL
-                  const match = controlValue.value.match(/https:\/\/[^\s]+/)
-                  imageUrl = match ? match[0] : undefined
-                }
+              if (controlValue.src) {
+                imageUrl = typeof controlValue.src === 'string' ? controlValue.src : undefined
+              } else if (controlValue.url) {
+                imageUrl = typeof controlValue.url === 'string' ? controlValue.url : undefined
+              } else if (controlValue.value && typeof controlValue.value === 'string' && controlValue.value.startsWith('data:framer/asset-reference')) {
+                const match = controlValue.value.match(/https:\/\/[^\s]+/)
+                imageUrl = match ? match[0] : undefined
+              }
 
-                if (imageUrl && imageUrl.startsWith('http')) {
-                  // This looks like a CMS image in component controls
-                  const estimatedDimensions = controlValue.pixelWidth && controlValue.pixelHeight
-                    ? { width: controlValue.pixelWidth, height: controlValue.pixelHeight }
-                    : await estimateImageDimensions(imageUrl)
-                  const estimatedBytes = estimateImageBytes(estimatedDimensions)
+              if (imageUrl && imageUrl.startsWith('http')) {
+                const estimatedDimensions = controlValue.pixelWidth && controlValue.pixelHeight
+                  ? { width: controlValue.pixelWidth, height: controlValue.pixelHeight }
+                  : await estimateImageDimensions(imageUrl)
+                const estimatedBytes = estimateImageBytes(estimatedDimensions)
 
-                  allAssets.push({
-                    id: `cms-component-${frame.id}-${key}`,
-                    collectionId: 'component-controls',
-                    collectionName: frame.name || 'Component Controls',
-                    estimatedBytes,
-                    estimatedDimensions,
-                    format: detectImageFormat(imageUrl),
-                    isManualEstimate: false,
-                    url: imageUrl,
-                    status: 'found',
-                    fieldName: key
-                  })
-
-                  componentCMSAssets++
-                  debugLog.info(`Found CMS asset in component controls: ${frame.name} → ${key} (${(estimatedBytes / 1024).toFixed(1)} KB)`)
-                }
+                allAssets.push({
+                  id: `cms-component-${frame.id}-${key}`,
+                  collectionId: 'component-controls',
+                  collectionName: frame.name || 'Component Controls',
+                  estimatedBytes,
+                  estimatedDimensions,
+                  format: detectImageFormat(imageUrl),
+                  isManualEstimate: false,
+                  url: imageUrl,
+                  status: 'found',
+                  fieldName: key
+                })
               }
             }
           }
         }
       }
-
-      debugLog.info(`Found ${componentCMSAssets} CMS assets in component controls`)
-    } catch (error) {
-      debugLog.warn('Error checking component controls:', error)
     }
-  } catch (error) {
-    debugLog.warn('Error collecting CMS assets:', error)
+  } catch {
+    // Heuristic detection failed
   }
-  
+
   return allAssets
 }
 

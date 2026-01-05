@@ -10,6 +10,7 @@ import { debugLog } from '../../utils/debugLog'
 import type { ManualCMSEstimate } from '../../hooks/useAnalysis'
 import { spacing, typography, borders, colors, backgrounds, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 import { StatusIndicator } from '../common/StatusIndicator'
+import { ClipboardDocumentIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid'
 
 interface OverviewPanelProps {
   analysis: ProjectAnalysis
@@ -240,7 +241,7 @@ export function OverviewPanel({
                     fontSize: typography.fontSize.xs,
                     fontWeight: typography.fontWeight.medium,
                     color: framerColors.textSecondary,
-                    backgroundColor: 'rgba(0, 0, 0, 0.06)',
+                    backgroundColor: 'var(--framer-color-bg-tertiary)',
                     padding: `${spacing.xxs} ${spacing.sm}`,
                     borderRadius: borders.radius.full,
                     whiteSpace: 'nowrap' as const
@@ -467,6 +468,15 @@ export function OverviewPanel({
               onClick={handleExportMarkdown}
               variant="secondary"
               size="sm"
+              icon={
+                <ClipboardDocumentIcon 
+                  style={{ 
+                    width: '14px',
+                    height: '14px',
+                    flexShrink: 0
+                  }}
+                />
+              }
             >
               Copy as Markdown
             </Button>
@@ -474,6 +484,15 @@ export function OverviewPanel({
               onClick={handleExportJSON}
               variant="secondary"
               size="sm"
+              icon={
+                <ArrowDownTrayIcon 
+                  style={{ 
+                    width: '14px',
+                    height: '14px',
+                    flexShrink: 0
+                  }}
+                />
+              }
             >
               Download JSON
             </Button>

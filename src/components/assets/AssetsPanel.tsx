@@ -225,53 +225,68 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
             onAssetClick={handleAssetClick}
           />
         ) : (
-          <div style={{ 
-            height: '100%', 
-            display: 'flex', 
-            alignItems: 'center', 
-            justifyContent: 'center' 
+          <div style={{
+            height: '100%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}>
-            <div style={{ 
-              textAlign: 'center', 
-              padding: `${spacing.xl} ${spacing.md}`, 
-              maxWidth: '384px', 
-              margin: '0 auto' 
+            <div style={{
+              textAlign: 'center',
+              padding: `${spacing.xl} ${spacing.md}`,
+              maxWidth: '384px',
+              margin: '0 auto'
             }}>
-              <div style={{ fontSize: typography.fontSize['3xl'], marginBottom: spacing.md }}>
-                {baseAssets.length === 0 ? '📦' : '🔍'}
+              <div style={{
+                marginBottom: spacing.md,
+                display: 'flex',
+                justifyContent: 'center'
+              }}>
+                {baseAssets.length === 0 ? (
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={framerColors.textTertiary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+                    <line x1="12" y1="22.08" x2="12" y2="12" />
+                  </svg>
+                ) : (
+                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={framerColors.textTertiary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
+                  </svg>
+                )}
               </div>
-              <div style={{ 
-                fontWeight: typography.fontWeight.semibold, 
-                fontSize: typography.fontSize.lg, 
+              <div style={{
+                fontWeight: typography.fontWeight.semibold,
+                fontSize: typography.fontSize.lg,
                 marginBottom: spacing.sm,
-                color: framerColors.text 
+                color: framerColors.text
               }}>
                 {baseAssets.length === 0 ? 'No Assets Found' : 'No Matching Assets'}
               </div>
-              <div style={{ 
-                fontSize: typography.fontSize.sm, 
-                marginBottom: spacing.md, 
+              <div style={{
+                fontSize: typography.fontSize.sm,
+                marginBottom: spacing.md,
                 lineHeight: typography.lineHeight.relaxed,
-                color: framerColors.textSecondary 
+                color: framerColors.textSecondary
               }}>
                 {baseAssets.length === 0 ? (
                   <>
                     <p style={{ marginBottom: spacing.sm }}>No images or SVGs were detected in your project.</p>
-                    <p style={{ 
-                      fontSize: typography.fontSize.xs, 
+                    <p style={{
+                      fontSize: typography.fontSize.xs,
                       marginBottom: spacing.sm,
-                      color: framerColors.textTertiary 
+                      color: framerColors.textTertiary
                     }}>
-                      Make sure your pages contain frames with background images or SVG elements. 
-                      Images need to be set as background images on frames to be detected. 
-                      <a 
-                        href="https://www.framer.com/learn/design/images/" 
-                        target="_blank" 
+                      Make sure your pages contain frames with background images or SVG elements.
+                      Images need to be set as background images on frames to be detected.
+                      <a
+                        href="https://www.framer.com/learn/design/images/"
+                        target="_blank"
                         rel="noopener noreferrer"
-                        style={{ 
+                        style={{
                           textDecoration: 'underline',
                           marginLeft: spacing.xs,
-                          color: 'var(--framer-color-tint)' 
+                          color: 'var(--framer-color-tint)'
                         }}
                       >
                         Learn about adding images in Framer
@@ -281,9 +296,9 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
                 ) : (
                   <>
                     <p style={{ marginBottom: spacing.sm }}>No assets match your current filters.</p>
-                    <p style={{ 
+                    <p style={{
                       fontSize: typography.fontSize.xs,
-                      color: framerColors.textTertiary 
+                      color: framerColors.textTertiary
                     }}>
                       Try adjusting your filters or selecting a different page.
                     </p>

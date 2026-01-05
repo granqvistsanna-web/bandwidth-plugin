@@ -2,6 +2,88 @@ import type { AssetInfo, Breakpoint, BreakpointData } from '../types/analysis'
 import { getPixelDensity } from '../utils/formatBytes'
 import { getFramerOptimizationSetting } from '../hooks/useSettings'
 
+/**
+ * Calibration factors for bandwidth estimates based on real-world testing.
+ *
+ * Test data (Jan 2025) - 6 sites tested:
+ * - 0.16 factor: Too aggressive, underestimated 4/6 sites by 4-8x
+ * - 0.50 factor: Better balance based on average of all test sites
+ *
+ * Sites tested: Darling, Studio UX, Hillcrest, Ledger, Maya Labs, Helga
+ * Required factors ranged from 0.16 to 1.62 (median ~0.60)
+ *
+ * Factors account for:
+ * - Framer CDN optimization (WebP/AVIF conversion)
+ * - Responsive image serving (viewport-appropriate sizes)
+ * - Browser caching (return visitors, shared assets)
+ * - Lazy loading (below-fold images may not load)
+ */
+export const BANDWIDTH_CALIBRATION = {
+  // When Framer optimization is ON (published sites)
+  // Balanced factor based on 6 real-world test sites
+  framerOptimizedRealistic: 0.50,
+
+  // When Framer optimization is OFF (source files)
+  // Higher factor - less optimization applied
+  sourceFilesRealistic: 0.70,
+
+  // Labels for UI
+  labels: {
+    realistic: 'Realistic estimate',
+    realisticSubtext: 'Based on real-world testing with Framer CDN',
+    worstCase: 'Worst case',
+    worstCaseSubtext: 'No caching or optimization'
+  }
+} as const
+
+/**
+ * Calculate monthly bandwidth estimates with calibration
+ */
+export interface MonthlyBandwidthEstimate {
+  /** Realistic estimate accounting for CDN, caching, etc. */
+  realistic: number
+  /** Worst-case estimate (raw calculation) */
+  worstCase: number
+  /** Per-visitor bandwidth (realistic) */
+  perVisitorRealistic: number
+  /** Per-visitor bandwidth (worst-case) */
+  perVisitorWorstCase: number
+  /** Calibration factor used */
+  calibrationFactor: number
+  /** Whether Framer optimization is enabled */
+  framerOptimizationEnabled: boolean
+}
+
+/**
+ * Calculate monthly bandwidth with both realistic and worst-case estimates
+ */
+export function calculateMonthlyBandwidth(
+  pageWeightBytes: number,
+  monthlyVisitors: number,
+  framerOptimizationEnabled?: boolean
+): MonthlyBandwidthEstimate {
+  const useOptimization = framerOptimizationEnabled ?? getFramerOptimizationSetting()
+
+  // Worst case: raw calculation (no caching/optimization benefits)
+  const worstCase = pageWeightBytes * monthlyVisitors
+
+  // Realistic: apply calibration factor based on real-world testing
+  const calibrationFactor = useOptimization
+    ? BANDWIDTH_CALIBRATION.framerOptimizedRealistic
+    : BANDWIDTH_CALIBRATION.sourceFilesRealistic
+
+  const realistic = worstCase * calibrationFactor
+
+  return {
+    realistic,
+    worstCase,
+    perVisitorRealistic: realistic / monthlyVisitors,
+    perVisitorWorstCase: pageWeightBytes,
+    calibrationFactor,
+    framerOptimizationEnabled: useOptimization
+  }
+}
+
 export function estimateImageBytes(
   asset: AssetInfo,
   breakpoint: Breakpoint,

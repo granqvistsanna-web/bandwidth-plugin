@@ -170,7 +170,8 @@ export function RecommendationsPanel({
 
       {/* Filter Dropdown */}
       <div style={{
-        marginBottom: spacing.md
+        marginBottom: spacing.md,
+        position: 'relative'
       }}>
         <select
           value={filter}
@@ -181,15 +182,17 @@ export function RecommendationsPanel({
             fontSize: typography.fontSize.xs,
             fontWeight: typography.fontWeight.medium,
             color: framerColors.text,
-            backgroundColor: surfaces.primary,
-            border: 'none',
+            backgroundColor: filter !== 'all' ? surfaces.secondary : surfaces.primary,
+            border: filter !== 'all' 
+              ? `1px solid var(--framer-color-tint)` 
+              : 'none',
             borderRadius: borders.radius.md,
             cursor: 'pointer',
             transition: 'all 0.15s ease',
             appearance: 'none',
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%23525252' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-            backgroundRepeat: 'no-repeat',
-            backgroundPosition: 'right 8px center'
+            boxShadow: filter !== 'all' 
+              ? `0 0 0 1px var(--framer-color-tint-dimmed)` 
+              : 'none'
           }}
         >
           <option value="all">All ({activeRecommendations.length})</option>
@@ -197,6 +200,49 @@ export function RecommendationsPanel({
           <option value="medium">Medium priority ({priorityCounts.medium})</option>
           <option value="low">Low priority ({priorityCounts.low})</option>
         </select>
+        {filter !== 'all' && (
+          <div style={{
+            position: 'absolute',
+            right: spacing.xl,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.xs,
+            pointerEvents: 'none'
+          }}>
+            <div style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--framer-color-tint)',
+              flexShrink: 0
+            }} />
+          </div>
+        )}
+        <svg
+          width="8"
+          height="5"
+          viewBox="0 0 8 5"
+          fill="none"
+          style={{
+            position: 'absolute',
+            right: filter !== 'all' ? spacing.xl : spacing.md,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            pointerEvents: 'none',
+            color: filter !== 'all' ? 'var(--framer-color-tint)' : framerColors.textSecondary,
+            transition: 'color 0.15s ease'
+          }}
+        >
+          <path
+            d="M1 1L4 4L7 1"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
@@ -231,15 +277,21 @@ export function RecommendationsPanel({
         )}
 
         {filteredRecommendations.length === 0 && activeRecommendations.length > 0 && (
-          <div style={{ 
+          <div style={{
             textAlign: 'center',
             padding: `${spacing.xl} ${spacing.md}`
           }}>
-            <div style={{ 
-              fontSize: typography.fontSize.xl,
-              marginBottom: spacing.md
-            }}>🔍</div>
-            <div style={{ 
+            <div style={{
+              marginBottom: spacing.md,
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={framerColors.textTertiary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+            </div>
+            <div style={{
               fontWeight: typography.fontWeight.semibold,
               marginBottom: spacing.sm,
               color: framerColors.text,
@@ -247,7 +299,7 @@ export function RecommendationsPanel({
             }}>
               No {filter} Priority Recommendations
             </div>
-            <div style={{ 
+            <div style={{
               fontSize: typography.fontSize.sm,
               color: framerColors.textSecondary
             }}>
@@ -257,32 +309,38 @@ export function RecommendationsPanel({
         )}
 
         {activeRecommendations.length === 0 && (
-          <div style={{ 
+          <div style={{
             textAlign: 'center',
             padding: `${spacing.xl} ${spacing.md}`,
             maxWidth: '400px',
             margin: '0 auto'
           }}>
             <div style={{
-              fontSize: typography.fontSize['5xl'],
-              marginBottom: spacing.md
-            }}>✓</div>
-            <div style={{ 
+              marginBottom: spacing.md,
+              display: 'flex',
+              justifyContent: 'center'
+            }}>
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--status-success-solid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9 12l2 2 4-4" />
+              </svg>
+            </div>
+            <div style={{
               fontWeight: typography.fontWeight.semibold,
               fontSize: typography.fontSize.lg,
               marginBottom: spacing.sm,
               color: framerColors.text
             }}>
-              Great! No Optimization Needed
+              No Optimization Needed
             </div>
-            <div style={{ 
+            <div style={{
               fontSize: typography.fontSize.sm,
               marginBottom: spacing.md,
               lineHeight: typography.lineHeight.relaxed,
               color: framerColors.textSecondary
             }}>
               <p style={{ marginBottom: spacing.sm }}>Your assets are well-optimized.</p>
-              <p style={{ 
+              <p style={{
                 fontSize: typography.fontSize.xs,
                 color: framerColors.textTertiary
               }}>

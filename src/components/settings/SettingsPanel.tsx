@@ -11,16 +11,7 @@ interface SettingsPanelProps {
 
 export function SettingsPanel({ lastScanned, loading, onSettingsChange }: SettingsPanelProps) {
   const { theme, resolvedTheme, setTheme } = useTheme()
-  const { includeFramerOptimization, toggleFramerOptimization, updateSetting } = useSettings()
-
-  const handleOptimizationToggle = (e: React.MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault()
-    e.stopPropagation()
-    // Toggle the setting
-    toggleFramerOptimization()
-    // Notify parent to trigger rescan
-    onSettingsChange?.()
-  }
+  const { includeFramerOptimization, toggleFramerOptimization } = useSettings()
 
   const themeOptions: { value: ThemeMode; label: string; icon: JSX.Element }[] = [
     {

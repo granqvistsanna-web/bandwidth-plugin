@@ -1,5 +1,42 @@
 export type Breakpoint = 'mobile' | 'tablet' | 'desktop'
 
+/**
+ * Page usage information for an asset
+ */
+export interface PageUsageInfo {
+  pageId: string
+  pageName: string
+  pageSlug: string // Route like "/about", "/services"
+  hierarchyPath?: string // Path to the layer in hierarchy (optional)
+}
+
+/**
+ * Result of asset page usage lookup
+ */
+export interface AssetPageUsage {
+  /** Whether the asset was found */
+  found: boolean
+  /** The asset identifier used for lookup */
+  assetIdentifier: {
+    nodeId?: string
+    url?: string
+    imageAssetId?: string
+  }
+  /** Pages where this asset is used (empty if not found or CMS) */
+  pages: PageUsageInfo[]
+  /** Whether this is a CMS-driven asset */
+  isCMSAsset: boolean
+  /** If asset couldn't be resolved, explains why */
+  unresolvedReason?: 'not_found' | 'cms_dynamic' | 'external_url' | 'component_instance' | 'unknown'
+  /** Partial information if available even when unresolved */
+  partialInfo?: {
+    possiblePages?: PageUsageInfo[]
+    cmsCollectionName?: string
+    cmsItemSlug?: string
+    externalUrl?: string
+  }
+}
+
 export interface AssetInfo {
   nodeId: string
   nodeName: string
@@ -72,6 +109,7 @@ export interface Recommendation {
   pageName?: string // Framer page name/slug (route like "about")
   pageUrl?: string // Full published URL of the page (if published and available)
   pageSlug?: string // Page slug/route (extracted from pageUrl or pageName)
+  breakpoint?: string // Breakpoint frame: "Desktop", "Tablet", "Mobile"
   imageAssetId?: string // ImageAsset.id for tracking and replacement
   optimalWidth?: number // Target width for optimization
   optimalHeight?: number // Target height for optimization

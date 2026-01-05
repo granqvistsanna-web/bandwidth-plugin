@@ -1,8 +1,8 @@
-import { framer, supportsBackgroundImage, type ImageAsset, type CanvasNode } from 'framer-plugin'
+import { framer, supportsBackgroundImage, type ImageAsset, type CanvasNode, type WebPageNode } from 'framer-plugin'
 import type { AssetInfo, Breakpoint } from '../types/analysis'
 import type { ExtendedCanvasNode } from '../types/framer'
 import { debugLog } from '../utils/debugLog'
-import { handleServiceError, withEmptyArrayFallback, withNullFallback, ErrorCode } from '../utils/errorHandler'
+import { handleServiceError, withEmptyArrayFallback, ErrorCode } from '../utils/errorHandler'
 
 /**
  * Check if a page is a design page (should be excluded from analysis)
@@ -10,11 +10,10 @@ import { handleServiceError, withEmptyArrayFallback, withNullFallback, ErrorCode
  * - Named with "Design", "Component", "Template", "Style" prefixes
  * - Used for design system components, not actual pages
  */
-function isDesignPage(page: { name?: string; type?: string }): boolean {
-  if (!page.name) return false
-  
-  const name = page.name.toLowerCase().trim()
-  
+function isDesignPage(page: { name?: string; type?: string; path?: string }): boolean {
+  const name = (page.name || '').toLowerCase().trim()
+  const path = ((page as WebPageNode).path || '').toLowerCase()
+
   // Common design page naming patterns
   const designPagePatterns = [
     'design',
@@ -33,40 +32,75 @@ function isDesignPage(page: { name?: string; type?: string }): boolean {
     '🎨', // Design emoji
     '📐', // Design emoji
   ]
-  
-  // Check if page name starts with any design pattern
-  return designPagePatterns.some(pattern => name.startsWith(pattern))
+
+  // Check if page name or path starts with any design pattern
+  return designPagePatterns.some(pattern =>
+    name.startsWith(pattern) || path.startsWith('/' + pattern)
+  )
 }
 
 export async function getAllPages(excludeDesignPages: boolean = true): Promise<CanvasNode[]> {
   return withEmptyArrayFallback(async () => {
-    const root = await framer.getCanvasRoot()
-    debugLog.info(`Canvas root found: ${root?.type || 'unknown'}`, root)
+    // Use getNodesWithType to get actual WebPageNodes (site pages/routes)
+    // This is more reliable than getting canvas root children which may include breakpoint artboards
+    let allPages: CanvasNode[]
 
-    // getCanvasRoot returns a single node, we need to get its children (the pages)
-    if (!root) {
-      handleServiceError(
-        new Error('No canvas root found'),
-        'getAllPages',
-        { notifyUser: true, code: ErrorCode.NOT_FOUND }
-      )
-      return []
+    try {
+      const webPages = await framer.getNodesWithType("WebPageNode")
+      debugLog.info(`Found ${webPages.length} WebPageNodes via getNodesWithType`)
+
+      if (webPages.length > 0) {
+        allPages = webPages
+        debugLog.info(`WebPageNodes:`, webPages.map(p => ({
+          name: p.name || 'unnamed',
+          path: (p as WebPageNode).path || 'no path',
+          id: p.id
+        })))
+      } else {
+        // Fallback to canvas root children if no WebPageNodes found
+        debugLog.warn('No WebPageNodes found, falling back to canvas root children')
+        const root = await framer.getCanvasRoot()
+        if (!root) {
+          handleServiceError(
+            new Error('No canvas root found'),
+            'getAllPages',
+            { notifyUser: true, code: ErrorCode.NOT_FOUND }
+          )
+          return []
+        }
+        allPages = await framer.getChildren(root.id)
+        debugLog.info(`Canvas root children:`, allPages.map(p => p.name || p.id))
+      }
+    } catch (error) {
+      // Fallback to canvas root children if getNodesWithType fails
+      debugLog.warn('getNodesWithType failed, falling back to canvas root children:', error)
+      const root = await framer.getCanvasRoot()
+      if (!root) {
+        handleServiceError(
+          new Error('No canvas root found'),
+          'getAllPages',
+          { notifyUser: true, code: ErrorCode.NOT_FOUND }
+        )
+        return []
+      }
+      allPages = await framer.getChildren(root.id)
     }
 
-    // Get all child pages from the root
-    const allPages = await framer.getChildren(root.id)
-    
     // Filter out design pages if requested
-    const pages = excludeDesignPages 
+    const pages = excludeDesignPages
       ? allPages.filter(page => !isDesignPage(page))
       : allPages
-    
+
     const excludedCount = allPages.length - pages.length
     if (excludedCount > 0) {
       debugLog.info(`Excluded ${excludedCount} design page(s) from analysis`)
     }
-    
-    debugLog.success(`Found ${pages.length} page(s) for analysis`, pages.map(p => p.name || p.id))
+
+    debugLog.success(`Found ${pages.length} page(s) for analysis`, pages.map(p => ({
+      name: p.name || 'unnamed',
+      path: (p as WebPageNode).path || 'no path',
+      id: p.id
+    })))
 
     return pages
   }, 'getAllPages')
@@ -88,11 +122,7 @@ export async function traverseNodeTree(
     // Extract asset info from current node
     const asset = await extractAssetInfo(node, breakpoint, currentDepth)
     if (asset) {
-      debugLog.success(`Found asset: ${asset.nodeName} (${asset.type})`, {
-        nodeId: asset.nodeId,
-        url: asset.url,
-        dimensions: asset.dimensions
-      })
+      // Verbose per-asset logging removed to reduce debug log noise
       assets.push(asset)
     }
 
@@ -213,16 +243,13 @@ async function extractAssetInfo(
         try {
           const size = await image.measure()
           actualDimensions = { width: size.width, height: size.height }
-          debugLog.info(`Measured image: ${node.name}`, actualDimensions)
-        } catch (error) {
-          debugLog.warn(`Failed to measure image: ${node.name}`, error)
+        } catch {
           // Continue without actual dimensions
         }
 
         // Get the page this node belongs to
         const page = await getPageForNode(node.id)
-        
-        debugLog.success(`Found backgroundImage: ${node.name}`, { url: imageUrl, type: node.type, page: page?.name })
+        // Verbose per-asset logging removed
       return {
         nodeId: node.id,
         nodeName: node.name || 'Unnamed',
@@ -457,6 +484,39 @@ async function isNodeDescendantOfPage(nodeId: string, pageId: string, currentDep
  * Get the page that a node belongs to by traversing up the parent chain
  * Returns the page node if found, null otherwise
  */
+/**
+ * Check if a node name indicates it's a breakpoint artboard (not a real page)
+ * Breakpoint artboards are containers for responsive layouts, not actual routes
+ */
+function isBreakpointArtboard(name: string): boolean {
+  if (!name) return false
+  const normalized = name.toLowerCase().trim()
+
+  // Common breakpoint artboard names in Framer
+  const breakpointPatterns = [
+    'desktop',
+    'tablet',
+    'phone',
+    'mobile',
+    'laptop',
+    'wide',
+    'narrow',
+    // Size-based patterns
+    '1440',
+    '1200',
+    '1024',
+    '768',
+    '390',
+    '375',
+    '320',
+    // Framer default breakpoint names
+    'breakpoint',
+    '@media'
+  ]
+
+  return breakpointPatterns.some(pattern => normalized.includes(pattern))
+}
+
 async function getPageForNode(nodeId: string): Promise<{ id: string; name: string; url?: string; slug?: string } | null> {
   try {
     // Always fetch the full node to ensure we have parent information
@@ -466,20 +526,22 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
       debugLog.warn(`getPageForNode: Node ${nodeId} not found`)
       return null
     }
-    
+
     // Get all pages for lookup
     const allPages = await getAllPagesCached()
-    
-    // If this node is a page, return it
+
+    // If this node is a page, return it (but skip if it's a breakpoint artboard)
     const nodeType = node.type || ''
     const nodeTypeLower = nodeType.toLowerCase()
-    
+    const nodeName = node.name || ''
+
     // Check if this node is a page by type or by ID match
-    if (nodeTypeLower.includes('page') || allPages.some(p => p.id === node.id)) {
-      const pageName = node.name || 'Unnamed'
+    // BUT skip breakpoint artboards - they're not real pages/routes
+    if ((nodeTypeLower.includes('page') || allPages.some(p => p.id === node.id)) && !isBreakpointArtboard(nodeName)) {
+      const pageName = nodeName || 'Unnamed'
       const pageSlug = pageName
-      debugLog.info(`getPageForNode: Node ${nodeId} IS a page "${pageName}" (type: ${nodeType})`)
-      
+      // Verbose per-asset logging removed
+
       // Try to get published URL only if this is the current page being viewed
       let pageUrl: string | undefined
       try {
@@ -512,13 +574,26 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
     while (current && depth < maxDepth) {
       // Check if current node is a page by type or by ID match
       const currentType = (current.type || '').toLowerCase()
+      const currentName = current.name || ''
       const isPageByType = currentType.includes('page')
       const isPageById = allPages.some(p => p.id === current.id)
-      
+
+      // Skip breakpoint artboards - continue traversing up to find the real page
+      if (isBreakpointArtboard(currentName)) {
+        // Verbose logging removed
+        const parentId = current.parent?.id || current.parent
+        if (!parentId) break
+        const parent = await framer.getNode(parentId)
+        if (!parent) break
+        current = parent
+        depth++
+        continue
+      }
+
       if (isPageByType || isPageById) {
-        const pageName = current.name || 'Unnamed'
+        const pageName = currentName || 'Unnamed'
         const pageSlug = pageName
-        debugLog.info(`getPageForNode: Found page "${pageName}" (type: ${current.type}, id match: ${isPageById}) in parent chain for node ${nodeId}`)
+        // Verbose logging removed
         
         // Try to get published URL only if this is the current page
         let pageUrl: string | undefined
@@ -572,20 +647,18 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
         }
         
         if (foundPage) {
-          debugLog.info(`getPageForNode: Found node ${nodeId} as descendant of page ${foundPage.name} via getChildren()`)
+          // Verbose per-asset logging removed
           return { id: foundPage.id, name: foundPage.name, slug: foundPage.name }
         }
-        
+
         // If still not found, try a more aggressive search: check if node ID appears in any page's children
         // This handles cases where the node might be in a component or shared element
-        debugLog.info(`getPageForNode: Trying aggressive search for node ${nodeId} across all pages...`)
         for (const page of allPages) {
           try {
             // Get all children recursively (with caching)
             const allChildIds = await getAllDescendantIds(page.id, 0, 15) // Go deeper, up to 15 levels
             if (allChildIds.includes(current.id)) {
               foundPage = page
-              debugLog.info(`getPageForNode: Found node ${nodeId} in page ${page.name} via aggressive search`)
               break
             }
           } catch {
@@ -609,13 +682,22 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
       
       // Check if parent is a page by type or by ID match
       const parentType = (parent.type || '').toLowerCase()
+      const parentName = parent.name || ''
       const isParentPageByType = parentType.includes('page')
       const isParentPageById = allPages.some(p => p.id === parent.id)
-      
+
+      // Skip breakpoint artboards - continue traversing up
+      if (isBreakpointArtboard(parentName)) {
+        // Verbose logging removed
+        current = parent
+        depth++
+        continue
+      }
+
       if (isParentPageByType || isParentPageById) {
-        const pageName = parent.name || 'Unnamed'
+        const pageName = parentName || 'Unnamed'
         const pageSlug = pageName
-        debugLog.info(`getPageForNode: Found page "${pageName}" (type: ${parent.type}, id match: ${isParentPageById}) as parent for node ${nodeId}`)
+        // Verbose logging removed
         
         // Try to get published URL only if this is the current page
         let pageUrl: string | undefined
@@ -646,12 +728,10 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
     
     // Final fallback: try aggressive search across all pages
     // Note: allPages is already declared earlier in this function
-    debugLog.info(`getPageForNode: Trying final fallback search for node ${nodeId}...`)
     for (const page of allPages) {
       try {
         const allChildIds = await getAllDescendantIds(page.id, 0, 20) // Very deep search as last resort
         if (allChildIds.includes(node.id)) {
-          debugLog.info(`getPageForNode: Found node ${nodeId} in page ${page.name} via final fallback search`)
           return { id: page.id, name: page.name, slug: page.name }
         }
       } catch {
@@ -659,8 +739,7 @@ async function getPageForNode(nodeId: string): Promise<{ id: string; name: strin
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    debugLog.warn(`getPageForNode: Could not find page for node ${nodeId} after traversing ${depth} levels and final fallback. Node type: ${(node as any).type || 'unknown'}, Node name: ${(node as any).name || 'unnamed'}`)
+    // Node could not be mapped to a page (not an error, may be expected for some nodes)
     return null
   } catch (error) {
     debugLog.warn(`Error getting page for node ${nodeId}:`, error)
@@ -800,12 +879,10 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
         try {
           const size = await image.measure()
           actualDimensions = { width: size.width, height: size.height }
-          debugLog.info(`Measured image: ${node.name}`, actualDimensions)
-        } catch (error) {
-          debugLog.warn(`Failed to measure image: ${node.name}`, error)
+        } catch {
           // Continue without actual dimensions
         }
-        
+
         const asset: AssetInfo = {
           nodeId: node.id,
           nodeName: node.name || 'Unnamed',
@@ -824,14 +901,10 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
         }
         
         assets.push(asset)
-        if (!page) {
-          debugLog.warn(`⚠️ No page found for node ${node.name || node.id} - asset will show "Unknown"`)
-        }
-        debugLog.success(`Found backgroundImage: ${node.name}`, { url: image.url, page: page?.name || 'NO PAGE' })
       }
     }
-    
-    debugLog.success(`Collected ${assets.length} unique background images`)
+
+    debugLog.success(`✅ Collected ${assets.length} unique background images`)
     
     // Also get SVG nodes
     const svgNodes = await framer.getNodesWithType('SVGNode')

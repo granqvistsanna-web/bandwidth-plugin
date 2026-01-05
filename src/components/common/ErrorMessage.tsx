@@ -1,4 +1,4 @@
-import { framerColors, spacing, typography, borders } from '../../styles/designTokens'
+import { framerColors, spacing, typography } from '../../styles/designTokens'
 import { Button } from '../primitives/Button'
 
 interface ErrorMessageProps {

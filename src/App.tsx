@@ -1,5 +1,5 @@
 import { framer } from "framer-plugin"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { SidebarNavigation } from "./components/SidebarNavigation"
 import { OverviewPanel } from "./components/overview/OverviewPanel"
 import { AssetsPanel } from "./components/assets/AssetsPanel"
@@ -7,11 +7,14 @@ import { RecommendationsPanel } from "./components/recommendations/Recommendatio
 import { BandwidthPanel } from "./components/bandwidth/BandwidthPanel"
 import { SettingsPanel } from "./components/settings/SettingsPanel"
 import { DebugPanel } from "./components/DebugPanel"
+import { WelcomeScreen } from "./components/WelcomeScreen"
 import { LoadingSpinner } from "./components/common/LoadingSpinner"
 import { ErrorMessage } from "./components/common/ErrorMessage"
 import { useAnalysis } from "./hooks/useAnalysis"
 import { useTheme } from "./hooks/useTheme"
 import { spacing } from "./styles/designTokens"
+
+const STORAGE_KEY_HAS_SCANNED = 'bandwidth-check-has-scanned'
 
 framer.showUI({
     position: "top right",
@@ -29,10 +32,19 @@ type Tab = 'overview' | 'assets' | 'recommendations' | 'bandwidth' | 'settings' 
 export function App() {
     const [activeTab, setActiveTab] = useState<Tab>('overview')
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null)
-    
+
+    // Track if user has completed initial scan (persisted)
+    const [hasScanned, setHasScanned] = useState<boolean>(() => {
+        try {
+            return localStorage.getItem(STORAGE_KEY_HAS_SCANNED) === 'true'
+        } catch {
+            return false
+        }
+    })
+
     // Initialize theme first
     useTheme()
-    
+
     const {
       analysis,
       loading,
@@ -48,21 +60,51 @@ export function App() {
       unignoreRecommendation
     } = useAnalysis()
 
-    // Auto-run analysis on mount
-    useEffect(() => {
-        runAnalysis()
+    // Handle initial scan from welcome screen
+    const handleInitialScan = useCallback(async () => {
+        await runAnalysis()
+        setHasScanned(true)
+        try {
+            localStorage.setItem(STORAGE_KEY_HAS_SCANNED, 'true')
+        } catch {
+            // Ignore localStorage errors
+        }
     }, [runAnalysis])
 
+    // Auto-run analysis on mount only if user has scanned before
+    useEffect(() => {
+        if (hasScanned) {
+            runAnalysis()
+        }
+    }, [hasScanned, runAnalysis])
+
+    // Show welcome screen if user hasn't scanned yet
+    if (!hasScanned) {
+        return (
+            <div style={{
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                backgroundColor: 'var(--framer-color-bg)'
+            }}>
+                <WelcomeScreen
+                    onScanProject={handleInitialScan}
+                    loading={loading}
+                />
+            </div>
+        )
+    }
+
     return (
-        <div style={{ 
+        <div style={{
             position: 'relative',
             width: '100%',
             height: '100%',
             backgroundColor: 'var(--framer-color-bg)'
         }}>
             {!loading && !error && (
-                <SidebarNavigation 
-                  activeTab={activeTab} 
+                <SidebarNavigation
+                  activeTab={activeTab}
                   onTabChange={setActiveTab}
                   onRefresh={runAnalysis}
                   loading={loading}
