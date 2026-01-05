@@ -8,7 +8,6 @@ import { spacing, typography, borders, surfaces, themeBorders, framerColors } fr
 interface AssetsTableRowProps {
   asset: AssetInfo
   onClick: (nodeId: string) => void
-  style?: React.CSSProperties
 }
 
 // Format badge colors for visual distinction
@@ -59,8 +58,7 @@ function calculatePotentialSavings(asset: AssetInfo): number {
 
 export const AssetsTableRow = memo(function AssetsTableRow({
   asset,
-  onClick,
-  style
+  onClick
 }: AssetsTableRowProps) {
   // Memoize expensive calculations
   const potentialSavings = useMemo(() => calculatePotentialSavings(asset), [asset])
@@ -85,18 +83,14 @@ export const AssetsTableRow = memo(function AssetsTableRow({
     <div
       onClick={handleClick}
       style={{
-        ...style,
         display: 'flex',
         alignItems: 'center',
         gap: spacing.md,
-        padding: `${spacing.sm} 0`,
+        padding: `${spacing.md} 0`,
         backgroundColor: 'transparent',
         borderBottom: `1px solid ${themeBorders.subtle}`,
         cursor: canClick ? 'pointer' : 'default',
         transition: canClick ? 'background-color 0.15s ease' : 'none',
-        height: '72px',
-        boxSizing: 'border-box',
-        overflow: 'hidden',
       }}
       onMouseEnter={(e) => {
         if (canClick) {
@@ -170,7 +164,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         justifyContent: 'center',
         gap: '4px'
       }}>
-        {/* Name - single line with ellipsis */}
+        {/* Name - up to 2 lines */}
         <div
           style={{
             fontSize: typography.fontSize.sm,
@@ -178,7 +172,11 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             color: framerColors.text,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+            lineHeight: '1.3',
+            wordBreak: 'break-word',
           }}
           title={asset.nodeName}
         >

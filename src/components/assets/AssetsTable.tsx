@@ -10,8 +10,9 @@ export const AssetsTable = memo(function AssetsTable({ assets, onAssetClick }: A
   const rowVirtualizer = useVirtualizer({
     count: assets.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 72,
+    estimateSize: () => 72, // Initial estimate, will be measured
     overscan: 5,
+    measureElement: (element) => element.getBoundingClientRect().height,
   })
 
   const handleClick = useCallback((nodeId: string) => {
@@ -31,17 +32,22 @@ export const AssetsTable = memo(function AssetsTable({ assets, onAssetClick }: A
       >
         <div style={{ position: 'relative', height: `${rowVirtualizer.getTotalSize()}px` }}>
           {rowVirtualizer.getVirtualItems().map(virtualRow => (
-            <AssetsTableRow
+            <div
               key={assets[virtualRow.index].nodeId || virtualRow.index}
-              asset={assets[virtualRow.index]}
-              onClick={handleClick}
+              data-index={virtualRow.index}
+              ref={rowVirtualizer.measureElement}
               style={{
                 position: 'absolute',
                 top: 0,
                 width: '100%',
                 transform: `translateY(${virtualRow.start}px)`,
               }}
-            />
+            >
+              <AssetsTableRow
+                asset={assets[virtualRow.index]}
+                onClick={handleClick}
+              />
+            </div>
           ))}
         </div>
       </div>
