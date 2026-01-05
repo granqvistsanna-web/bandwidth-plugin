@@ -79,27 +79,42 @@ export const AssetsTableRow = memo(function AssetsTableRow({
       {/* Thumbnail - fixed 48px */}
       <div style={{ flexShrink: 0, width: '48px', height: '48px' }}>
         {asset.type === 'svg' ? (
-          <div
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: borders.radius.sm,
-              border: `1px solid ${themeBorders.subtle}`,
-              backgroundColor: surfaces.tertiary,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              overflow: 'hidden',
-              padding: '6px',
-            }}
-            dangerouslySetInnerHTML={asset.svgContent ? { __html: asset.svgContent } : undefined}
-          >
-            {!asset.svgContent && (
+          asset.svgContent ? (
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: borders.radius.sm,
+                border: `1px solid ${themeBorders.subtle}`,
+                backgroundColor: surfaces.tertiary,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                padding: '6px',
+              }}
+              dangerouslySetInnerHTML={{ __html: asset.svgContent }}
+            />
+          ) : (
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: borders.radius.sm,
+                border: `1px solid ${themeBorders.subtle}`,
+                backgroundColor: surfaces.tertiary,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                padding: '6px',
+              }}
+            >
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={framerColors.textTertiary} strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
               </svg>
-            )}
-          </div>
+            </div>
+          )
         ) : asset.url && thumbnailUrl ? (
           <LazyThumbnail
             src={thumbnailUrl}

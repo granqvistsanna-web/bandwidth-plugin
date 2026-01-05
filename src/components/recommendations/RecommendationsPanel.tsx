@@ -205,6 +205,8 @@ export function RecommendationsPanel({
             cursor: 'pointer',
             transition: 'all 0.15s ease',
             appearance: 'none',
+            WebkitAppearance: 'none',
+            MozAppearance: 'none',
             boxShadow: filter !== 'all' 
               ? `0 0 0 1px var(--framer-color-tint-dimmed)` 
               : 'none'
@@ -215,26 +217,7 @@ export function RecommendationsPanel({
           <option value="medium">Medium priority ({priorityCounts.medium})</option>
           <option value="low">Low priority ({priorityCounts.low})</option>
         </select>
-        {filter !== 'all' && (
-          <div style={{
-            position: 'absolute',
-            right: spacing.xl,
-            top: '50%',
-            transform: 'translateY(-50%)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: spacing.xs,
-            pointerEvents: 'none'
-          }}>
-            <div style={{
-              width: '6px',
-              height: '6px',
-              borderRadius: '50%',
-              backgroundColor: 'var(--framer-color-tint)',
-              flexShrink: 0
-            }} />
-          </div>
-        )}
+        {/* Chevron icon - always visible */}
         <svg
           width="8"
           height="5"
@@ -242,7 +225,7 @@ export function RecommendationsPanel({
           fill="none"
           style={{
             position: 'absolute',
-            right: filter !== 'all' ? spacing.xl : spacing.md,
+            right: spacing.md,
             top: '50%',
             transform: 'translateY(-50%)',
             pointerEvents: 'none',
@@ -258,6 +241,24 @@ export function RecommendationsPanel({
             strokeLinejoin="round"
           />
         </svg>
+        {/* Active filter indicator dot - only when filter is active */}
+        {filter !== 'all' && (
+          <div style={{
+            position: 'absolute',
+            right: `calc(${spacing.md} + 12px)`, // Position to the left of chevron
+            top: '50%',
+            transform: 'translateY(-50%)',
+            pointerEvents: 'none'
+          }}>
+            <div style={{
+              width: '6px',
+              height: '6px',
+              borderRadius: '50%',
+              backgroundColor: 'var(--framer-color-tint)',
+              flexShrink: 0
+            }} />
+          </div>
+        )}
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>

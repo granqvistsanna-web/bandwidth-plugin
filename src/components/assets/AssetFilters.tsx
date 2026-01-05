@@ -29,9 +29,9 @@ function SelectChevron() {
 }
 
 // Active filter styling helper
-function getSelectStyles(isActive: boolean) {
+function getSelectStyles(isActive: boolean, hasLeftIndicator: boolean = false) {
   return {
-    padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
+    padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${hasLeftIndicator ? spacing.xl : spacing.md}`,
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.medium,
     color: framerColors.text,
@@ -42,7 +42,12 @@ function getSelectStyles(isActive: boolean) {
     width: '100%',
     transition: 'all 0.15s ease',
     appearance: 'none' as const,
-    boxShadow: isActive ? '0 0 0 1px var(--framer-color-tint-dimmed)' : 'none'
+    WebkitAppearance: 'none' as const,
+    MozAppearance: 'none' as const,
+    boxShadow: isActive ? '0 0 0 1px var(--framer-color-tint-dimmed)' : 'none',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap' as const
   }
 }
 
@@ -82,7 +87,7 @@ export function AssetFilters({
         <select
           value={filters.type}
           onChange={handleTypeChange}
-          style={getSelectStyles(filters.type !== 'all')}
+          style={getSelectStyles(filters.type !== 'all', filters.type !== 'all')}
         >
           <option value="all">All</option>
           <option value="image">Images</option>
@@ -92,7 +97,7 @@ export function AssetFilters({
         {filters.type !== 'all' && (
           <div style={{
             position: 'absolute',
-            left: spacing.sm,
+            left: spacing.md,
             top: '50%',
             transform: 'translateY(-50%)',
             width: '6px',
@@ -133,9 +138,9 @@ export function AssetFilters({
           padding: `${spacing.xs} ${spacing.sm}`,
           fontSize: typography.fontSize.xs,
           fontWeight: typography.fontWeight.medium,
-          color: hasActiveFilters ? framerColors.textSecondary : 'transparent',
-          backgroundColor: 'transparent',
-          border: 'none',
+          color: hasActiveFilters ? framerColors.text : 'transparent',
+          backgroundColor: hasActiveFilters ? surfaces.secondary : 'transparent',
+          border: hasActiveFilters ? `1px solid ${framerColors.divider}` : 'none',
           borderRadius: borders.radius.sm,
           cursor: hasActiveFilters ? 'pointer' : 'default',
           display: 'flex',
@@ -149,11 +154,13 @@ export function AssetFilters({
           if (!hasActiveFilters) return
           e.currentTarget.style.color = framerColors.text
           e.currentTarget.style.backgroundColor = surfaces.tertiary
+          e.currentTarget.style.borderColor = framerColors.divider
         }}
         onMouseLeave={(e) => {
           if (!hasActiveFilters) return
-          e.currentTarget.style.color = framerColors.textSecondary
-          e.currentTarget.style.backgroundColor = 'transparent'
+          e.currentTarget.style.color = framerColors.text
+          e.currentTarget.style.backgroundColor = surfaces.secondary
+          e.currentTarget.style.borderColor = framerColors.divider
         }}
       >
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
