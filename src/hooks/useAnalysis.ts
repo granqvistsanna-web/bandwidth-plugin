@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { framer } from 'framer-plugin'
-import type { ProjectAnalysis } from '../types/analysis'
+import type { ProjectAnalysis, AnalysisProgress } from '../types/analysis'
 import { analyzeProject } from '../services/analyzer'
 import type { ManualCMSEstimate } from '../services/assetCollector'
 import { debugLog } from '../utils/debugLog'
@@ -16,6 +16,7 @@ export function useAnalysis() {
   const [analysis, setAnalysis] = useState<ProjectAnalysis | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<Error | null>(null)
+  const [progress, setProgress] = useState<AnalysisProgress | null>(null)
   const [selectedPageId, setSelectedPageId] = useState<string | 'all'>('all')
   const [lastScanned, setLastScanned] = useState<Date | null>(null)
   const [excludedPageIds, setExcludedPageIds] = useState<Set<string>>(new Set())
@@ -156,18 +157,26 @@ export function useAnalysis() {
   const runAnalysis = useCallback(async () => {
     setLoading(true)
     setError(null)
+    setProgress(null)
     debugLog.clear()
     debugLog.info('Starting new analysis...')
 
     try {
-      const result = await analyzeProject('canvas', Array.from(excludedPageIds), manualCMSEstimates)
+      const result = await analyzeProject(
+        'canvas',
+        Array.from(excludedPageIds),
+        manualCMSEstimates,
+        setProgress // Pass progress callback
+      )
       setAnalysis(result)
       setLastScanned(new Date())
+      setProgress({ step: 'complete', message: 'Analysis complete!' })
       debugLog.success(`Analysis complete! Found ${result.overallBreakpoints.desktop.assets.length} assets`)
       framer.notify('Analysis complete!', { variant: 'success', durationMs: 2000 })
     } catch (err) {
       const error = err as Error
       setError(error)
+      setProgress(null)
       debugLog.error('Analysis failed', error)
       framer.notify('Analysis failed: ' + error.message, { variant: 'error' })
     } finally {
@@ -179,6 +188,7 @@ export function useAnalysis() {
     analysis,
     loading,
     error,
+    progress,
     runAnalysis,
     selectedPageId,
     setSelectedPageId,

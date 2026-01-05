@@ -1,6 +1,14 @@
 export type Breakpoint = 'mobile' | 'tablet' | 'desktop'
 
 /**
+ * Progress information during analysis
+ */
+export interface AnalysisProgress {
+  step: 'pages' | 'assets' | 'bandwidth' | 'recommendations' | 'complete'
+  message: string
+}
+
+/**
  * Page usage information for an asset
  */
 export interface PageUsageInfo {

@@ -41,6 +41,7 @@ export function App() {
       analysis,
       loading,
       error,
+      progress,
       runAnalysis,
       lastScanned,
       manualCMSEstimates,
@@ -110,7 +111,7 @@ export function App() {
                     flex: 1,
                     overflowY: 'auto'
                 }}>
-                    {loading && <LoadingSpinner />}
+                    {loading && <LoadingSpinner message={progress?.message} />}
 
                     {error && <ErrorMessage error={error} onRetry={runAnalysis} />}
 

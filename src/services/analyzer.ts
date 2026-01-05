@@ -1,4 +1,4 @@
-import type { ProjectAnalysis, PageAnalysis, AnalysisMode, Recommendation } from '../types/analysis'
+import type { ProjectAnalysis, PageAnalysis, AnalysisMode, Recommendation, AnalysisProgress } from '../types/analysis'
 import { getAllPages } from './traversal'
 import { calculateBreakpointData } from './bandwidth'
 import { generateRecommendations } from './recommendations'
@@ -41,17 +41,22 @@ async function enrichWithRouteInfo(rec: Recommendation): Promise<Recommendation>
 }
 
 export async function analyzeProject(
-  mode: AnalysisMode = 'canvas', 
+  mode: AnalysisMode = 'canvas',
   excludedPageIds: string[] = [],
-  manualCMSEstimates: ManualCMSEstimate[] = []
+  manualCMSEstimates: ManualCMSEstimate[] = [],
+  onProgress?: (progress: AnalysisProgress) => void
 ): Promise<ProjectAnalysis> {
   try {
     debugLog.info('🚀 Starting project analysis...')
+
+    // Report progress: Finding pages
+    onProgress?.({ step: 'pages', message: 'Finding pages...' })
+
     // Clear caches at the start of analysis
     const { clearPagesCache } = await import('./traversal')
     clearPagesCache()
     clearRoutesCache() // Clear routes cache for fresh route resolution
-    
+
     const allPages = await getAllPages(true) // Exclude design pages by default
     
     // Filter out user-excluded pages
@@ -73,6 +78,9 @@ export async function analyzeProject(
       throw new Error('No pages found in project. Try creating a page first.')
     }
 
+    // Report progress: Collecting assets
+    onProgress?.({ step: 'assets', message: `Collecting assets from ${pages.length} pages...` })
+
     // Collect all assets organized by source and breakpoint
     const assetCollection = await collectAllAssets(excludedPageIds, manualCMSEstimates)
     
@@ -80,6 +88,10 @@ export async function analyzeProject(
 
     debugLog.success(`✅ Collected assets: ${canvas.desktop.length} desktop, ${canvas.tablet.length} tablet, ${canvas.mobile.length} mobile canvas assets`)
     debugLog.success(`✅ CMS assets: ${cms.length}, Manual estimates: ${manual.length}`)
+
+    // Report progress: Calculating bandwidth
+    const totalAssets = canvas.desktop.length + cms.length + manual.length
+    onProgress?.({ step: 'bandwidth', message: `Calculating bandwidth for ${totalAssets} assets...` })
 
     // Calculate bandwidth for each breakpoint using breakpoint-specific assets
     // CRITICAL: Each breakpoint must use its own assets + CMS + manual (CMS/manual are same across breakpoints)
@@ -89,6 +101,9 @@ export async function analyzeProject(
     const overallMobile = calculateBreakpointData([...canvas.mobile, ...cms, ...manual], 'mobile')
 
     debugLog.success(`Total bandwidth: ${(overallDesktop.totalBytes / 1024 / 1024).toFixed(2)} MB`)
+
+    // Report progress: Generating recommendations
+    onProgress?.({ step: 'recommendations', message: 'Generating optimization recommendations...' })
 
     // Generate recommendations based on desktop (typically largest)
     // Note: Overall recommendations don't have page context since they aggregate all pages

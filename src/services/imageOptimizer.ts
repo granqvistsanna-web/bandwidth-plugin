@@ -83,53 +83,102 @@ export async function fetchImageBytes(url: string): Promise<Uint8Array> {
 }
 
 /**
- * Check if image has transparency by loading it and checking alpha channel
+ * Load image and get its size in one operation
+ * Uses blob URL to avoid double-fetching
  */
-async function checkTransparency(url: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    const img = new Image()
-    img.crossOrigin = 'anonymous'
-    
-    img.onload = () => {
-      try {
-        const canvas = document.createElement('canvas')
-        canvas.width = img.width
-        canvas.height = img.height
-        const ctx = canvas.getContext('2d')
-        
-        if (!ctx) {
-          resolve(false)
-          return
+async function loadImageWithSize(url: string): Promise<{ img: HTMLImageElement; originalSize: number }> {
+  // Validate URL
+  if (!isValidImageUrl(url)) {
+    throw new Error('Invalid image URL. URL must be a valid HTTP(S) URL or data URL.')
+  }
+
+  try {
+    // Fetch once to get both size and blob
+    const response = await fetch(url, {
+      mode: 'cors',
+      credentials: 'omit'
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)
+    }
+
+    const blob = await response.blob()
+    const originalSize = blob.size
+
+    // Create object URL from blob to load image without re-fetching
+    const blobUrl = URL.createObjectURL(blob)
+
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const image = new Image()
+        image.crossOrigin = 'anonymous'
+
+        image.onload = () => resolve(image)
+        image.onerror = () => {
+          reject(new Error('Failed to load image. It may be blocked by CORS or invalid.'))
         }
-        
-        ctx.drawImage(img, 0, 0)
-        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-        const data = imageData.data
-        
-        // Check if any pixel has alpha < 255
-        for (let i = 3; i < data.length; i += 4) {
-          if (data[i] < 255) {
-            resolve(true)
-            return
-          }
-        }
-        resolve(false)
-      } catch {
-        // If we can't check, assume no transparency
-        resolve(false)
+
+        image.src = blobUrl
+      })
+
+      return { img, originalSize }
+    } finally {
+      // Clean up blob URL after image loads
+      URL.revokeObjectURL(blobUrl)
+    }
+  } catch (error) {
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      throw new Error('Cannot access image URL. Image may be from external source or blocked by CORS.')
+    }
+    if (error instanceof Error) {
+      throw error
+    }
+    throw new Error('Unknown error loading image')
+  }
+}
+
+/**
+ * Check if image has transparency by sampling pixels (much faster than checking all)
+ * Uses a loaded image element to avoid double-loading
+ */
+function checkTransparencyFromImage(img: HTMLImageElement): boolean {
+  try {
+    // Use a smaller canvas for sampling - max 200x200
+    const maxSampleSize = 200
+    const scaleDown = Math.max(img.width, img.height) > maxSampleSize
+      ? maxSampleSize / Math.max(img.width, img.height)
+      : 1
+
+    const sampleWidth = Math.max(1, Math.floor(img.width * scaleDown))
+    const sampleHeight = Math.max(1, Math.floor(img.height * scaleDown))
+
+    const canvas = document.createElement('canvas')
+    canvas.width = sampleWidth
+    canvas.height = sampleHeight
+    const ctx = canvas.getContext('2d', { willReadFrequently: true })
+
+    if (!ctx) return false
+
+    ctx.drawImage(img, 0, 0, sampleWidth, sampleHeight)
+    const imageData = ctx.getImageData(0, 0, sampleWidth, sampleHeight)
+    const data = imageData.data
+
+    // Sample every 4th pixel for speed (still catches most transparency)
+    for (let i = 3; i < data.length; i += 16) {
+      if (data[i] < 255) {
+        return true
       }
     }
-    
-    img.onerror = () => {
-      resolve(false)
-    }
-    
-    img.src = url
-  })
+    return false
+  } catch {
+    return false
+  }
 }
 
 /**
  * Resize and compress image using Canvas API
+ * Optimized to load image only once for better performance
  */
 export async function optimizeImage(options: OptimizeImageOptions): Promise<OptimizeImageResult> {
   const { url, targetWidth, targetHeight, format, quality } = options
@@ -142,37 +191,12 @@ export async function optimizeImage(options: OptimizeImageOptions): Promise<Opti
   if (targetWidth > 10000 || targetHeight > 10000) {
     throw new Error('Target dimensions are too large. Maximum size is 10000x10000 pixels.')
   }
-  
-  // Get original size
-  let originalSize = 0
-  try {
-    const originalBytes = await fetchImageBytes(url)
-    originalSize = originalBytes.length
-  } catch {
-    // Could not fetch original image to get size, will estimate later
-    originalSize = 0
-  }
 
-  // Check for transparency
-  const hasTransparency = await checkTransparency(url)
+  // Load image once - get size from blob and use for processing
+  const { img, originalSize } = await loadImageWithSize(url)
 
-  // Warn if PNG with transparency and user wants JPEG
-  if (hasTransparency && format === 'jpeg') {
-    debugLog.warn('Image has transparency but JPEG format requested. Transparency will be lost.')
-  }
-
-  // Load image
-  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image()
-    image.crossOrigin = 'anonymous'
-    
-    image.onload = () => resolve(image)
-    image.onerror = () => {
-      reject(new Error('Failed to load image. It may be blocked by CORS or invalid.'))
-    }
-    
-    image.src = url
-  })
+  // Check for transparency using already-loaded image (fast sampling)
+  const hasTransparency = checkTransparencyFromImage(img)
 
   // Calculate dimensions preserving aspect ratio
   const aspectRatio = img.width / img.height

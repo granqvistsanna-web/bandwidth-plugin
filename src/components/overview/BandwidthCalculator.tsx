@@ -627,10 +627,13 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
                 style={{
                   height: '100%',
                   width: `${Math.min(usagePercent, 100)}%`,
-                  backgroundColor: riskLevel === 'danger' ? 'var(--status-error-solid)' :
-                                  riskLevel === 'warning' ? 'var(--status-warning-solid)' :
-                                  'var(--status-success-solid)',
-                  transition: 'width 0.3s ease'
+                  background: riskLevel === 'danger'
+                    ? 'linear-gradient(90deg, var(--status-warning-solid), var(--status-error-solid))'
+                    : riskLevel === 'warning'
+                    ? 'linear-gradient(90deg, var(--status-success-solid), var(--status-warning-solid))'
+                    : 'linear-gradient(90deg, var(--status-success-solid), var(--status-success-hover))',
+                  transition: 'width 0.3s ease',
+                  borderRadius: borders.radius.full
                 }}
               />
             </div>

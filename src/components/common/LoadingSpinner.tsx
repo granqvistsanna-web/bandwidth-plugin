@@ -1,6 +1,10 @@
 import { framerColors, backgrounds, spacing, typography } from '../../styles/designTokens'
 
-export function LoadingSpinner() {
+interface LoadingSpinnerProps {
+  message?: string
+}
+
+export function LoadingSpinner({ message = 'Analyzing bandwidth...' }: LoadingSpinnerProps) {
   return (
     <div style={{
       display: 'flex',
@@ -17,7 +21,7 @@ export function LoadingSpinner() {
         alignItems: 'center',
         gap: spacing.md
       }}>
-        <div 
+        <div
           style={{
             width: '40px',
             height: '40px',
@@ -27,11 +31,13 @@ export function LoadingSpinner() {
             animation: 'spin 1s linear infinite'
           }}
         ></div>
-        <p style={{ 
+        <p style={{
           fontSize: typography.fontSize.sm,
           color: framerColors.textSecondary,
-          margin: 0
-        }}>Analyzing bandwidth...</p>
+          margin: 0,
+          textAlign: 'center',
+          transition: 'opacity 0.15s ease'
+        }}>{message}</p>
       </div>
     </div>
   )

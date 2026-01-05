@@ -1,4 +1,4 @@
-import { memo, useMemo, useCallback } from 'react'
+import { memo, useMemo, useCallback, useState } from 'react'
 import type { AssetInfo } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
 import { getThumbnailUrl } from '../../utils/imageThumbnail'
@@ -9,6 +9,28 @@ interface AssetsTableRowProps {
   asset: AssetInfo
   onClick: (nodeId: string) => void
   style?: React.CSSProperties
+}
+
+// Format badge colors for visual distinction
+function getFormatColor(format: string | undefined): { bg: string; text: string } {
+  const f = format?.toUpperCase()
+  switch (f) {
+    case 'PNG':
+      return { bg: 'rgba(249, 115, 22, 0.12)', text: '#EA580C' } // Orange
+    case 'JPG':
+    case 'JPEG':
+      return { bg: 'rgba(59, 130, 246, 0.12)', text: '#2563EB' } // Blue
+    case 'WEBP':
+      return { bg: 'rgba(34, 197, 94, 0.12)', text: '#16A34A' } // Green
+    case 'SVG':
+      return { bg: 'rgba(168, 85, 247, 0.12)', text: '#9333EA' } // Purple
+    case 'AVIF':
+      return { bg: 'rgba(20, 184, 166, 0.12)', text: '#0D9488' } // Teal
+    case 'GIF':
+      return { bg: 'rgba(236, 72, 153, 0.12)', text: '#DB2777' } // Pink
+    default:
+      return { bg: 'var(--framer-color-bg-tertiary)', text: 'var(--framer-color-text-tertiary)' }
+  }
 }
 
 // Calculate potential savings for unoptimized assets
@@ -40,24 +62,29 @@ export const AssetsTableRow = memo(function AssetsTableRow({
   onClick,
   style
 }: AssetsTableRowProps) {
+  const [isHovered, setIsHovered] = useState(false)
+
   // Memoize expensive calculations
   const potentialSavings = useMemo(() => calculatePotentialSavings(asset), [asset])
-  
+
   const isCMS = asset.isCMSAsset || asset.isManualEstimate || !!asset.cmsItemSlug
   const canClick = !isCMS && asset.nodeId && asset.nodeId.trim() !== ''
-  
+
   // Generate thumbnail URL for performance (small, low quality for blurry preview)
   const thumbnailUrl = useMemo(() => {
     if (!asset.url) return null
     return getThumbnailUrl(asset.url, 64) // 64px thumbnail with low quality
   }, [asset.url])
-  
+
   // Memoize click handler
   const handleClick = useCallback(() => {
     if (canClick) {
       onClick(asset.nodeId)
     }
   }, [canClick, onClick, asset.nodeId])
+
+  const handleMouseEnter = useCallback(() => setIsHovered(true), [])
+  const handleMouseLeave = useCallback(() => setIsHovered(false), [])
 
   return (
     <div
@@ -76,11 +103,13 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         boxSizing: 'border-box',
       }}
       onMouseEnter={(e) => {
+        handleMouseEnter()
         if (canClick) {
           e.currentTarget.style.backgroundColor = 'var(--hover-surface)'
         }
       }}
       onMouseLeave={(e) => {
+        handleMouseLeave()
         if (canClick) {
           e.currentTarget.style.backgroundColor = 'transparent'
         }
@@ -129,6 +158,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             alt={asset.nodeName || 'Image'}
             fallbackSrc={asset.url}
             size={48}
+            forceLoad={isHovered}
           />
         ) : (
           <div
@@ -180,17 +210,23 @@ export const AssetsTableRow = memo(function AssetsTableRow({
           flexWrap: 'wrap',
           lineHeight: '1.6'
         }}>
-          {asset.format && (
-            <span style={{
-              textTransform: 'uppercase',
-              fontSize: typography.fontSize.xxs || '10px', // Extra small for badges
-              fontWeight: typography.fontWeight.semibold,
-              letterSpacing: '0.05em',
-              color: framerColors.textTertiary
-            }}>
-              {asset.format}
-            </span>
-          )}
+          {asset.format && (() => {
+            const formatColor = getFormatColor(asset.format)
+            return (
+              <span style={{
+                textTransform: 'uppercase',
+                fontSize: typography.fontSize.xxs || '10px',
+                fontWeight: typography.fontWeight.semibold,
+                letterSpacing: '0.05em',
+                color: formatColor.text,
+                backgroundColor: formatColor.bg,
+                padding: '2px 6px',
+                borderRadius: '4px'
+              }}>
+                {asset.format}
+              </span>
+            )
+          })()}
           {asset.format && <span style={{ color: framerColors.textTertiary }}>·</span>}
           <span style={{ fontWeight: typography.fontWeight.medium, whiteSpace: 'nowrap' }}>
             {asset.actualDimensions ? (

@@ -92,12 +92,20 @@ export function InfoTooltip({ text, position = 'center' }: InfoTooltipProps) {
           <circle cx="8" cy="5" r="0.75" fill="currentColor"/>
         </svg>
       </div>
-      {isVisible && (
-        <div style={getTooltipStyle()}>
-          {text}
-          <div style={getArrowStyle()} />
-        </div>
-      )}
+      <div
+        style={{
+          ...getTooltipStyle(),
+          opacity: isVisible ? 1 : 0,
+          visibility: isVisible ? 'visible' : 'hidden',
+          transform: isVisible
+            ? (position === 'center' ? 'translateX(-50%) translateY(0)' : 'translateY(0)')
+            : (position === 'center' ? 'translateX(-50%) translateY(4px)' : 'translateY(4px)'),
+          transition: 'opacity 0.15s ease, transform 0.15s ease, visibility 0.15s ease'
+        }}
+      >
+        {text}
+        <div style={getArrowStyle()} />
+      </div>
     </div>
   )
 }

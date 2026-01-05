@@ -1,4 +1,4 @@
-import { useState, ReactNode } from 'react'
+import { useState, useRef, useEffect, ReactNode } from 'react'
 import { spacing, typography, framerColors } from '../../styles/designTokens'
 
 interface CollapsibleSectionProps {
@@ -13,6 +13,15 @@ export function CollapsibleSection({
   defaultCollapsed = false
 }: CollapsibleSectionProps) {
   const [isCollapsed, setIsCollapsed] = useState(defaultCollapsed)
+  const [contentHeight, setContentHeight] = useState<number | 'auto'>('auto')
+  const contentRef = useRef<HTMLDivElement>(null)
+
+  // Measure content height for smooth animation
+  useEffect(() => {
+    if (contentRef.current) {
+      setContentHeight(contentRef.current.scrollHeight)
+    }
+  }, [children])
 
   return (
     <div>
@@ -65,12 +74,19 @@ export function CollapsibleSection({
         </svg>
       </button>
 
-      {/* Content - Expandable */}
-      {!isCollapsed && (
-        <div style={{ padding: `0 ${spacing.lg} ${spacing.lg}` }}>
+      {/* Content - Animated collapse/expand */}
+      <div
+        style={{
+          overflow: 'hidden',
+          transition: 'height 0.2s ease, opacity 0.2s ease',
+          height: isCollapsed ? 0 : contentHeight,
+          opacity: isCollapsed ? 0 : 1
+        }}
+      >
+        <div ref={contentRef} style={{ padding: `0 ${spacing.lg} ${spacing.lg}` }}>
           {children}
         </div>
-      )}
+      </div>
     </div>
   )
 }

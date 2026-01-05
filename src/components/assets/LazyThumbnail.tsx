@@ -1,4 +1,4 @@
-import { useState, memo } from 'react'
+import { useState, memo, useCallback } from 'react'
 import { borders, surfaces, framerColors } from '../../styles/designTokens'
 
 interface LazyThumbnailProps {
@@ -6,34 +6,47 @@ interface LazyThumbnailProps {
   alt: string
   fallbackSrc?: string
   size?: number
+  /** When true, starts loading the image immediately */
+  forceLoad?: boolean
 }
 
 /**
- * Thumbnail with loading placeholder and fade-in effect.
- * Works with virtualized lists - no IntersectionObserver needed
- * since the row is only rendered when visible.
+ * Thumbnail that loads on hover for better performance.
+ * Shows placeholder until user hovers, then loads and caches the image.
  */
 export const LazyThumbnail = memo(function LazyThumbnail({
   src,
   alt,
   fallbackSrc,
-  size = 48
+  size = 48,
+  forceLoad = false
 }: LazyThumbnailProps) {
+  const [shouldLoad, setShouldLoad] = useState(false)
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
 
-  const handleLoad = () => {
-    setIsLoaded(true)
-  }
+  // Load when forceLoad becomes true (from parent hover)
+  const actualShouldLoad = shouldLoad || forceLoad
 
-  const handleError = () => {
+  const handleMouseEnter = useCallback(() => {
+    if (!shouldLoad) {
+      setShouldLoad(true)
+    }
+  }, [shouldLoad])
+
+  const handleLoad = useCallback(() => {
+    setIsLoaded(true)
+  }, [])
+
+  const handleError = useCallback(() => {
     if (fallbackSrc && !hasError) {
       setHasError(true)
     }
-  }
+  }, [fallbackSrc, hasError])
 
   return (
     <div
+      onMouseEnter={handleMouseEnter}
       style={{
         width: `${size}px`,
         height: `${size}px`,
@@ -44,7 +57,7 @@ export const LazyThumbnail = memo(function LazyThumbnail({
         position: 'relative'
       }}
     >
-      {/* Placeholder - visible until image loads */}
+      {/* Placeholder - always visible until image fully loads */}
       {!isLoaded && (
         <div
           style={{
@@ -52,7 +65,8 @@ export const LazyThumbnail = memo(function LazyThumbnail({
             inset: 0,
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center'
+            justifyContent: 'center',
+            animation: actualShouldLoad ? 'pulse 1.5s ease-in-out infinite' : 'none'
           }}
         >
           <svg
@@ -72,22 +86,24 @@ export const LazyThumbnail = memo(function LazyThumbnail({
         </div>
       )}
 
-      {/* Image */}
-      <img
-        src={hasError && fallbackSrc ? fallbackSrc : src}
-        alt={alt}
-        loading="lazy"
-        decoding="async"
-        onLoad={handleLoad}
-        onError={handleError}
-        style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          opacity: isLoaded ? 1 : 0,
-          transition: 'opacity 0.15s ease'
-        }}
-      />
+      {/* Image - only rendered after hover triggers load */}
+      {actualShouldLoad && (
+        <img
+          src={hasError && fallbackSrc ? fallbackSrc : src}
+          alt={alt}
+          loading="eager"
+          decoding="async"
+          onLoad={handleLoad}
+          onError={handleError}
+          style={{
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            opacity: isLoaded ? 1 : 0,
+            transition: 'opacity 0.15s ease'
+          }}
+        />
+      )}
     </div>
   )
 })

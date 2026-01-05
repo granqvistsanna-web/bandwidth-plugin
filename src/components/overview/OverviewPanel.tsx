@@ -199,8 +199,8 @@ export function OverviewPanel({
             </div>
           </div>
 
-          {/* Savings Section - Only if savings exist */}
-          {totalSavings > 0 && (
+          {/* Savings Section - Show savings or success state */}
+          {totalSavings > 0 ? (
             <>
               {/* Divider */}
               <div style={{
@@ -278,6 +278,53 @@ export function OverviewPanel({
                     View {recommendations.length} {recommendations.length === 1 ? 'recommendation' : 'recommendations'}
                   </Button>
                 )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Divider */}
+              <div style={{
+                height: '1px',
+                backgroundColor: themeBorders.subtle,
+                margin: `${spacing.lg} 0`
+              }} />
+
+              {/* Success State - No optimizations needed */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: spacing.md
+              }}>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <div>
+                  <div style={{
+                    fontSize: typography.fontSize.sm,
+                    fontWeight: typography.fontWeight.semibold,
+                    color: framerColors.text,
+                    marginBottom: spacing.xxs
+                  }}>
+                    Images are optimized
+                  </div>
+                  <div style={{
+                    fontSize: typography.fontSize.xs,
+                    color: framerColors.textSecondary
+                  }}>
+                    No optimization recommendations at this time
+                  </div>
+                </div>
               </div>
             </>
           )}

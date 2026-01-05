@@ -9,17 +9,19 @@ import { handleServiceError, withEmptyArrayFallback, ErrorCode } from '../utils/
  * Design pages are typically:
  * - Named with "Design", "Component", "Template", "Style" prefixes
  * - Used for design system components, not actual pages
+ * - Cannot be published as regular site pages
  */
 function isDesignPage(page: { name?: string; type?: string; path?: string }): boolean {
   const name = (page.name || '').toLowerCase().trim()
   const path = ((page as WebPageNode).path || '').toLowerCase()
 
-  // Common design page naming patterns
+  // Common design page naming patterns - check if name CONTAINS these
   const designPagePatterns = [
     'design',
     'component',
     'template',
-    'style',
+    'style guide',
+    'styleguide',
     'system',
     'library',
     'atoms',
@@ -27,19 +29,105 @@ function isDesignPage(page: { name?: string; type?: string; path?: string }): bo
     'organisms',
     'patterns',
     'ui kit',
+    'uikit',
     'design system',
-    'ds-', // Design system prefix
-    '🎨', // Design emoji
-    '📐', // Design emoji
+    'ds-',
+    'symbols',
+    'master',
+    'breakpoint',
+    '🎨',
+    '📐',
+    '🧩',
+    '📦'
   ]
 
-  // Check if page name or path starts with any design pattern
-  return designPagePatterns.some(pattern =>
-    name.startsWith(pattern) || path.startsWith('/' + pattern)
+  // Check if page name or path contains any design pattern
+  const isDesign = designPagePatterns.some(pattern =>
+    name.includes(pattern) || path.includes('/' + pattern)
   )
+
+  if (isDesign) {
+    debugLog.info(`Design page detected: "${page.name || 'unnamed'}" (path: "${path || 'none'}")`)
+  }
+
+  return isDesign
 }
 
-export async function getAllPages(excludeDesignPages: boolean = true): Promise<CanvasNode[]> {
+/**
+ * Check if a page is a draft (not published)
+ *
+ * NOTE: Framer's Plugin API does not expose the actual draft/published status.
+ * We use heuristics based on:
+ * 1. Page visibility (visible: false may indicate draft)
+ * 2. No path assigned (null, undefined, or empty string)
+ * 3. Name patterns (draft, wip, etc.)
+ * 4. Path patterns (/draft, /old, etc.)
+ */
+function isDraftPage(page: CanvasNode): boolean {
+  const webPage = page as WebPageNode
+  const path = (webPage.path || '').toLowerCase()
+  const name = (page.name || '').toLowerCase().trim()
+
+  // Check if page is hidden/invisible - this often indicates a draft
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const isHidden = (page as any).visible === false
+
+  // Check path-based draft detection - no path at all
+  const hasNoPath = webPage.path === null || webPage.path === undefined || webPage.path === ''
+
+  // Check name-based draft detection (common conventions)
+  const draftNamePatterns = [
+    'draft',
+    '[draft]',
+    '(draft)',
+    '_draft',
+    'wip',
+    '[wip]',
+    'temp',
+    'test page',
+    'copy of',
+    'untitled',
+    'new page'
+  ]
+  const hasDraftName = draftNamePatterns.some(pattern => name.includes(pattern)) || name.startsWith('_')
+
+  // Check path-based draft patterns (route contains draft indicators)
+  const draftPathPatterns = [
+    '/draft',
+    '/_draft',
+    '/wip',
+    '/_wip',
+    '/temp',
+    '/_temp',
+    '/test',
+    '/_test',
+    '/old/',
+    '/old-',
+    '/archive',
+    '/deprecated',
+    '/backup',
+    '-draft',
+    '-wip',
+    '-old',
+    '-test'
+  ]
+  const hasDraftPath = draftPathPatterns.some(pattern => path.includes(pattern))
+
+  const isDraft = isHidden || hasNoPath || hasDraftName || hasDraftPath
+
+  if (isDraft) {
+    let reason = ''
+    if (isHidden) reason = `hidden (visible: false)`
+    else if (hasNoPath) reason = `no path`
+    else if (hasDraftName) reason = `draft name pattern ("${name}")`
+    else if (hasDraftPath) reason = `draft path pattern ("${path}")`
+    debugLog.info(`Draft page detected: "${page.name || 'unnamed'}" - reason: ${reason}`)
+  }
+
+  return isDraft
+}
+
+export async function getAllPages(excludeDesignPages: boolean = true, excludeDraftPages: boolean = true): Promise<CanvasNode[]> {
   return withEmptyArrayFallback(async () => {
     // Use getNodesWithType to get actual WebPageNodes (site pages/routes)
     // This is more reliable than getting canvas root children which may include breakpoint artboards
@@ -51,11 +139,22 @@ export async function getAllPages(excludeDesignPages: boolean = true): Promise<C
 
       if (webPages.length > 0) {
         allPages = webPages
-        debugLog.info(`WebPageNodes:`, webPages.map(p => ({
-          name: p.name || 'unnamed',
-          path: (p as WebPageNode).path || 'no path',
-          id: p.id
-        })))
+        // Log all pages with their paths for debugging
+        const pageDetails = webPages.map(p => {
+          const path = (p as WebPageNode).path
+          return {
+            name: p.name || 'unnamed',
+            path: path === null ? 'NULL' : path === undefined ? 'UNDEFINED' : path === '' ? 'EMPTY' : path,
+            id: p.id,
+            isDraft: isDraftPage(p)
+          }
+        })
+        debugLog.info(`WebPageNodes (${webPages.length} total):`, pageDetails)
+
+        // Count drafts vs published
+        const draftCount = pageDetails.filter(p => p.isDraft).length
+        const publishedCount = pageDetails.filter(p => !p.isDraft).length
+        debugLog.info(`Page breakdown: ${publishedCount} published, ${draftCount} drafts`)
       } else {
         // Fallback to canvas root children if no WebPageNodes found
         debugLog.warn('No WebPageNodes found, falling back to canvas root children')
@@ -86,14 +185,27 @@ export async function getAllPages(excludeDesignPages: boolean = true): Promise<C
       allPages = await framer.getChildren(root.id)
     }
 
-    // Filter out design pages if requested
-    const pages = excludeDesignPages
-      ? allPages.filter(page => !isDesignPage(page))
-      : allPages
+    // Start with all pages
+    let pages = allPages
 
-    const excludedCount = allPages.length - pages.length
-    if (excludedCount > 0) {
-      debugLog.info(`Excluded ${excludedCount} design page(s) from analysis`)
+    // Filter out draft pages if requested (pages without a published route)
+    if (excludeDraftPages) {
+      const publishedPages = pages.filter(page => !isDraftPage(page))
+      const draftCount = pages.length - publishedPages.length
+      if (draftCount > 0) {
+        debugLog.info(`Excluded ${draftCount} draft page(s) from analysis (no published route)`)
+      }
+      pages = publishedPages
+    }
+
+    // Filter out design pages if requested
+    if (excludeDesignPages) {
+      const nonDesignPages = pages.filter(page => !isDesignPage(page))
+      const designCount = pages.length - nonDesignPages.length
+      if (designCount > 0) {
+        debugLog.info(`Excluded ${designCount} design page(s) from analysis`)
+      }
+      pages = nonDesignPages
     }
 
     debugLog.success(`Found ${pages.length} page(s) for analysis`, pages.map(p => ({
@@ -774,6 +886,56 @@ async function getAllDescendantIds(pageId: string, currentDepth: number, maxDept
 }
 
 /**
+ * Check if a node belongs to a draft page by traversing up the parent chain
+ */
+async function isNodeInDraftPage(nodeId: string): Promise<boolean> {
+  try {
+    const node = await framer.getNode(nodeId)
+    if (!node) return false
+
+    // If this node is a page, check if it's a draft page
+    const nodeType = (node.type || '').toLowerCase()
+    if (nodeType.includes('page')) {
+      return isDraftPage(node)
+    }
+
+    // Traverse up the parent chain to find the page
+    let current: ExtendedCanvasNode | null = node
+    let depth = 0
+    const maxDepth = 20 // Safety limit
+
+    while (current && depth < maxDepth) {
+      // Check if current node is a page
+      const currentType = (current.type || '').toLowerCase()
+      if (currentType.includes('page')) {
+        return isDraftPage(current)
+      }
+
+      // Get parent ID
+      const parentId = current.parent?.id || current.parent
+      if (!parentId) break
+
+      const parent = await framer.getNode(parentId)
+      if (!parent) break
+
+      // Check if parent is a page
+      const parentType = (parent.type || '').toLowerCase()
+      if (parentType.includes('page')) {
+        return isDraftPage(parent)
+      }
+
+      current = parent
+      depth++
+    }
+
+    return false
+  } catch (error) {
+    debugLog.warn(`Error checking if node ${nodeId} is in draft page:`, error)
+    return false
+  }
+}
+
+/**
  * Check if a node belongs to a design page by traversing up the parent chain
  */
 async function isNodeInDesignPage(nodeId: string): Promise<boolean> {
@@ -826,22 +988,27 @@ async function isNodeInDesignPage(nodeId: string): Promise<boolean> {
  * Efficiently collect all assets using Framer's optimized APIs
  * This uses getNodesWithAttributeSet which is much faster than tree traversal
  */
-export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeDesignPages: boolean = true, excludedPageIds: string[] = []): Promise<AssetInfo[]> {
+export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeDesignPages: boolean = true, excludeDraftPages: boolean = true, excludedPageIds: string[] = []): Promise<AssetInfo[]> {
   const assets: AssetInfo[] = []
-  
+
   try {
     debugLog.info('Collecting assets using efficient API...')
-    
+
     // Get all nodes with background images set (most efficient way)
     const nodesWithBackgroundImages = await framer.getNodesWithAttributeSet('backgroundImage')
     debugLog.info(`Found ${nodesWithBackgroundImages.length} nodes with backgroundImage`)
-    
+
     // Use a Map to track unique images by ID
     const uniqueImages = new Map<string, ImageAsset>()
-    
+
     for (const node of nodesWithBackgroundImages) {
       // Skip if node is in a design page
       if (excludeDesignPages && await isNodeInDesignPage(node.id)) {
+        continue
+      }
+
+      // Skip if node is in a draft page (not published)
+      if (excludeDraftPages && await isNodeInDraftPage(node.id)) {
         continue
       }
       
@@ -915,7 +1082,12 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
       if (excludeDesignPages && await isNodeInDesignPage(node.id)) {
         continue
       }
-      
+
+      // Skip if node is in a draft page (not published)
+      if (excludeDraftPages && await isNodeInDraftPage(node.id)) {
+        continue
+      }
+
       // Get the page this node belongs to
       // Note: Nodes from getNodesWithType() may not have parent info, so we need to fetch the full node
       let page = null
@@ -974,14 +1146,14 @@ export async function collectAllAssetsEfficient(breakpoint: Breakpoint, excludeD
   } catch (error) {
     debugLog.error('Error collecting assets efficiently', error)
     // Fall back to tree traversal
-    return collectAllAssets(breakpoint, excludeDesignPages)
+    return collectAllAssets(breakpoint, excludeDesignPages, excludeDraftPages)
   }
   
   return assets
 }
 
-export async function collectAllAssets(breakpoint: Breakpoint, excludeDesignPages: boolean = true): Promise<AssetInfo[]> {
-  const pages = await getAllPages(excludeDesignPages)
+export async function collectAllAssets(breakpoint: Breakpoint, excludeDesignPages: boolean = true, excludeDraftPages: boolean = true): Promise<AssetInfo[]> {
+  const pages = await getAllPages(excludeDesignPages, excludeDraftPages)
   const allAssets: AssetInfo[] = []
 
   for (const page of pages) {

@@ -4,9 +4,12 @@ import type { ProjectAnalysis } from '../../types/analysis'
 import type { FilterState, SortConfig, AssetCounts } from './types'
 import { AssetFilters } from './AssetFilters'
 import { AssetsTable } from './AssetsTable'
+import { Pagination } from './Pagination'
 import { debugLog } from '../../utils/debugLog'
 import { spacing, typography, borders, backgrounds, framerColors } from '../../styles/designTokens'
 import { StatusIndicator } from '../common/StatusIndicator'
+
+const ITEMS_PER_PAGE = 50
 
 interface AssetsPanelProps {
   analysis: ProjectAnalysis
@@ -31,6 +34,7 @@ const DEFAULT_SORT: SortConfig = {
 export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: AssetsPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
   const [sortConfig, setSortConfig] = useState<SortConfig>(DEFAULT_SORT)
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Get base assets for selected page or all pages
   const baseAssets = useMemo(() => {
@@ -119,6 +123,26 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
     return sorted
   }, [filteredAssets, sortConfig])
 
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedAssets.length / ITEMS_PER_PAGE)
+
+  // Reset to page 1 when filters change
+  const paginatedAssets = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return sortedAssets.slice(start, start + ITEMS_PER_PAGE)
+  }, [sortedAssets, currentPage])
+
+  // Reset page when filters or sorting changes
+  const handleFiltersChange = (newFilters: FilterState) => {
+    setFilters(newFilters)
+    setCurrentPage(1)
+  }
+
+  const handleSortChange = (newSort: SortConfig) => {
+    setSortConfig(newSort)
+    setCurrentPage(1)
+  }
+
   // Calculate asset counts for filter pills
   const assetCounts = useMemo((): AssetCounts => {
     return {
@@ -189,10 +213,10 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
       }}>
         <AssetFilters
           filters={filters}
-          onFiltersChange={setFilters}
+          onFiltersChange={handleFiltersChange}
           assetCounts={assetCounts}
           sortConfig={sortConfig}
-          onSortChange={setSortConfig}
+          onSortChange={handleSortChange}
         />
       </div>
 
@@ -216,14 +240,25 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
       )}
 
       {/* Assets Table or Empty State */}
-      <div style={{ flex: 1, minHeight: 0 }}>
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         {sortedAssets.length > 0 ? (
-          <AssetsTable
-            assets={sortedAssets}
-            sortConfig={sortConfig}
-            onSort={setSortConfig}
-            onAssetClick={handleAssetClick}
-          />
+          <>
+            <div style={{ flex: 1, minHeight: 0 }}>
+              <AssetsTable
+                assets={paginatedAssets}
+                sortConfig={sortConfig}
+                onSort={handleSortChange}
+                onAssetClick={handleAssetClick}
+              />
+            </div>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={sortedAssets.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={setCurrentPage}
+            />
+          </>
         ) : (
           <div style={{
             height: '100%',
@@ -240,7 +275,8 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
               <div style={{
                 marginBottom: spacing.md,
                 display: 'flex',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                animation: 'float 3s ease-in-out infinite'
               }}>
                 {baseAssets.length === 0 ? (
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={framerColors.textTertiary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

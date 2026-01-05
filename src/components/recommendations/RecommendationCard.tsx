@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { framer } from 'framer-plugin'
 import type { Recommendation } from '../../types/analysis'
 import { Button } from '../primitives/Button'
@@ -8,6 +8,7 @@ import { downloadOptimizedImage } from '../../services/imageDownloader'
 import { ReplaceImageModal } from './ReplaceImageModal'
 import { debugLog } from '../../utils/debugLog'
 import { spacing, typography, borders, surfaces, themeBorders, themeElevation, framerColors, iconSize } from '../../styles/designTokens'
+import { getThumbnailUrl } from '../../utils/imageThumbnail'
 
 interface RecommendationCardProps {
   recommendation: Recommendation
@@ -16,12 +17,39 @@ interface RecommendationCardProps {
   isIgnored?: boolean
 }
 
+// Priority badge styling - refined approach
+function getPriorityBadge(priority: 'high' | 'medium' | 'low'): { bg: string; text: string; label: string } | null {
+  switch (priority) {
+    case 'high':
+      return {
+        bg: 'rgba(239, 68, 68, 0.12)',
+        text: '#DC2626',
+        label: 'High'
+      }
+    case 'medium':
+      return {
+        bg: 'rgba(245, 158, 11, 0.12)',
+        text: '#D97706',
+        label: 'Med'
+      }
+    case 'low':
+      return null // No badge for low priority - keeps UI clean
+    default:
+      return null
+  }
+}
+
 export function RecommendationCard({ recommendation, onIgnore, isIgnored = false }: RecommendationCardProps) {
   const [isOptimizing, setIsOptimizing] = useState(false)
   const [isSelecting, setIsSelecting] = useState(false)
   const [showReplaceModal, setShowReplaceModal] = useState(false)
   const [optimizationProgress, setOptimizationProgress] = useState<string>('')
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isHovered, setIsHovered] = useState(false)
+  const [thumbnailLoaded, setThumbnailLoaded] = useState(false)
+
+  const handleMouseEnter = useCallback(() => setIsHovered(true), [])
+  const handleMouseLeave = useCallback(() => setIsHovered(false), [])
 
   const handleOptimize = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -256,11 +284,15 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
         potentialSavings={recommendation.potentialSavings}
       />
     <div
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
       style={{
         backgroundColor: surfaces.secondary,
         borderRadius: borders.radius.lg,
         padding: spacing.lg,
         boxShadow: themeElevation.subtle,
+        transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+        transform: isHovered ? 'translateY(-1px)' : 'translateY(0)',
       }}
     >
       {/* Content Row with Thumbnail */}
@@ -269,51 +301,110 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
         gap: spacing.md,
         marginBottom: spacing.md
       }}>
-        {/* Thumbnail - Left Side */}
+        {/* Thumbnail - Left Side (hover to load) */}
         {hasPreview && (
           <div
             style={{
               flexShrink: 0,
-              width: '64px', // Fixed size for thumbnails
-              height: '64px', // Fixed size for thumbnails
+              width: '64px',
+              height: '64px',
               borderRadius: borders.radius.md,
               border: `1.5px solid ${themeBorders.subtle}`,
               backgroundColor: surfaces.tertiary,
               overflow: 'hidden',
-              boxShadow: themeElevation.subtle
+              boxShadow: themeElevation.subtle,
+              position: 'relative'
             }}
           >
-            <img
-              src={recommendation.url}
-              alt={recommendation.nodeName}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
-              }}
-              onError={(e) => {
-                e.currentTarget.style.display = 'none'
-              }}
-            />
+            {/* Placeholder */}
+            {!thumbnailLoaded && (
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <svg
+                  width="20"
+                  height="20"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke={framerColors.textTertiary}
+                  strokeWidth="1.5"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                  />
+                </svg>
+              </div>
+            )}
+            {/* Image - only load on hover */}
+            {isHovered && (
+              <img
+                src={getThumbnailUrl(recommendation.url || '', 64)}
+                alt={recommendation.nodeName}
+                loading="eager"
+                decoding="async"
+                onLoad={() => setThumbnailLoaded(true)}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  opacity: thumbnailLoaded ? 1 : 0,
+                  transition: 'opacity 0.15s ease'
+                }}
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none'
+                }}
+              />
+            )}
           </div>
         )}
 
         {/* Content - Right Side */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
-          {/* Savings Badge - Refined */}
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            padding: `${spacing.xxs} ${spacing.sm}`,
-            backgroundColor: 'var(--framer-color-bg-tertiary)',
-            color: framerColors.text,
-            fontSize: typography.fontSize.xs,
-            fontWeight: typography.fontWeight.bold,
-            borderRadius: borders.radius.full,
-            alignSelf: 'flex-start',
-            letterSpacing: typography.letterSpacing.normal
-          }}>
-            −{formatBytes(recommendation.potentialSavings)}
+          {/* Badges Row - Priority + Savings */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
+            {/* Priority Badge - Only show for high/medium */}
+            {(() => {
+              const priorityBadge = getPriorityBadge(recommendation.priority)
+              if (!priorityBadge) return null
+              return (
+                <div style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: `${spacing.xxs} ${spacing.sm}`,
+                  backgroundColor: priorityBadge.bg,
+                  color: priorityBadge.text,
+                  fontSize: typography.fontSize.xxs || '10px',
+                  fontWeight: typography.fontWeight.bold,
+                  borderRadius: borders.radius.full,
+                  letterSpacing: '0.02em',
+                  textTransform: 'uppercase'
+                }}>
+                  {priorityBadge.label}
+                </div>
+              )
+            })()}
+            {/* Savings Badge */}
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: `${spacing.xxs} ${spacing.sm}`,
+              backgroundColor: 'var(--framer-color-bg-tertiary)',
+              color: framerColors.text,
+              fontSize: typography.fontSize.xs,
+              fontWeight: typography.fontWeight.bold,
+              borderRadius: borders.radius.full,
+              letterSpacing: typography.letterSpacing.normal
+            }}>
+              −{formatBytes(recommendation.potentialSavings)}
+            </div>
           </div>
 
           {/* Asset Name - Better Typography */}

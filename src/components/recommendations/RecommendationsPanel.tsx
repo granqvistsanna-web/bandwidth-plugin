@@ -1,11 +1,14 @@
 import { useState } from 'react'
 import type { ProjectAnalysis } from '../../types/analysis'
 import { RecommendationCard } from './RecommendationCard'
+import { Pagination } from '../assets/Pagination'
 import { formatBytes } from '../../utils/formatBytes'
 import { calculateTotalSavings } from '../../services/recommendations'
 import { spacing, typography, borders, backgrounds, surfaces, themeElevation, framerColors } from '../../styles/designTokens'
 import { CollapsibleSection } from '../overview/CollapsibleSection'
 import { StatusIndicator } from '../common/StatusIndicator'
+
+const ITEMS_PER_PAGE = 20
 
 interface RecommendationsPanelProps {
   analysis: ProjectAnalysis
@@ -26,6 +29,7 @@ export function RecommendationsPanel({
   loading
 }: RecommendationsPanelProps) {
   const [filter, setFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all')
+  const [currentPage, setCurrentPage] = useState(1)
 
   // Safety check: ensure analysis exists
   if (!analysis) {
@@ -77,6 +81,17 @@ export function RecommendationsPanel({
   const filteredRecommendations = filter === 'all'
     ? activeRecommendations
     : activeRecommendations.filter(rec => rec.priority === filter)
+
+  // Pagination
+  const totalPages = Math.ceil(filteredRecommendations.length / ITEMS_PER_PAGE)
+  const paginationStart = (currentPage - 1) * ITEMS_PER_PAGE
+  const paginatedRecommendations = filteredRecommendations.slice(paginationStart, paginationStart + ITEMS_PER_PAGE)
+
+  // Reset page when filter changes
+  const handleFilterChange = (newFilter: 'all' | 'high' | 'medium' | 'low') => {
+    setFilter(newFilter)
+    setCurrentPage(1)
+  }
 
   const totalSavings = calculateTotalSavings(activeRecommendations)
 
@@ -175,7 +190,7 @@ export function RecommendationsPanel({
       }}>
         <select
           value={filter}
-          onChange={(e) => setFilter(e.target.value as 'all' | 'high' | 'medium' | 'low')}
+          onChange={(e) => handleFilterChange(e.target.value as 'all' | 'high' | 'medium' | 'low')}
           style={{
             width: '100%',
             padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${spacing.md}`,
@@ -246,14 +261,25 @@ export function RecommendationsPanel({
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: spacing.md }}>
-        {filteredRecommendations.map(recommendation => (
-          <RecommendationCard 
-            key={recommendation.id} 
+        {paginatedRecommendations.map(recommendation => (
+          <RecommendationCard
+            key={recommendation.id}
             recommendation={recommendation}
             allPages={(analysis.pages || []).map(p => ({ pageId: p.pageId, pageName: p.pageName }))}
             onIgnore={() => onIgnoreRecommendation(recommendation.id)}
           />
         ))}
+
+        {/* Pagination */}
+        {filteredRecommendations.length > ITEMS_PER_PAGE && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredRecommendations.length}
+            itemsPerPage={ITEMS_PER_PAGE}
+            onPageChange={setCurrentPage}
+          />
+        )}
 
         {/* Ignored Recommendations Section */}
         {ignoredRecommendations.length > 0 && (
@@ -284,7 +310,8 @@ export function RecommendationsPanel({
             <div style={{
               marginBottom: spacing.md,
               display: 'flex',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              animation: 'float 3s ease-in-out infinite'
             }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={framerColors.textTertiary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />
@@ -318,7 +345,8 @@ export function RecommendationsPanel({
             <div style={{
               marginBottom: spacing.md,
               display: 'flex',
-              justifyContent: 'center'
+              justifyContent: 'center',
+              animation: 'float 3s ease-in-out infinite'
             }}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--status-success-solid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />

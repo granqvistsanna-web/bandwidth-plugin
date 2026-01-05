@@ -8,18 +8,18 @@ interface StatusIndicatorProps {
 }
 
 function getStatusColor(lastScanned: Date | null, error?: string | null): string {
-  if (error) return '#EF4444' // Red for errors
-  if (!lastScanned) return '#94A3B8' // Gray if no scan
+  if (error) return 'var(--status-error-solid)' // Red for errors
+  if (!lastScanned) return 'var(--text-tertiary)' // Gray if no scan
 
   const now = new Date()
   const diffMs = now.getTime() - lastScanned.getTime()
   const diffMins = Math.floor(diffMs / (1000 * 60))
   const diffHours = Math.floor(diffMins / 60)
 
-  if (diffMins < 1) return '#22C55E' // Green: just now
-  if (diffMins < 30) return '#3B82F6' // Blue: < 30 mins
-  if (diffHours < 3) return '#EAB308' // Yellow: < 3 hours
-  return '#F97316' // Orange: > 3 hours
+  if (diffMins < 1) return 'var(--status-success-solid)' // Green: just now
+  if (diffMins < 30) return 'var(--status-info-solid)' // Blue: < 30 mins
+  if (diffHours < 3) return 'var(--status-warning-solid)' // Yellow: < 3 hours
+  return 'var(--status-warning-solid)' // Orange: > 3 hours (use warning for both)
 }
 
 export function StatusIndicator({ lastScanned, loading, error }: StatusIndicatorProps) {
