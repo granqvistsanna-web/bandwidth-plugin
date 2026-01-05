@@ -275,8 +275,7 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
               <div style={{
                 marginBottom: spacing.md,
                 display: 'flex',
-                justifyContent: 'center',
-                animation: 'float 3s ease-in-out infinite'
+                justifyContent: 'center'
               }}>
                 {baseAssets.length === 0 ? (
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={framerColors.textTertiary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">

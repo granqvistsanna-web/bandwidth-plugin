@@ -10,6 +10,34 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   size?: ButtonSize
   fullWidth?: boolean
   icon?: ReactNode
+  loading?: boolean
+}
+
+// Shared loading spinner component
+function LoadingSpinner({ size = 14 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      style={{ animation: 'spin 1s linear infinite', flexShrink: 0 }}
+    >
+      <circle
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+        style={{ opacity: 0.25 }}
+      />
+      <path
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        style={{ opacity: 0.75 }}
+      />
+    </svg>
+  )
 }
 
 export function Button({
@@ -18,10 +46,12 @@ export function Button({
   size = 'md',
   fullWidth = false,
   icon,
+  loading = false,
   disabled,
   className,
   ...props
 }: ButtonProps) {
+  const isDisabled = disabled || loading
   // Standardized button dimensions
   const sizeConfig = {
     sm: {
@@ -47,30 +77,30 @@ export function Button({
     fontSize: config.fontSize,
     fontWeight: typography.fontWeight.medium,
     lineHeight: typography.lineHeight.tight,
-    borderRadius: borders.radius.md, // 12px - consistent across all buttons
+    borderRadius: borders.radius.md,
     border: 'none',
-    cursor: disabled ? 'not-allowed' : 'pointer',
+    cursor: isDisabled ? 'not-allowed' : 'pointer',
     transition: 'all 0.15s ease',
     whiteSpace: 'nowrap' as const,
     width: fullWidth ? '100%' : 'auto',
-    opacity: disabled ? 0.5 : 1,
+    opacity: isDisabled ? 0.5 : 1,
     padding: config.padding,
     minHeight: config.minHeight,
   }
 
   const variantStyles: Record<ButtonVariant, React.CSSProperties> = {
     primary: {
-      backgroundColor: disabled ? surfaces.tertiary : colors.accent.primary,
-      color: disabled ? framerColors.textTertiary : colors.white,
+      backgroundColor: isDisabled ? surfaces.tertiary : colors.accent.primary,
+      color: isDisabled ? framerColors.textTertiary : colors.white,
     },
     secondary: {
-      backgroundColor: disabled ? surfaces.tertiary : surfaces.secondary,
+      backgroundColor: isDisabled ? surfaces.tertiary : surfaces.secondary,
       border: `1px solid ${themeBorders.subtle}`,
-      color: disabled ? framerColors.textTertiary : framerColors.text,
+      color: isDisabled ? framerColors.textTertiary : framerColors.text,
     },
     ghost: {
       backgroundColor: 'transparent',
-      color: disabled ? framerColors.textTertiary : framerColors.textSecondary,
+      color: isDisabled ? framerColors.textTertiary : framerColors.textSecondary,
     }
   }
 
@@ -89,13 +119,13 @@ export function Button({
   }
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return
+    if (isDisabled) return
     const styles = hoverStyles[variant]
     Object.assign(e.currentTarget.style, styles)
   }
 
   const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (disabled) return
+    if (isDisabled) return
     const styles = variantStyles[variant]
     Object.assign(e.currentTarget.style, styles)
   }
@@ -103,13 +133,13 @@ export function Button({
   return (
     <button
       style={{ ...baseStyles, ...variantStyles[variant] }}
-      disabled={disabled}
+      disabled={isDisabled}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={className}
       {...props}
     >
-      {icon}
+      {loading ? <LoadingSpinner size={size === 'sm' ? 12 : 14} /> : icon}
       {children}
     </button>
   )

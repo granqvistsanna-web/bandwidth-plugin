@@ -310,8 +310,7 @@ export function RecommendationsPanel({
             <div style={{
               marginBottom: spacing.md,
               display: 'flex',
-              justifyContent: 'center',
-              animation: 'float 3s ease-in-out infinite'
+              justifyContent: 'center'
             }}>
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke={framerColors.textTertiary} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="11" cy="11" r="8" />
@@ -345,8 +344,7 @@ export function RecommendationsPanel({
             <div style={{
               marginBottom: spacing.md,
               display: 'flex',
-              justifyContent: 'center',
-              animation: 'float 3s ease-in-out infinite'
+              justifyContent: 'center'
             }}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--status-success-solid)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10" />
