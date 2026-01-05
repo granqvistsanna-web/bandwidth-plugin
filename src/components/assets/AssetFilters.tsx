@@ -31,22 +31,23 @@ function SelectChevron() {
 // Active filter styling helper
 function getSelectStyles(isActive: boolean, hasLeftIndicator: boolean = false) {
   return {
-    padding: `${spacing.sm} ${spacing.xl} ${spacing.sm} ${hasLeftIndicator ? spacing.xl : spacing.md}`,
+    padding: `6px ${spacing.xl} 6px ${hasLeftIndicator ? spacing.xl : spacing.md}`,
     fontSize: typography.fontSize.xs,
     fontWeight: typography.fontWeight.medium,
+    lineHeight: '1.4',
     color: framerColors.text,
     backgroundColor: isActive ? surfaces.secondary : surfaces.primary,
     border: isActive ? '1px solid var(--framer-color-tint)' : 'none',
     borderRadius: borders.radius.md,
     cursor: 'pointer',
     width: '100%',
+    height: '32px',
     transition: 'all 0.15s ease',
     appearance: 'none' as const,
     WebkitAppearance: 'none' as const,
     MozAppearance: 'none' as const,
     backgroundImage: 'none',
     boxShadow: isActive ? '0 0 0 1px var(--framer-color-tint-dimmed)' : 'none',
-    overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap' as const
   }
@@ -131,45 +132,39 @@ export function AssetFilters({
         </div>
       )}
 
-      {/* Clear filters button - always rendered to prevent layout shift */}
-      <button
-        onClick={handleClearFilters}
-        disabled={!hasActiveFilters}
-        style={{
-          padding: `${spacing.xs} ${spacing.sm}`,
-          fontSize: typography.fontSize.xs,
-          fontWeight: typography.fontWeight.medium,
-          color: hasActiveFilters ? framerColors.text : 'transparent',
-          backgroundColor: hasActiveFilters ? surfaces.secondary : 'transparent',
-          border: hasActiveFilters ? `1px solid ${framerColors.divider}` : 'none',
-          borderRadius: borders.radius.sm,
-          cursor: hasActiveFilters ? 'pointer' : 'default',
-          display: 'flex',
-          alignItems: 'center',
-          gap: spacing.xxs,
-          transition: 'all 0.15s ease',
-          whiteSpace: 'nowrap',
-          visibility: hasActiveFilters ? 'visible' : 'hidden'
-        }}
-        onMouseEnter={(e) => {
-          if (!hasActiveFilters) return
-          e.currentTarget.style.color = framerColors.text
-          e.currentTarget.style.backgroundColor = surfaces.tertiary
-          e.currentTarget.style.borderColor = framerColors.divider
-        }}
-        onMouseLeave={(e) => {
-          if (!hasActiveFilters) return
-          e.currentTarget.style.color = framerColors.text
-          e.currentTarget.style.backgroundColor = surfaces.secondary
-          e.currentTarget.style.borderColor = framerColors.divider
-        }}
-      >
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-        Clear
-      </button>
+      {/* Clear filters button - only rendered when filters are active */}
+      {hasActiveFilters && (
+        <button
+          onClick={handleClearFilters}
+          style={{
+            padding: `${spacing.xs} ${spacing.sm}`,
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            color: framerColors.text,
+            backgroundColor: surfaces.secondary,
+            border: `1px solid ${framerColors.divider}`,
+            borderRadius: borders.radius.sm,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.xxs,
+            transition: 'all 0.15s ease',
+            whiteSpace: 'nowrap'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = surfaces.tertiary
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = surfaces.secondary
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+          Clear
+        </button>
+      )}
     </div>
   )
 }

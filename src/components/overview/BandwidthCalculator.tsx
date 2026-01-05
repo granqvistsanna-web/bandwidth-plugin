@@ -14,22 +14,22 @@ interface BandwidthCalculatorProps {
   onNavigateToRecommendations?: () => void
 }
 
-// Framer plan limits (approximate)
+// Framer plan limits (as of October 2025 pricing update)
 const FRAMER_PLANS = {
   free: {
     name: 'Free',
-    bandwidthGB: 1,
-  },
-  mini: {
-    name: 'Mini',
-    bandwidthGB: 10,
+    bandwidthGB: 0.1, // 100 MB
   },
   basic: {
     name: 'Basic',
-    bandwidthGB: 50,
+    bandwidthGB: 10,
   },
   pro: {
     name: 'Pro',
+    bandwidthGB: 100,
+  },
+  scale: {
+    name: 'Scale',
     bandwidthGB: 200,
   }
 } as const
@@ -177,9 +177,9 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
   // Suggest appropriate plan based on estimate
   const suggestedPlan = useMemo(() => {
     if (monthlyBandwidthGB <= FRAMER_PLANS.free.bandwidthGB) return 'free'
-    if (monthlyBandwidthGB <= FRAMER_PLANS.mini.bandwidthGB) return 'mini'
     if (monthlyBandwidthGB <= FRAMER_PLANS.basic.bandwidthGB) return 'basic'
-    return 'pro'
+    if (monthlyBandwidthGB <= FRAMER_PLANS.pro.bandwidthGB) return 'pro'
+    return 'scale'
   }, [monthlyBandwidthGB])
 
   // Auto-select suggested plan on initial load
@@ -239,14 +239,14 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
         }}>
           <div style={{
             fontSize: typography.fontSize.xs,
-            fontWeight: typography.fontWeight.medium,
-            color: riskLevel === 'danger' ? 'var(--status-error-solid)' :
-                   riskLevel === 'warning' ? 'var(--status-warning-solid)' :
-                   'var(--status-success-solid)',
+            fontWeight: typography.fontWeight.semibold,
+            color: riskLevel === 'danger' ? 'var(--status-error-text)' :
+                   riskLevel === 'warning' ? 'var(--status-warning-text)' :
+                   'var(--status-success-text)',
             backgroundColor: riskLevel === 'danger' ? status.error.bg :
                               riskLevel === 'warning' ? status.warning.bg :
                               status.success.bg,
-            padding: `${spacing.xxs} ${spacing.sm}`,
+            padding: `${spacing.xs} ${spacing.sm}`,
             borderRadius: borders.radius.full,
             whiteSpace: 'nowrap' as const
           }}>

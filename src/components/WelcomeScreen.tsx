@@ -21,66 +21,25 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
         alignItems: 'center',
         justifyContent: 'center',
         padding: spacing.xl,
-        paddingBottom: '100px',
-        overflowY: 'auto'
+        paddingBottom: '120px'
       }}>
-        {/* Hero illustration - abstract visualization */}
-        <div style={{
-          width: '100%',
-          maxWidth: '240px',
-          marginBottom: spacing.xl,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          gap: spacing.sm
-        }}>
-          {/* Global animation styles */}
-          <style>
-            {`
-              @keyframes barBreath {
-                0%, 100% {
-                  transform: scaleY(1);
-                }
-                50% {
-                  transform: scaleY(0.8);
-                }
-              }
-            `}
-          </style>
-
-          {/* Animated bars representing bandwidth analysis */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-            gap: '4px',
-            height: '64px',
-            padding: '14px 16px',
-            backgroundColor: 'var(--framer-color-bg-secondary)',
-            borderRadius: '16px'
-          }}>
-            <Bar height={18} color="#93C5FD" delay={0} />
-            <Bar height={32} color="#60A5FA" delay={0.12} />
-            <Bar height={24} color="#3B82F6" delay={0.24} />
-            <Bar height={40} color="#2563EB" delay={0.36} />
-            <Bar height={28} color="#3B82F6" delay={0.48} />
-            <Bar height={36} color="#60A5FA" delay={0.6} />
-            <Bar height={20} color="#93C5FD" delay={0.72} />
-          </div>
-
+        {/* App icon with animations */}
+        <div style={{ marginBottom: '28px' }}>
+          <AnimatedIcon />
         </div>
 
         {/* Headline */}
         <h1 style={{
-          fontSize: typography.fontSize.lg,
+          fontSize: '20px',
           fontWeight: typography.fontWeight.semibold,
           color: 'var(--framer-color-text)',
           margin: 0,
           marginBottom: spacing.sm,
           textAlign: 'center',
-          lineHeight: typography.lineHeight.tight
+          lineHeight: 1.3,
+          letterSpacing: '-0.02em'
         }}>
-          Estimate bandwidth usage
+          Bandwidth Check
         </h1>
 
         {/* Description */}
@@ -90,34 +49,31 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
           margin: 0,
           marginBottom: spacing.xl,
           textAlign: 'center',
-          maxWidth: '260px',
-          lineHeight: typography.lineHeight.relaxed
+          maxWidth: '240px',
+          lineHeight: 1.5
         }}>
-          Scan your project to see estimated monthly bandwidth and get image optimization tips.
+          Analyze your project's bandwidth usage and find optimization opportunities.
         </p>
 
-        {/* Value props */}
+        {/* USP Cards */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: spacing.sm,
           width: '100%',
-          maxWidth: '260px'
+          maxWidth: '280px'
         }}>
           <ValueProp
-            icon={<CalculatorIcon />}
-            title="Monthly estimates"
-            description="Based on page weight and traffic"
+            icon={<ChartIcon />}
+            title="Usage estimates"
+            description="Monthly bandwidth based on traffic"
           />
           <ValueProp
             icon={<ImageIcon />}
-            title="Image optimization"
-            description="Find oversized images to compress"
+            title="Image insights"
+            description="Find oversized assets to optimize"
           />
         </div>
-
-        {/* Future paywall/limit placeholder */}
-        <div style={{ marginTop: spacing.xl }} />
       </div>
 
       {/* Sticky button container */}
@@ -128,7 +84,7 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
         right: 0,
         padding: spacing.lg,
         paddingBottom: spacing.xl,
-        background: 'linear-gradient(to top, var(--framer-color-bg) 70%, transparent)',
+        background: 'linear-gradient(to top, var(--framer-color-bg) 60%, transparent)',
         display: 'flex',
         justifyContent: 'center'
       }}>
@@ -137,8 +93,8 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
           disabled={loading}
           style={{
             width: '100%',
-            maxWidth: '260px',
-            padding: `14px ${spacing.lg}`,
+            maxWidth: '280px',
+            padding: '14px 20px',
             backgroundColor: colors.accent.primary,
             color: '#FFFFFF',
             border: 'none',
@@ -147,25 +103,25 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
             fontWeight: typography.fontWeight.semibold,
             cursor: loading ? 'not-allowed' : 'pointer',
             opacity: loading ? 0.7 : 1,
-            transition: 'all 0.15s ease',
+            transition: 'all 0.2s ease',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: spacing.sm,
-            boxShadow: '0 2px 8px rgba(0, 153, 255, 0.3)'
+            boxShadow: '0 4px 12px rgba(0, 139, 232, 0.25)'
           }}
           onMouseEnter={(e) => {
             if (!loading) {
-              e.currentTarget.style.backgroundColor = '#0088E6'
+              e.currentTarget.style.backgroundColor = '#0080D4'
               e.currentTarget.style.transform = 'translateY(-1px)'
-              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 153, 255, 0.4)'
+              e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 139, 232, 0.35)'
             }
           }}
           onMouseLeave={(e) => {
             if (!loading) {
               e.currentTarget.style.backgroundColor = colors.accent.primary
               e.currentTarget.style.transform = 'translateY(0)'
-              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 153, 255, 0.3)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 139, 232, 0.25)'
             }
           }}
         >
@@ -183,23 +139,94 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
   )
 }
 
-// Animated bar for hero visualization
-function Bar({ height, color, delay }: { height: number; color: string; delay: number }) {
+// Animated app icon with rotating internal shapes
+function AnimatedIcon() {
   return (
-    <div
-      style={{
-        width: '8px',
-        height: `${height}px`,
-        backgroundColor: color,
-        borderRadius: '4px',
-        transformOrigin: 'bottom',
-        animation: `barBreath 4s ease-in-out ${delay}s infinite`
-      }}
-    />
+    <>
+      <style>
+        {`
+          @keyframes iconFloat {
+            0%, 100% {
+              transform: translateY(0);
+              filter: drop-shadow(0 8px 20px rgba(0, 139, 232, 0.25));
+            }
+            50% {
+              transform: translateY(-8px);
+              filter: drop-shadow(0 16px 28px rgba(0, 139, 232, 0.2));
+            }
+          }
+          @keyframes breatheTopLeft {
+            0%, 25% { transform: translate(0, 0); }
+            45%, 75% { transform: translate(-6px, -6px); }
+            100% { transform: translate(0, 0); }
+          }
+          @keyframes breatheBottomRight {
+            0%, 25% { transform: translate(0, 0); }
+            45%, 75% { transform: translate(6px, 6px); }
+            100% { transform: translate(0, 0); }
+          }
+          @keyframes breatheBottomLeft {
+            0%, 25% { transform: translate(0, 0); }
+            45%, 75% { transform: translate(-6px, 6px); }
+            100% { transform: translate(0, 0); }
+          }
+          @keyframes breatheTopRight {
+            0%, 25% { transform: translate(0, 0); }
+            45%, 75% { transform: translate(6px, -6px); }
+            100% { transform: translate(0, 0); }
+          }
+        `}
+      </style>
+      <svg
+        width="88"
+        height="88"
+        viewBox="0 0 197 197"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{
+          animation: 'iconFloat 5s ease-in-out infinite',
+          borderRadius: '22px'
+        }}
+      >
+        <defs>
+          <radialGradient id="iconGradient" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(90.7857 27.7222) rotate(66.3599) scale(279.962)">
+            <stop stopColor="#008BE8"/>
+            <stop offset="1" stopColor="#84C8F5"/>
+          </radialGradient>
+          <clipPath id="iconClip">
+            <rect width="197" height="197" rx="44" fill="white"/>
+          </clipPath>
+        </defs>
+        <g clipPath="url(#iconClip)">
+          {/* Background */}
+          <rect x="-16" y="-17" width="230" height="230" rx="54.7619" fill="url(#iconGradient)"/>
+
+          {/* Top-left circle */}
+          <g style={{ animation: 'breatheTopLeft 5s ease-in-out infinite' }}>
+            <circle cx="63.7809" cy="62.7809" r="32.7809" fill="white"/>
+          </g>
+
+          {/* Bottom-right circle */}
+          <g style={{ animation: 'breatheBottomRight 5s ease-in-out infinite' }}>
+            <circle cx="134.219" cy="133.219" r="32.7809" fill="white"/>
+          </g>
+
+          {/* Bottom-left rounded square */}
+          <g style={{ animation: 'breatheBottomLeft 5s ease-in-out infinite' }}>
+            <path d="M31 100.438H96.5618V131.322C96.5618 150.474 81.0362 166 61.8845 166H31V100.438Z" fill="white"/>
+          </g>
+
+          {/* Top-right rounded square */}
+          <g style={{ animation: 'breatheTopRight 5s ease-in-out infinite' }}>
+            <path d="M101.438 64.6773C101.438 45.5256 116.964 30 136.116 30H167V95.5618H101.438V64.6773Z" fill="white"/>
+          </g>
+        </g>
+      </svg>
+    </>
   )
 }
 
-// Value proposition item
+// Value proposition card
 function ValueProp({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
     <div style={{
@@ -272,19 +299,11 @@ function LoadingSpinner() {
 }
 
 // Icons
-function CalculatorIcon() {
+function ChartIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="2" width="16" height="20" rx="2" />
-      <line x1="8" y1="6" x2="16" y2="6" />
-      <line x1="8" y1="10" x2="8" y2="10.01" />
-      <line x1="12" y1="10" x2="12" y2="10.01" />
-      <line x1="16" y1="10" x2="16" y2="10.01" />
-      <line x1="8" y1="14" x2="8" y2="14.01" />
-      <line x1="12" y1="14" x2="12" y2="14.01" />
-      <line x1="16" y1="14" x2="16" y2="14.01" />
-      <line x1="8" y1="18" x2="8" y2="18.01" />
-      <line x1="12" y1="18" x2="16" y2="18" />
+      <path d="M3 3v18h18" />
+      <path d="M18 9l-5 5-4-4-3 3" />
     </svg>
   )
 }
