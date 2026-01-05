@@ -11,7 +11,7 @@ export const AssetsTable = memo(function AssetsTable({ assets, onAssetClick }: A
     count: assets.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 80, // 48px thumbnail + 16px padding (8px top + 8px bottom) + ~16px for text
-    overscan: 10, // Increased for smoother scrolling
+    overscan: 3, // Reduced for better performance with lazy thumbnails
   })
 
   // Memoize the click handler to prevent re-renders

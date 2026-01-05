@@ -2,6 +2,7 @@ import { memo, useMemo, useCallback } from 'react'
 import type { AssetInfo } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
 import { getThumbnailUrl } from '../../utils/imageThumbnail'
+import { LazyThumbnail } from './LazyThumbnail'
 import { spacing, typography, borders, surfaces, themeBorders, framerColors } from '../../styles/designTokens'
 
 interface AssetsTableRowProps {
@@ -123,29 +124,11 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             </div>
           )
         ) : asset.url && thumbnailUrl ? (
-          <img
+          <LazyThumbnail
             src={thumbnailUrl}
-            alt={asset.nodeName}
-            loading="lazy"
-            style={{
-              width: '48px',
-              height: '48px',
-              borderRadius: borders.radius.md,
-              border: `1px solid ${themeBorders.subtle}`,
-              objectFit: 'cover' as const,
-              display: 'block',
-              // Add slight blur for very low quality thumbnails
-              imageRendering: 'auto' as const,
-            }}
-            onError={(e) => {
-              // Fallback to original URL if thumbnail fails
-              const target = e.target as HTMLImageElement
-              if (target.src !== asset.url) {
-                target.src = asset.url
-              } else {
-                target.style.display = 'none'
-              }
-            }}
+            alt={asset.nodeName || 'Image'}
+            fallbackSrc={asset.url}
+            size={48}
           />
         ) : (
           <div
