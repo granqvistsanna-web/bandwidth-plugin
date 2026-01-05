@@ -1,4 +1,4 @@
-import { spacing, typography, borders, framerColors, colors } from '../styles/designTokens'
+import { spacing, typography, borders, colors } from '../styles/designTokens'
 
 interface WelcomeScreenProps {
   onScanProject: () => void
@@ -74,7 +74,7 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
         <h1 style={{
           fontSize: typography.fontSize.lg,
           fontWeight: typography.fontWeight.semibold,
-          color: framerColors.text,
+          color: 'var(--framer-color-text)',
           margin: 0,
           marginBottom: spacing.sm,
           textAlign: 'center',
@@ -86,7 +86,7 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
         {/* Description */}
         <p style={{
           fontSize: typography.fontSize.sm,
-          color: framerColors.textSecondary,
+          color: 'var(--framer-color-text-secondary)',
           margin: 0,
           marginBottom: spacing.xl,
           textAlign: 'center',
@@ -227,14 +227,14 @@ function ValueProp({ icon, title, description }: { icon: React.ReactNode; title:
         <div style={{
           fontSize: typography.fontSize.xs,
           fontWeight: typography.fontWeight.semibold,
-          color: framerColors.text,
+          color: 'var(--framer-color-text)',
           marginBottom: '2px'
         }}>
           {title}
         </div>
         <div style={{
           fontSize: typography.fontSize.xs,
-          color: framerColors.textSecondary,
+          color: 'var(--framer-color-text-secondary)',
           lineHeight: 1.4
         }}>
           {description}
