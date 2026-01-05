@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { spacing, typography, borders, colors, surfaces, themeBorders, overlays, hoverStates, framerColors } from '../styles/designTokens'
 import { Button } from './primitives/Button'
-import { 
-  Squares2X2Icon, 
-  PhotoIcon, 
-  SparklesIcon, 
-  ChartBarIcon, 
-  Cog6ToothIcon, 
+import {
+  Squares2X2Icon,
+  PhotoIcon,
+  SparklesIcon,
+  ChartBarIcon,
+  Cog6ToothIcon,
   BugAntIcon,
   ArrowPathIcon
 } from '@heroicons/react/24/solid'

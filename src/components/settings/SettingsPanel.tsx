@@ -20,6 +20,10 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange, availabl
   const { theme, resolvedTheme, setTheme } = useTheme()
   const { includeFramerOptimization, toggleFramerOptimization, excludedPageIds, togglePageExclusion } = useSettings()
 
+  // Filter excluded page IDs to only include pages that exist in the current project
+  const availablePageIds = new Set(availablePages.map(p => p.pageId))
+  const validExcludedPageIds = excludedPageIds.filter(id => availablePageIds.has(id))
+
   const themeOptions: { value: ThemeMode; label: string; icon: JSX.Element }[] = [
     {
       value: 'light',
@@ -390,7 +394,7 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange, availabl
               })}
             </div>
 
-            {excludedPageIds.length > 0 && (
+            {validExcludedPageIds.length > 0 && (
               <div style={{
                 marginTop: spacing.sm,
                 paddingTop: spacing.sm,
@@ -403,7 +407,7 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange, availabl
                   fontSize: typography.fontSize.xs,
                   color: framerColors.textSecondary
                 }}>
-                  {excludedPageIds.length} page{excludedPageIds.length !== 1 ? 's' : ''} excluded
+                  {validExcludedPageIds.length} page{validExcludedPageIds.length !== 1 ? 's' : ''} excluded
                 </span>
                 <button
                   onClick={() => onSettingsChange?.()}
