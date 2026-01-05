@@ -1,4 +1,4 @@
-import { spacing, typography, borders, surfaces, framerColors, colors } from '../styles/designTokens'
+import { spacing, typography, borders, framerColors, colors } from '../styles/designTokens'
 
 interface WelcomeScreenProps {
   onScanProject: () => void
@@ -13,7 +13,7 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
       height: '100%',
       backgroundColor: 'var(--framer-color-bg)'
     }}>
-      {/* Main content area - scrollable */}
+      {/* Main content area */}
       <div style={{
         flex: 1,
         display: 'flex',
@@ -21,35 +21,53 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
         alignItems: 'center',
         justifyContent: 'center',
         padding: spacing.xl,
-        paddingBottom: '100px', // Space for sticky button
+        paddingBottom: '100px',
         overflowY: 'auto'
       }}>
-        {/* Icon */}
+        {/* Hero illustration - abstract visualization */}
         <div style={{
-          width: '56px',
-          height: '56px',
-          borderRadius: borders.radius.lg,
-          backgroundColor: surfaces.secondary,
+          width: '100%',
+          maxWidth: '240px',
+          marginBottom: spacing.xl,
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: spacing.lg
+          gap: spacing.sm
         }}>
-          <svg
-            width="28"
-            height="28"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke={colors.accent.primary}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M3 3v18h18" />
-            <path d="M18 17V9" />
-            <path d="M13 17V5" />
-            <path d="M8 17v-3" />
-          </svg>
+          {/* Global animation styles */}
+          <style>
+            {`
+              @keyframes barBreath {
+                0%, 100% {
+                  transform: scaleY(1);
+                }
+                50% {
+                  transform: scaleY(0.8);
+                }
+              }
+            `}
+          </style>
+
+          {/* Animated bars representing bandwidth analysis */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+            gap: '4px',
+            height: '64px',
+            padding: '14px 16px',
+            backgroundColor: 'var(--framer-color-bg-secondary)',
+            borderRadius: '16px'
+          }}>
+            <Bar height={18} color="#93C5FD" delay={0} />
+            <Bar height={32} color="#60A5FA" delay={0.12} />
+            <Bar height={24} color="#3B82F6" delay={0.24} />
+            <Bar height={40} color="#2563EB" delay={0.36} />
+            <Bar height={28} color="#3B82F6" delay={0.48} />
+            <Bar height={36} color="#60A5FA" delay={0.6} />
+            <Bar height={20} color="#93C5FD" delay={0.72} />
+          </div>
+
         </div>
 
         {/* Headline */}
@@ -62,7 +80,7 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
           textAlign: 'center',
           lineHeight: typography.lineHeight.tight
         }}>
-          Usage estimates made clear
+          Estimate bandwidth usage
         </h1>
 
         {/* Description */}
@@ -72,36 +90,33 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
           margin: 0,
           marginBottom: spacing.xl,
           textAlign: 'center',
-          maxWidth: '320px',
+          maxWidth: '260px',
           lineHeight: typography.lineHeight.relaxed
         }}>
-          Estimate your website's bandwidth usage based on page weight and traffic. Compare light, medium, and heavy pages against real benchmarks to avoid surprises.
+          Scan your project to see estimated monthly bandwidth and get image optimization tips.
         </p>
 
-        {/* Feature highlights */}
+        {/* Value props */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: spacing.sm,
           width: '100%',
-          maxWidth: '280px'
+          maxWidth: '260px'
         }}>
-          <FeatureItem
-            icon={<ScanIcon />}
-            text="Scan all pages and assets"
+          <ValueProp
+            icon={<CalculatorIcon />}
+            title="Monthly estimates"
+            description="Based on page weight and traffic"
           />
-          <FeatureItem
-            icon={<ChartIcon />}
-            text="See bandwidth by device type"
-          />
-          <FeatureItem
-            icon={<OptimizeIcon />}
-            text="Get optimization recommendations"
+          <ValueProp
+            icon={<ImageIcon />}
+            title="Image optimization"
+            description="Find oversized images to compress"
           />
         </div>
 
-        {/* Future paywall/limit notice placeholder */}
-        {/* This div can be used to insert scan limits or upgrade prompts */}
+        {/* Future paywall/limit placeholder */}
         <div style={{ marginTop: spacing.xl }} />
       </div>
 
@@ -122,8 +137,8 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
           disabled={loading}
           style={{
             width: '100%',
-            maxWidth: '280px',
-            padding: `${spacing.md} ${spacing.lg}`,
+            maxWidth: '260px',
+            padding: `14px ${spacing.lg}`,
             backgroundColor: colors.accent.primary,
             color: '#FFFFFF',
             border: 'none',
@@ -136,16 +151,21 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: spacing.sm
+            gap: spacing.sm,
+            boxShadow: '0 2px 8px rgba(0, 153, 255, 0.3)'
           }}
           onMouseEnter={(e) => {
             if (!loading) {
               e.currentTarget.style.backgroundColor = '#0088E6'
+              e.currentTarget.style.transform = 'translateY(-1px)'
+              e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 153, 255, 0.4)'
             }
           }}
           onMouseLeave={(e) => {
             if (!loading) {
               e.currentTarget.style.backgroundColor = colors.accent.primary
+              e.currentTarget.style.transform = 'translateY(0)'
+              e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 153, 255, 0.3)'
             }
           }}
         >
@@ -163,40 +183,68 @@ export function WelcomeScreen({ onScanProject, loading }: WelcomeScreenProps) {
   )
 }
 
-// Feature item component
-function FeatureItem({ icon, text }: { icon: React.ReactNode; text: string }) {
+// Animated bar for hero visualization
+function Bar({ height, color, delay }: { height: number; color: string; delay: number }) {
+  return (
+    <div
+      style={{
+        width: '8px',
+        height: `${height}px`,
+        backgroundColor: color,
+        borderRadius: '4px',
+        transformOrigin: 'bottom',
+        animation: `barBreath 4s ease-in-out ${delay}s infinite`
+      }}
+    />
+  )
+}
+
+// Value proposition item
+function ValueProp({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
   return (
     <div style={{
       display: 'flex',
-      alignItems: 'center',
-      gap: spacing.sm,
-      padding: `${spacing.sm} ${spacing.md}`,
-      backgroundColor: surfaces.secondary,
-      borderRadius: borders.radius.sm
+      alignItems: 'flex-start',
+      gap: spacing.md,
+      padding: spacing.md,
+      backgroundColor: 'var(--framer-color-bg-secondary)',
+      borderRadius: borders.radius.sm,
+      border: '1px solid var(--border-subtle)'
     }}>
       <div style={{
-        color: framerColors.textSecondary,
+        color: colors.accent.primary,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        width: '16px',
-        height: '16px',
-        flexShrink: 0
+        width: '20px',
+        height: '20px',
+        flexShrink: 0,
+        marginTop: '1px'
       }}>
         {icon}
       </div>
-      <span style={{
-        fontSize: typography.fontSize.xs,
-        color: framerColors.text,
-        fontWeight: typography.fontWeight.medium
-      }}>
-        {text}
-      </span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: typography.fontSize.xs,
+          fontWeight: typography.fontWeight.semibold,
+          color: framerColors.text,
+          marginBottom: '2px'
+        }}>
+          {title}
+        </div>
+        <div style={{
+          fontSize: typography.fontSize.xs,
+          color: framerColors.textSecondary,
+          lineHeight: 1.4
+        }}>
+          {description}
+        </div>
+      </div>
     </div>
   )
 }
 
-// Small loading spinner for button
+// Loading spinner
 function LoadingSpinner() {
   return (
     <svg
@@ -204,9 +252,7 @@ function LoadingSpinner() {
       height="16"
       viewBox="0 0 24 24"
       fill="none"
-      style={{
-        animation: 'spin 1s linear infinite'
-      }}
+      style={{ animation: 'spin 1s linear infinite' }}
     >
       <style>
         {`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}
@@ -226,32 +272,29 @@ function LoadingSpinner() {
 }
 
 // Icons
-function ScanIcon() {
+function CalculatorIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-      <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-      <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-      <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-      <rect x="7" y="7" width="10" height="10" rx="1" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="2" width="16" height="20" rx="2" />
+      <line x1="8" y1="6" x2="16" y2="6" />
+      <line x1="8" y1="10" x2="8" y2="10.01" />
+      <line x1="12" y1="10" x2="12" y2="10.01" />
+      <line x1="16" y1="10" x2="16" y2="10.01" />
+      <line x1="8" y1="14" x2="8" y2="14.01" />
+      <line x1="12" y1="14" x2="12" y2="14.01" />
+      <line x1="16" y1="14" x2="16" y2="14.01" />
+      <line x1="8" y1="18" x2="8" y2="18.01" />
+      <line x1="12" y1="18" x2="16" y2="18" />
     </svg>
   )
 }
 
-function ChartIcon() {
+function ImageIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M18 20V10" />
-      <path d="M12 20V4" />
-      <path d="M6 20v-6" />
-    </svg>
-  )
-}
-
-function OptimizeIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3l1.912 5.813a2 2 0 0 0 1.275 1.275L21 12l-5.813 1.912a2 2 0 0 0-1.275 1.275L12 21l-1.912-5.813a2 2 0 0 0-1.275-1.275L3 12l5.813-1.912a2 2 0 0 0 1.275-1.275L12 3z" />
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <circle cx="8.5" cy="8.5" r="1.5" />
+      <path d="M21 15l-5-5L5 21" />
     </svg>
   )
 }

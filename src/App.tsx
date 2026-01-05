@@ -14,8 +14,6 @@ import { useAnalysis } from "./hooks/useAnalysis"
 import { useTheme } from "./hooks/useTheme"
 import { spacing } from "./styles/designTokens"
 
-const STORAGE_KEY_HAS_SCANNED = 'bandwidth-check-has-scanned'
-
 framer.showUI({
     position: "top right",
     width: 500,
@@ -33,14 +31,8 @@ export function App() {
     const [activeTab, setActiveTab] = useState<Tab>('overview')
     const [selectedPageId, setSelectedPageId] = useState<string | null>(null)
 
-    // Track if user has completed initial scan (persisted)
-    const [hasScanned, setHasScanned] = useState<boolean>(() => {
-        try {
-            return localStorage.getItem(STORAGE_KEY_HAS_SCANNED) === 'true'
-        } catch {
-            return false
-        }
-    })
+    // Track if user has completed scan this session (not persisted - always show welcome on open)
+    const [hasScanned, setHasScanned] = useState<boolean>(false)
 
     // Initialize theme first
     useTheme()
@@ -64,11 +56,6 @@ export function App() {
     const handleInitialScan = useCallback(async () => {
         await runAnalysis()
         setHasScanned(true)
-        try {
-            localStorage.setItem(STORAGE_KEY_HAS_SCANNED, 'true')
-        } catch {
-            // Ignore localStorage errors
-        }
     }, [runAnalysis])
 
     // Auto-run analysis on mount only if user has scanned before
