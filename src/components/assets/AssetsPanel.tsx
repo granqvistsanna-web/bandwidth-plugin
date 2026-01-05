@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../../types/analysis'
 import type { FilterState, SortConfig, AssetCounts } from './types'
@@ -28,12 +28,9 @@ const DEFAULT_SORT: SortConfig = {
   direction: 'desc'
 }
 
-const PAGE_SIZE = 50 // Assets per page for better performance
-
 export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: AssetsPanelProps) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS)
   const [sortConfig, setSortConfig] = useState<SortConfig>(DEFAULT_SORT)
-  const [currentPage, setCurrentPage] = useState(1)
 
   // Get base assets for selected page or all pages
   const baseAssets = useMemo(() => {
@@ -121,18 +118,6 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
 
     return sorted
   }, [filteredAssets, sortConfig])
-
-  // Reset page when filters or sort changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [filters, sortConfig, selectedPageId])
-
-  // Pagination calculations
-  const totalPages = Math.ceil(sortedAssets.length / PAGE_SIZE)
-  const paginatedAssets = useMemo(() => {
-    const start = (currentPage - 1) * PAGE_SIZE
-    return sortedAssets.slice(start, start + PAGE_SIZE)
-  }, [sortedAssets, currentPage])
 
   // Calculate asset counts for filter pills
   const assetCounts = useMemo((): AssetCounts => {
@@ -231,73 +216,14 @@ export function AssetsPanel({ analysis, selectedPageId, lastScanned, loading }: 
       )}
 
       {/* Assets Table or Empty State */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, minHeight: 0 }}>
         {sortedAssets.length > 0 ? (
-          <>
-            <div style={{ flex: 1, minHeight: 0 }}>
-              <AssetsTable
-                assets={paginatedAssets}
-                sortConfig={sortConfig}
-                onSort={setSortConfig}
-                onAssetClick={handleAssetClick}
-              />
-            </div>
-
-            {/* Pagination controls - only show if more than one page */}
-            {totalPages > 1 && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: spacing.sm,
-                padding: `${spacing.md} 0`,
-                borderTop: `1px solid var(--framer-color-divider)`
-              }}>
-                <button
-                  onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  style={{
-                    padding: `${spacing.xs} ${spacing.sm}`,
-                    fontSize: typography.fontSize.xs,
-                    color: currentPage === 1 ? framerColors.textTertiary : framerColors.text,
-                    backgroundColor: 'transparent',
-                    border: `1px solid ${currentPage === 1 ? 'transparent' : 'var(--framer-color-divider)'}`,
-                    borderRadius: borders.radius.sm,
-                    cursor: currentPage === 1 ? 'default' : 'pointer',
-                    opacity: currentPage === 1 ? 0.5 : 1
-                  }}
-                >
-                  Previous
-                </button>
-
-                <span style={{
-                  fontSize: typography.fontSize.xs,
-                  color: framerColors.textSecondary,
-                  minWidth: '80px',
-                  textAlign: 'center'
-                }}>
-                  {currentPage} of {totalPages}
-                </span>
-
-                <button
-                  onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  style={{
-                    padding: `${spacing.xs} ${spacing.sm}`,
-                    fontSize: typography.fontSize.xs,
-                    color: currentPage === totalPages ? framerColors.textTertiary : framerColors.text,
-                    backgroundColor: 'transparent',
-                    border: `1px solid ${currentPage === totalPages ? 'transparent' : 'var(--framer-color-divider)'}`,
-                    borderRadius: borders.radius.sm,
-                    cursor: currentPage === totalPages ? 'default' : 'pointer',
-                    opacity: currentPage === totalPages ? 0.5 : 1
-                  }}
-                >
-                  Next
-                </button>
-              </div>
-            )}
-          </>
+          <AssetsTable
+            assets={sortedAssets}
+            sortConfig={sortConfig}
+            onSort={setSortConfig}
+            onAssetClick={handleAssetClick}
+          />
         ) : (
           <div style={{
             height: '100%',
