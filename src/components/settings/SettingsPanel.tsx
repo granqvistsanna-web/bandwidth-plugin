@@ -262,14 +262,10 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange, availabl
             {/* Toggle Switch */}
             <button
               type="button"
-              key={`toggle-${includeFramerOptimization}`}
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                const newValue = !includeFramerOptimization
-                console.log('Toggle clicked - changing from', includeFramerOptimization, 'to', newValue)
+              onClick={() => {
                 toggleFramerOptimization()
-                onSettingsChange?.()
+                // Delay rescan to ensure localStorage is updated
+                setTimeout(() => onSettingsChange?.(), 100)
               }}
               style={{
                 position: 'relative',
@@ -482,9 +478,7 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange, availabl
             gap: spacing.xs
           }}>
             <a
-              href="https://github.com/anthropics/claude-code/issues"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="mailto:granqvistsanna@gmail.com?subject=[Bandwidth Check Plugin] Issue Report"
               style={{
                 fontSize: typography.fontSize.xs,
                 color: 'var(--framer-color-tint)',
@@ -509,7 +503,7 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange, availabl
               }}
             >
               <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
               <span style={{ flex: 1 }}>Report an issue</span>
               <svg className="link-arrow" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} style={{ transition: 'transform 0.15s ease', opacity: 0.5 }}>
