@@ -207,6 +207,7 @@ export function RecommendationsPanel({
             appearance: 'none',
             WebkitAppearance: 'none',
             MozAppearance: 'none',
+            backgroundImage: 'none',
             boxShadow: filter !== 'all' 
               ? `0 0 0 1px var(--framer-color-tint-dimmed)` 
               : 'none'

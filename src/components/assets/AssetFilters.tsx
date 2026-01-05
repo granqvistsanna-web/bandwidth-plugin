@@ -44,6 +44,7 @@ function getSelectStyles(isActive: boolean, hasLeftIndicator: boolean = false) {
     appearance: 'none' as const,
     WebkitAppearance: 'none' as const,
     MozAppearance: 'none' as const,
+    backgroundImage: 'none',
     boxShadow: isActive ? '0 0 0 1px var(--framer-color-tint-dimmed)' : 'none',
     overflow: 'hidden',
     textOverflow: 'ellipsis',
