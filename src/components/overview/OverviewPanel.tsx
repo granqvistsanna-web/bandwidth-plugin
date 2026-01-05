@@ -4,11 +4,8 @@ import type { ProjectAnalysis } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
 import { BreakdownChart } from './BreakdownChart'
 import { generateMarkdownReport, copyToClipboard, downloadJSON } from '../../utils/exportReport'
-import { CMSAssetsNotice } from './CMSAssetsNotice'
 import { Button } from '../primitives/Button'
 import { calculateDeviceWeightedBandwidth } from '../../utils/deviceBandwidth'
-import { debugLog } from '../../utils/debugLog'
-import type { ManualCMSEstimate } from '../../hooks/useAnalysis'
 import { spacing, typography, borders, colors, backgrounds, surfaces, themeBorders, themeElevation, framerColors } from '../../styles/designTokens'
 import { StatusIndicator } from '../common/StatusIndicator'
 import { ClipboardDocumentIcon, ArrowDownTrayIcon } from '@heroicons/react/24/solid'
@@ -17,11 +14,6 @@ interface OverviewPanelProps {
   analysis: ProjectAnalysis
   onNavigateToRecommendations?: () => void
   onNavigateToBandwidth?: () => void
-  onRescan?: () => void
-  manualCMSEstimates?: ManualCMSEstimate[]
-  addManualCMSEstimate?: (estimate: Omit<ManualCMSEstimate, 'id' | 'createdAt'>) => void
-  updateManualCMSEstimate?: (id: string, estimate: Partial<Omit<ManualCMSEstimate, 'id' | 'createdAt'>>) => void
-  removeManualCMSEstimate?: (id: string) => void
   lastScanned?: Date | null
   loading?: boolean
 }
@@ -30,11 +22,6 @@ export function OverviewPanel({
   analysis,
   onNavigateToRecommendations,
   onNavigateToBandwidth,
-  onRescan,
-  manualCMSEstimates = [],
-  removeManualCMSEstimate,
-  addManualCMSEstimate,
-  updateManualCMSEstimate,
   lastScanned,
   loading
 }: OverviewPanelProps) {
@@ -393,28 +380,6 @@ export function OverviewPanel({
           </div>
           <BreakdownChart breakdown={breakpointData.breakdown} totalBytes={breakpointData.totalBytes} />
         </div>
-
-        {/* CMS Assets Notice */}
-        <CMSAssetsNotice
-          analysis={analysis}
-          onCMSEstimateAdded={onRescan}
-          manualCMSEstimates={manualCMSEstimates}
-          onEditEstimate={() => {}}
-          onRemoveEstimate={(id) => {
-            if (!id || !removeManualCMSEstimate) return
-            try {
-              removeManualCMSEstimate(id)
-              if (onRescan) {
-                setTimeout(() => onRescan(), 500)
-              }
-            } catch (error) {
-              debugLog.error('Failed to remove estimate:', error)
-              framer.notify('Failed to remove estimate', { variant: 'error' })
-            }
-          }}
-          onAddEstimate={addManualCMSEstimate}
-          onUpdateEstimate={updateManualCMSEstimate}
-        />
 
         {/* Custom Code Assets */}
         {customCode && customCode.hasCustomCode && (

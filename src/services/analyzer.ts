@@ -5,7 +5,7 @@ import { calculateBreakpointData } from './bandwidth'
 import { generateRecommendations } from './recommendations'
 import { getPublishedUrl, analyzePublishedSite } from './publishedAnalysis'
 import { calculateCMSBandwidthImpact } from './cmsAssets'
-import { collectAllAssets, collectPageAssetsForBreakpoint, type ManualCMSEstimate } from './assetCollector'
+import { collectAllAssets, collectPageAssetsForBreakpoint } from './assetCollector'
 import { debugLog } from '../utils/debugLog'
 import { formatBytes } from '../utils/formatBytes'
 import { handleServiceError, ErrorCode } from '../utils/errorHandler'
@@ -174,7 +174,6 @@ function filterExcludedRecommendations(
 export async function analyzeProject(
   mode: AnalysisMode = 'canvas',
   excludedPageIds: string[] = [],
-  manualCMSEstimates: ManualCMSEstimate[] = [],
   onProgress?: (progress: AnalysisProgress) => void
 ): Promise<ProjectAnalysis> {
   try {
@@ -216,12 +215,12 @@ export async function analyzeProject(
     onProgress?.({ step: 'assets', message: `Collecting assets from ${pages.length} pages...` })
 
     // Collect all assets organized by source and breakpoint
-    const assetCollection = await collectAllAssets(excludedPageIds, manualCMSEstimates)
-    
-    const { canvas, cms, manual } = assetCollection
+    const assetCollection = await collectAllAssets(excludedPageIds)
+
+    const { canvas, cms } = assetCollection
 
     debugLog.success(`✅ Collected assets: ${canvas.desktop.length} desktop, ${canvas.tablet.length} tablet, ${canvas.mobile.length} mobile canvas assets`)
-    debugLog.success(`✅ CMS assets: ${cms.length}, Manual estimates: ${manual.length}`)
+    debugLog.success(`✅ CMS assets: ${cms.length}`)
 
     // Filter out assets from excluded pages
     const filteredDesktop = filterExcludedAssets(canvas.desktop, excludedPageIds)
@@ -238,15 +237,15 @@ export async function analyzeProject(
     }
 
     // Report progress: Calculating bandwidth
-    const totalAssets = filteredDesktop.length + cms.length + manual.length
+    const totalAssets = filteredDesktop.length + cms.length
     onProgress?.({ step: 'bandwidth', message: `Calculating bandwidth for ${totalAssets} assets...` })
 
     // Calculate bandwidth for each breakpoint using breakpoint-specific assets
-    // CRITICAL: Each breakpoint must use its own assets + CMS + manual (CMS/manual are same across breakpoints)
+    // CRITICAL: Each breakpoint must use its own assets + CMS (CMS is same across breakpoints)
     debugLog.info('💰 Calculating bandwidth estimates for each breakpoint...')
-    const overallDesktop = calculateBreakpointData([...filteredDesktop, ...cms, ...manual], 'desktop')
-    const overallTablet = calculateBreakpointData([...filteredTablet, ...cms, ...manual], 'tablet')
-    const overallMobile = calculateBreakpointData([...filteredMobile, ...cms, ...manual], 'mobile')
+    const overallDesktop = calculateBreakpointData([...filteredDesktop, ...cms], 'desktop')
+    const overallTablet = calculateBreakpointData([...filteredTablet, ...cms], 'tablet')
+    const overallMobile = calculateBreakpointData([...filteredMobile, ...cms], 'mobile')
 
     debugLog.success(`Total bandwidth: ${(overallDesktop.totalBytes / 1024 / 1024).toFixed(2)} MB`)
 
@@ -362,52 +361,35 @@ export async function analyzeProject(
     debugLog.success(`✅ Final recommendations: ${allRecommendations.length}`)
 
     // Calculate CMS asset statistics
-    const allCMSAssets = [...cms, ...manual]
-    const cmsAssetsBytes = allCMSAssets.reduce((sum, asset) => sum + asset.estimatedBytes, 0)
-    const hasManualCMSEstimates = manual.length > 0
-    const cmsAssetsNotFound = allCMSAssets.filter(a =>
+    const cmsAssetsBytes = cms.reduce((sum, asset) => sum + asset.estimatedBytes, 0)
+    const cmsAssetsNotFound = cms.filter(a =>
       (a as { cmsStatus?: string }).cmsStatus === 'not_found'
     ).length
-    
+
     // Debug: Log CMS asset count
     debugLog.info(`📊 CMS Assets Summary:`)
-    debugLog.info(`   - Total CMS assets: ${allCMSAssets.length}`)
-    debugLog.info(`   - Auto-detected: ${cms.length}`)
-    debugLog.info(`   - Manual estimates: ${manual.length}`)
+    debugLog.info(`   - Total CMS assets: ${cms.length}`)
     debugLog.info(`   - Total CMS bytes: ${formatBytes(cmsAssetsBytes)}`)
-    if (allCMSAssets.length === 0) {
+    if (cms.length === 0) {
       debugLog.warn(`⚠️ No CMS assets detected! This could mean:`)
       debugLog.warn(`   1. Site is not published (CMS assets only detected from published sites)`)
       debugLog.warn(`   2. All images are also in canvas (not detected as CMS)`)
       debugLog.warn(`   3. Component controls don't contain image data`)
-      debugLog.warn(`   💡 Try: Publish your site or add manual CMS estimates`)
     }
     
-    // Calculate CMS bandwidth impact (combine all CMS assets including manual estimates)
-    const allCMSAssetsForImpact = [
-      ...cms.map((asset, idx) => ({
-        id: asset.nodeId || `cms-${idx}`,
-        collectionId: asset.cmsCollectionName?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
-        collectionName: asset.cmsCollectionName || 'Unknown',
-        estimatedBytes: asset.estimatedBytes,
-        estimatedDimensions: asset.dimensions,
-        format: asset.format || 'unknown',
-        isManualEstimate: false,
-        status: 'found' as const
-      })),
-      ...manual.map((est, idx) => ({
-        id: `manual-${est.nodeId}-${idx}`,
-        collectionId: est.cmsCollectionName?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
-        collectionName: est.cmsCollectionName || 'Unknown',
-        estimatedBytes: est.estimatedBytes,
-        estimatedDimensions: est.dimensions,
-        format: est.format || 'unknown',
-        isManualEstimate: true,
-        status: 'estimated' as const
-      }))
-    ]
-    const cmsBandwidthImpact = allCMSAssetsForImpact.length > 0 
-      ? calculateCMSBandwidthImpact(allCMSAssetsForImpact)
+    // Calculate CMS bandwidth impact
+    const cmsAssetsForImpact = cms.map((asset, idx) => ({
+      id: asset.nodeId || `cms-${idx}`,
+      collectionId: asset.cmsCollectionName?.toLowerCase().replace(/\s+/g, '-') || 'unknown',
+      collectionName: asset.cmsCollectionName || 'Unknown',
+      estimatedBytes: asset.estimatedBytes,
+      estimatedDimensions: asset.dimensions,
+      format: asset.format || 'unknown',
+      isManualEstimate: false,
+      status: 'found' as const
+    }))
+    const cmsBandwidthImpact = cmsAssetsForImpact.length > 0
+      ? calculateCMSBandwidthImpact(cmsAssetsForImpact)
       : undefined
 
     const result: ProjectAnalysis = {
@@ -429,9 +411,8 @@ export async function analyzeProject(
         desktop: overallDesktop
       },
       allRecommendations,
-      cmsAssetsCount: allCMSAssets.length,
+      cmsAssetsCount: cms.length,
       cmsAssetsBytes,
-      hasManualCMSEstimates,
       cmsBandwidthImpact,
       cmsAssetsNotFound
     }

@@ -235,7 +235,6 @@ export interface ProjectAnalysis {
   allRecommendations: Recommendation[]
   cmsAssetsCount?: number
   cmsAssetsBytes?: number
-  hasManualCMSEstimates?: boolean
   cmsBandwidthImpact?: CMSBandwidthImpact
   cmsAssetsNotFound?: number
   publishedUrl?: string

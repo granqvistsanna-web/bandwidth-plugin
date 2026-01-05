@@ -44,10 +44,6 @@ export function App() {
       progress,
       runAnalysis,
       lastScanned,
-      manualCMSEstimates,
-      addManualCMSEstimate,
-      updateManualCMSEstimate,
-      removeManualCMSEstimate,
       ignoredRecommendationIds,
       ignoreRecommendation,
       unignoreRecommendation
@@ -122,11 +118,6 @@ export function App() {
                                     analysis={analysis}
                                     onNavigateToRecommendations={() => setActiveTab('recommendations')}
                                     onNavigateToBandwidth={() => setActiveTab('bandwidth')}
-                                    manualCMSEstimates={manualCMSEstimates}
-                                    addManualCMSEstimate={addManualCMSEstimate}
-                                    updateManualCMSEstimate={updateManualCMSEstimate}
-                                    removeManualCMSEstimate={removeManualCMSEstimate}
-                                    onRescan={runAnalysis}
                                     lastScanned={lastScanned}
                                     loading={loading}
                                 />

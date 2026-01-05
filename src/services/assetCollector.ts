@@ -1,15 +1,15 @@
 /**
  * Asset Collection Service
- * 
+ *
  * Centralized service for collecting and organizing assets by source and breakpoint.
- * Separates concerns: canvas assets, CMS assets, and manual estimates.
+ * Separates concerns: canvas assets and CMS assets.
  */
 
 import type { AssetInfo, Breakpoint } from '../types/analysis'
 import { collectAllAssetsEfficient, collectPageAssets } from './traversal'
-import { 
-  collectCMSAssets, 
-  convertCMSAssetsToAssetInfo, 
+import {
+  collectCMSAssets,
+  convertCMSAssetsToAssetInfo,
   extractCMSAssetsFromPublishedSite,
   extractAssetsFromCMSItems,
   collectCMSItems,
@@ -25,27 +25,14 @@ export interface AssetCollectionResult {
     mobile: AssetInfo[]
   }
   cms: AssetInfo[]
-  manual: AssetInfo[]
   allUnique: AssetInfo[] // Deduplicated across all sources
-}
-
-export interface ManualCMSEstimate {
-  id: string
-  collectionName: string
-  imageCount: number
-  avgWidth: number
-  avgHeight: number
-  format: string
-  estimatedBytes: number
-  createdAt?: string
 }
 
 /**
  * Collect all assets organized by source and breakpoint
  */
 export async function collectAllAssets(
-  excludedPageIds: string[] = [],
-  manualCMSEstimates: ManualCMSEstimate[] = []
+  excludedPageIds: string[] = []
 ): Promise<AssetCollectionResult> {
   debugLog.info('📡 Collecting assets for all breakpoints...')
 
@@ -68,20 +55,16 @@ export async function collectAllAssets(
       .filter(a => a.url)
       .map(a => a.url!)
   )
-  const cmsAssets = await collectCMSAssetsWithDeduplication(manualCMSEstimates, canvasImageUrls)
+  const cmsAssets = await collectCMSAssetsWithDeduplication(canvasImageUrls)
 
-  debugLog.success(`📦 CMS detection complete: ${cmsAssets.assets.length} assets found`)
-
-  // Convert manual estimates to AssetInfo
-  const manualAssets = convertManualEstimatesToAssets(manualCMSEstimates, cmsAssets.autoDetectedCollections)
+  debugLog.success(`📦 CMS detection complete: ${cmsAssets.length} assets found`)
 
   // Build unique asset map across all sources
   const allAssets = [
     ...desktopCanvas,
     ...tabletCanvas,
     ...mobileCanvas,
-    ...cmsAssets.assets,
-    ...manualAssets
+    ...cmsAssets
   ]
 
   const uniqueAssets = deduplicateAssets(allAssets)
@@ -93,8 +76,7 @@ export async function collectAllAssets(
       tablet: tabletCanvas,
       mobile: mobileCanvas
     },
-    cms: cmsAssets.assets,
-    manual: manualAssets,
+    cms: cmsAssets,
     allUnique: uniqueAssets
   }
 }
@@ -103,11 +85,9 @@ export async function collectAllAssets(
  * Collect CMS assets with deduplication logic
  */
 async function collectCMSAssetsWithDeduplication(
-  manualCMSEstimates: ManualCMSEstimate[],
   canvasImageUrls: Set<string>
-): Promise<{ assets: AssetInfo[], autoDetectedCollections: Set<string> }> {
+): Promise<AssetInfo[]> {
   const cmsAssets: unknown[] = []
-  const autoDetectedCollections = new Set<string>()
 
   // Method 1: Official CMS API
   try {
@@ -157,49 +137,7 @@ async function collectCMSAssetsWithDeduplication(
     // Published site analysis failed silently
   }
 
-  const cmsAssetInfos = convertCMSAssetsToAssetInfo(cmsAssets)
-
-  // Track auto-detected collections to prevent duplicate manual estimates
-  for (const asset of cmsAssetInfos) {
-    if (asset.cmsCollectionName) {
-      autoDetectedCollections.add(asset.cmsCollectionName)
-    }
-  }
-
-  return {
-    assets: cmsAssetInfos,
-    autoDetectedCollections
-  }
-}
-
-/**
- * Convert manual CMS estimates to AssetInfo, filtering out duplicates
- */
-function convertManualEstimatesToAssets(
-  estimates: ManualCMSEstimate[],
-  autoDetectedCollections: Set<string>
-): AssetInfo[] {
-  return estimates
-    .filter(estimate => {
-      const isDuplicate = estimate.collectionName && autoDetectedCollections.has(estimate.collectionName)
-      if (isDuplicate) {
-        debugLog.info(`⚠️ Skipping manual estimate for "${estimate.collectionName}" - already auto-detected`)
-      }
-      return !isDuplicate
-    })
-    .map((estimate, index) => ({
-      nodeId: `manual-cms-${estimate.id}-${index}`,
-      nodeName: `CMS (Manual): ${estimate.collectionName}`,
-      type: 'image' as const,
-      estimatedBytes: estimate.estimatedBytes,
-      dimensions: { width: estimate.avgWidth, height: estimate.avgHeight },
-      format: estimate.format,
-      visible: true,
-      isCMSAsset: true,
-      isManualEstimate: true,
-      manualEstimateNote: `${estimate.imageCount} images estimated`,
-      cmsCollectionName: estimate.collectionName
-    }))
+  return convertCMSAssetsToAssetInfo(cmsAssets)
 }
 
 /**
