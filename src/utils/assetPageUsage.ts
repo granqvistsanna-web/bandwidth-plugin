@@ -36,6 +36,7 @@ export interface RouteInfo {
     name: string
     slug: string  // e.g. "/about", "/services", "/"
   }
+  pageId?: string  // WebPageNode ID for filtering
   nodePath?: string  // Path to node in hierarchy: "Header > Logo > Image"
   breakpoint?: string  // Breakpoint frame name: "Desktop", "Tablet", "Mobile"
   confidence: 'high' | 'medium' | 'low'
@@ -196,6 +197,7 @@ export async function resolveNodeRoute(nodeId: string): Promise<RouteResolutionR
             name: (webPage as WebPageNodeWithName).name || 'Unnamed Route',
             slug: webPage.path || '/'
           },
+          pageId: webPage.id,
           confidence: 'high',
           isCMSDetailPage: !!webPage.collectionId,
           cmsCollectionId: webPage.collectionId || undefined
@@ -224,6 +226,7 @@ export async function resolveNodeRoute(nodeId: string): Promise<RouteResolutionR
               name: (webPage as WebPageNodeWithName).name || 'Unnamed Route',
               slug: webPage.path || '/'
             },
+            pageId: webPage.id,
             nodePath: nodePath || undefined,
             breakpoint,
             confidence: 'high',

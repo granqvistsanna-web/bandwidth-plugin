@@ -2,6 +2,13 @@ import type { AssetInfo, Breakpoint, BreakpointData } from '../types/analysis'
 import { getPixelDensity } from '../utils/formatBytes'
 import { getFramerOptimizationSetting } from '../hooks/useSettings'
 
+/** Bytes conversion constants */
+export const BYTES = {
+  KB: 1024,
+  MB: 1024 * 1024,
+  GB: 1024 * 1024 * 1024
+} as const
+
 /**
  * Calibration factors for bandwidth estimates based on real-world testing.
  *
@@ -74,10 +81,13 @@ export function calculateMonthlyBandwidth(
 
   const realistic = worstCase * calibrationFactor
 
+  // Guard against division by zero
+  const safeMonthlyVisitors = monthlyVisitors > 0 ? monthlyVisitors : 1
+
   return {
     realistic,
     worstCase,
-    perVisitorRealistic: realistic / monthlyVisitors,
+    perVisitorRealistic: realistic / safeMonthlyVisitors,
     perVisitorWorstCase: pageWeightBytes,
     calibrationFactor,
     framerOptimizationEnabled: useOptimization

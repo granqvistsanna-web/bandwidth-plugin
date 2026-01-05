@@ -4,8 +4,7 @@ import type { ProjectAnalysis, AnalysisProgress } from '../types/analysis'
 import { analyzeProject } from '../services/analyzer'
 import type { ManualCMSEstimate } from '../services/assetCollector'
 import { debugLog } from '../utils/debugLog'
-
-const EXCLUDED_PAGES_STORAGE_KEY = 'bandwidth-inspector-excluded-pages'
+import { getExcludedPageIds } from './useSettings'
 const MANUAL_ESTIMATES_STORAGE_KEY = 'bandwidth-inspector-cms-manual-estimates'
 const IGNORED_RECOMMENDATIONS_STORAGE_KEY = 'bandwidth-inspector-ignored-recommendations'
 
@@ -19,22 +18,11 @@ export function useAnalysis() {
   const [progress, setProgress] = useState<AnalysisProgress | null>(null)
   const [selectedPageId, setSelectedPageId] = useState<string | 'all'>('all')
   const [lastScanned, setLastScanned] = useState<Date | null>(null)
-  const [excludedPageIds, setExcludedPageIds] = useState<Set<string>>(new Set())
   const [manualCMSEstimates, setManualCMSEstimates] = useState<ManualCMSEstimate[]>([])
   const [ignoredRecommendationIds, setIgnoredRecommendationIds] = useState<Set<string>>(new Set())
 
-  // Load excluded pages and manual CMS estimates from localStorage on mount
+  // Load manual CMS estimates from localStorage on mount
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(EXCLUDED_PAGES_STORAGE_KEY)
-      if (stored) {
-        const ids = JSON.parse(stored) as string[]
-        setExcludedPageIds(new Set(ids))
-      }
-    } catch (error) {
-      debugLog.warn('Failed to load excluded pages from localStorage:', error)
-    }
-
     try {
       const stored = localStorage.getItem(MANUAL_ESTIMATES_STORAGE_KEY)
       if (stored) {
@@ -54,27 +42,6 @@ export function useAnalysis() {
     } catch (error) {
       debugLog.warn('Failed to load ignored recommendations from localStorage:', error)
     }
-  }, [])
-
-  // Save excluded pages to localStorage whenever they change
-  useEffect(() => {
-    try {
-      localStorage.setItem(EXCLUDED_PAGES_STORAGE_KEY, JSON.stringify(Array.from(excludedPageIds)))
-    } catch (error) {
-      debugLog.warn('Failed to save excluded pages to localStorage:', error)
-    }
-  }, [excludedPageIds])
-
-  const togglePageExclusion = useCallback((pageId: string) => {
-    setExcludedPageIds(prev => {
-      const next = new Set(prev)
-      if (next.has(pageId)) {
-        next.delete(pageId)
-      } else {
-        next.add(pageId)
-      }
-      return next
-    })
   }, [])
 
   // Save manual CMS estimates to localStorage whenever they change
@@ -162,9 +129,12 @@ export function useAnalysis() {
     debugLog.info('Starting new analysis...')
 
     try {
+      // Get excluded pages from settings (shared storage)
+      const excludedPageIds = getExcludedPageIds()
+
       const result = await analyzeProject(
         'canvas',
-        Array.from(excludedPageIds),
+        excludedPageIds,
         manualCMSEstimates,
         setProgress // Pass progress callback
       )
@@ -182,7 +152,7 @@ export function useAnalysis() {
     } finally {
       setLoading(false)
     }
-  }, [excludedPageIds, manualCMSEstimates])
+  }, [manualCMSEstimates])
 
   return {
     analysis,
@@ -193,8 +163,6 @@ export function useAnalysis() {
     selectedPageId,
     setSelectedPageId,
     lastScanned,
-    excludedPageIds,
-    togglePageExclusion,
     manualCMSEstimates,
     addManualCMSEstimate,
     updateManualCMSEstimate,

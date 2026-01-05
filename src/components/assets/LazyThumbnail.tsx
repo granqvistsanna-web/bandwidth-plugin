@@ -1,4 +1,4 @@
-import { useState, memo, useCallback } from 'react'
+import { useState, memo, useCallback, useEffect, useRef } from 'react'
 import { borders, surfaces, framerColors } from '../../styles/designTokens'
 
 interface LazyThumbnailProps {
@@ -6,13 +6,13 @@ interface LazyThumbnailProps {
   alt: string
   fallbackSrc?: string
   size?: number
-  /** When true, starts loading the image immediately */
+  /** When true, starts loading the image immediately (bypasses intersection observer) */
   forceLoad?: boolean
 }
 
 /**
- * Thumbnail that loads on hover for better performance.
- * Shows placeholder until user hovers, then loads and caches the image.
+ * Thumbnail that loads when visible in viewport using Intersection Observer.
+ * Shows placeholder until image is visible, then loads and caches the image.
  */
 export const LazyThumbnail = memo(function LazyThumbnail({
   src,
@@ -21,18 +21,40 @@ export const LazyThumbnail = memo(function LazyThumbnail({
   size = 48,
   forceLoad = false
 }: LazyThumbnailProps) {
-  const [shouldLoad, setShouldLoad] = useState(false)
+  const [shouldLoad, setShouldLoad] = useState(forceLoad)
   const [isLoaded, setIsLoaded] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
 
-  // Load when forceLoad becomes true (from parent hover)
-  const actualShouldLoad = shouldLoad || forceLoad
+  // Use Intersection Observer to load images when they're visible
+  useEffect(() => {
+    if (forceLoad || shouldLoad) return // Already loading or forced
 
-  const handleMouseEnter = useCallback(() => {
-    if (!shouldLoad) {
-      setShouldLoad(true)
+    const container = containerRef.current
+    if (!container) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setShouldLoad(true)
+            observer.disconnect()
+          }
+        })
+      },
+      {
+        // Start loading when thumbnail is 50px away from viewport
+        rootMargin: '50px',
+        threshold: 0.01
+      }
+    )
+
+    observer.observe(container)
+
+    return () => {
+      observer.disconnect()
     }
-  }, [shouldLoad])
+  }, [forceLoad, shouldLoad])
 
   const handleLoad = useCallback(() => {
     setIsLoaded(true)
@@ -46,7 +68,7 @@ export const LazyThumbnail = memo(function LazyThumbnail({
 
   return (
     <div
-      onMouseEnter={handleMouseEnter}
+      ref={containerRef}
       style={{
         width: `${size}px`,
         height: `${size}px`,
@@ -66,7 +88,7 @@ export const LazyThumbnail = memo(function LazyThumbnail({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            animation: actualShouldLoad ? 'pulse 1.5s ease-in-out infinite' : 'none'
+            animation: shouldLoad ? 'pulse 1.5s ease-in-out infinite' : 'none'
           }}
         >
           <svg
@@ -86,12 +108,12 @@ export const LazyThumbnail = memo(function LazyThumbnail({
         </div>
       )}
 
-      {/* Image - only rendered after hover triggers load */}
-      {actualShouldLoad && (
+      {/* Image - rendered when visible in viewport */}
+      {shouldLoad && (
         <img
           src={hasError && fallbackSrc ? fallbackSrc : src}
           alt={alt}
-          loading="eager"
+          loading="lazy"
           decoding="async"
           onLoad={handleLoad}
           onError={handleError}

@@ -37,8 +37,11 @@ function isValidImageUrl(url: string): boolean {
   }
 }
 
+/** Timeout for image fetch operations (10 seconds) */
+const FETCH_TIMEOUT_MS = 10000
+
 /**
- * Fetch image bytes from URL
+ * Fetch image bytes from URL with timeout
  */
 export async function fetchImageBytes(url: string): Promise<Uint8Array> {
   // Validate URL
@@ -47,10 +50,16 @@ export async function fetchImageBytes(url: string): Promise<Uint8Array> {
   }
 
   try {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
+
     const response = await fetch(url, {
       mode: 'cors',
-      credentials: 'omit'
+      credentials: 'omit',
+      signal: controller.signal
     })
+
+    clearTimeout(timeoutId)
 
     if (!response.ok) {
       throw new Error(`Failed to fetch image: ${response.status} ${response.statusText}`)

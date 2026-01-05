@@ -1,5 +1,6 @@
-import type { ProjectAnalysis, PageAnalysis, AnalysisMode, Recommendation, AnalysisProgress } from '../types/analysis'
-import { getAllPages } from './traversal'
+import { framer } from 'framer-plugin'
+import type { ProjectAnalysis, PageAnalysis, AnalysisMode, Recommendation, AnalysisProgress, AssetInfo } from '../types/analysis'
+import { getAllPages, clearPagesCache } from './traversal'
 import { calculateBreakpointData } from './bandwidth'
 import { generateRecommendations } from './recommendations'
 import { getPublishedUrl, analyzePublishedSite } from './publishedAnalysis'
@@ -9,6 +10,10 @@ import { debugLog } from '../utils/debugLog'
 import { formatBytes } from '../utils/formatBytes'
 import { handleServiceError, ErrorCode } from '../utils/errorHandler'
 import { resolveNodeRoute, clearRoutesCache } from '../utils/assetPageUsage'
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
 /**
  * Enrich a recommendation with proper route info (Site Page, not breakpoint artboard)
@@ -25,10 +30,10 @@ async function enrichWithRouteInfo(rec: Recommendation): Promise<Recommendation>
     if (result.found && result.routeInfo) {
       return {
         ...rec,
+        pageId: result.routeInfo.pageId || rec.pageId,
         pageName: result.routeInfo.route.name,
         pageSlug: result.routeInfo.route.slug,
         breakpoint: result.routeInfo.breakpoint,
-        // Keep pageId as-is (WebPageNode ID if we had it)
         isCMSAsset: rec.isCMSAsset || result.routeInfo.isCMSDetailPage
       }
     }
@@ -39,6 +44,132 @@ async function enrichWithRouteInfo(rec: Recommendation): Promise<Recommendation>
 
   return rec
 }
+
+/**
+ * Filter assets from excluded pages
+ */
+function filterExcludedAssets(assets: AssetInfo[], excludedPageIds: string[]): AssetInfo[] {
+  if (excludedPageIds.length === 0) return assets
+  return assets.filter(asset => !asset.pageId || !excludedPageIds.includes(asset.pageId))
+}
+
+/**
+ * Merge and deduplicate recommendations from multiple sources.
+ * Tracks cross-page usage and keeps highest-impact recommendations.
+ */
+function mergeRecommendations(
+  pageRecommendations: Recommendation[],
+  overallRecommendations: Recommendation[]
+): Recommendation[] {
+  // Map recommendations by nodeId to deduplicate
+  const recommendationMap = new Map<string, Recommendation>()
+
+  // Track which pages use each asset (by URL for cross-page tracking)
+  const urlToPages = new Map<string, { pageId: string; pageName: string }[]>()
+
+  // First pass: collect all page info for each URL
+  for (const rec of pageRecommendations) {
+    if (rec.url && rec.pageId && rec.pageName) {
+      const pages = urlToPages.get(rec.url) || []
+      if (!pages.some(p => p.pageId === rec.pageId)) {
+        pages.push({ pageId: rec.pageId, pageName: rec.pageName })
+      }
+      urlToPages.set(rec.url, pages)
+    }
+  }
+
+  // Second pass: add page-specific recommendations with usedInPages populated
+  for (const rec of pageRecommendations) {
+    const key = rec.nodeId || rec.id
+    const existing = recommendationMap.get(key)
+
+    // Get all pages where this URL is used
+    const pagesForUrl = rec.url ? urlToPages.get(rec.url) : undefined
+    const usedInPages = pagesForUrl && pagesForUrl.length > 0
+      ? pagesForUrl
+      : (rec.pageId && rec.pageName ? [{ pageId: rec.pageId, pageName: rec.pageName }] : undefined)
+
+    // Keep the recommendation with higher potential savings, but merge page info
+    if (!existing || rec.potentialSavings > existing.potentialSavings) {
+      recommendationMap.set(key, { ...rec, usedInPages })
+    } else if (existing && usedInPages) {
+      // Merge page info if we have more pages
+      const existingPages = existing.usedInPages || []
+      const mergedPages = [...existingPages]
+      for (const page of usedInPages) {
+        if (!mergedPages.some(p => p.pageId === page.pageId)) {
+          mergedPages.push(page)
+        }
+      }
+      if (mergedPages.length > existingPages.length) {
+        recommendationMap.set(key, { ...existing, usedInPages: mergedPages })
+      }
+    }
+  }
+
+  // Add overall recommendations that weren't in page-specific analysis
+  for (const rec of overallRecommendations) {
+    const key = rec.nodeId || rec.id
+    if (!recommendationMap.has(key)) {
+      const pagesForUrl = rec.url ? urlToPages.get(rec.url) : undefined
+      const usedInPages = pagesForUrl && pagesForUrl.length > 0
+        ? pagesForUrl
+        : (rec.pageId && rec.pageName ? [{ pageId: rec.pageId, pageName: rec.pageName }] : undefined)
+      recommendationMap.set(key, { ...rec, usedInPages })
+    }
+  }
+
+  return Array.from(recommendationMap.values())
+}
+
+/**
+ * Sort recommendations by impact (stable sort)
+ */
+function sortRecommendationsByImpact(recommendations: Recommendation[]): Recommendation[] {
+  return [...recommendations].sort((a, b) => {
+    // Primary: by potential savings (descending)
+    if (b.potentialSavings !== a.potentialSavings) {
+      return b.potentialSavings - a.potentialSavings
+    }
+    // Secondary: by priority
+    const priorityOrder = { high: 0, medium: 1, low: 2 }
+    const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
+    if (priorityDiff !== 0) return priorityDiff
+    // Tertiary: by node name (alphabetical)
+    const nameA = a.nodeName || ''
+    const nameB = b.nodeName || ''
+    if (nameA !== nameB) return nameA.localeCompare(nameB)
+    // Final: by node ID for complete stability
+    return (a.nodeId || a.id).localeCompare(b.nodeId || b.id)
+  })
+}
+
+/**
+ * Filter recommendations from excluded pages
+ */
+function filterExcludedRecommendations(
+  recommendations: Recommendation[],
+  excludedPageIds: string[]
+): Recommendation[] {
+  if (excludedPageIds.length === 0) return recommendations
+
+  return recommendations.filter(rec => {
+    // Check if this recommendation's page is excluded
+    if (rec.pageId && excludedPageIds.includes(rec.pageId)) {
+      return false
+    }
+    // Check usedInPages - if ALL pages are excluded, filter it out
+    if (rec.usedInPages && rec.usedInPages.length > 0) {
+      const hasNonExcludedPage = rec.usedInPages.some(p => !excludedPageIds.includes(p.pageId))
+      if (!hasNonExcludedPage) return false
+    }
+    return true
+  })
+}
+
+// ============================================================================
+// MAIN ANALYSIS FUNCTION
+// ============================================================================
 
 export async function analyzeProject(
   mode: AnalysisMode = 'canvas',
@@ -52,21 +183,24 @@ export async function analyzeProject(
     // Report progress: Finding pages
     onProgress?.({ step: 'pages', message: 'Finding pages...' })
 
-    // Clear caches at the start of analysis
-    const { clearPagesCache } = await import('./traversal')
+    // Clear caches at the start of analysis for fresh data
     clearPagesCache()
-    clearRoutesCache() // Clear routes cache for fresh route resolution
+    clearRoutesCache()
 
-    const allPages = await getAllPages(true) // Exclude design pages by default
-    
+    // Get ALL pages (without draft filtering) for Settings UI
+    const allPagesIncludingDrafts = await getAllPages(true, false) // excludeDesignPages=true, excludeDraftPages=false
+
+    // Get pages with heuristic draft filtering for analysis
+    const allPages = await getAllPages(true, true) // excludeDesignPages=true, excludeDraftPages=true
+
     // Filter out user-excluded pages
     const pages = allPages.filter(page => !excludedPageIds.includes(page.id))
-    
+
     if (excludedPageIds.length > 0) {
       debugLog.info(`Excluded ${excludedPageIds.length} user-selected page(s) from analysis`)
     }
-    
-    debugLog.success(`Found ${pages.length} pages`, pages.map(p => p.name || p.id))
+
+    debugLog.success(`Found ${pages.length} pages (${allPagesIncludingDrafts.length} total available)`, pages.map(p => p.name || p.id))
 
     if (!pages || !Array.isArray(pages)) {
       debugLog.error('Pages is not an array:', pages)
@@ -89,16 +223,30 @@ export async function analyzeProject(
     debugLog.success(`✅ Collected assets: ${canvas.desktop.length} desktop, ${canvas.tablet.length} tablet, ${canvas.mobile.length} mobile canvas assets`)
     debugLog.success(`✅ CMS assets: ${cms.length}, Manual estimates: ${manual.length}`)
 
+    // Filter out assets from excluded pages
+    const filteredDesktop = filterExcludedAssets(canvas.desktop, excludedPageIds)
+    const filteredTablet = filterExcludedAssets(canvas.tablet, excludedPageIds)
+    const filteredMobile = filterExcludedAssets(canvas.mobile, excludedPageIds)
+
+    if (excludedPageIds.length > 0) {
+      const filteredCount = (canvas.desktop.length - filteredDesktop.length) +
+                           (canvas.tablet.length - filteredTablet.length) +
+                           (canvas.mobile.length - filteredMobile.length)
+      if (filteredCount > 0) {
+        debugLog.info(`Filtered ${filteredCount} assets from excluded pages`)
+      }
+    }
+
     // Report progress: Calculating bandwidth
-    const totalAssets = canvas.desktop.length + cms.length + manual.length
+    const totalAssets = filteredDesktop.length + cms.length + manual.length
     onProgress?.({ step: 'bandwidth', message: `Calculating bandwidth for ${totalAssets} assets...` })
 
     // Calculate bandwidth for each breakpoint using breakpoint-specific assets
     // CRITICAL: Each breakpoint must use its own assets + CMS + manual (CMS/manual are same across breakpoints)
     debugLog.info('💰 Calculating bandwidth estimates for each breakpoint...')
-    const overallDesktop = calculateBreakpointData([...canvas.desktop, ...cms, ...manual], 'desktop')
-    const overallTablet = calculateBreakpointData([...canvas.tablet, ...cms, ...manual], 'tablet')
-    const overallMobile = calculateBreakpointData([...canvas.mobile, ...cms, ...manual], 'mobile')
+    const overallDesktop = calculateBreakpointData([...filteredDesktop, ...cms, ...manual], 'desktop')
+    const overallTablet = calculateBreakpointData([...filteredTablet, ...cms, ...manual], 'tablet')
+    const overallMobile = calculateBreakpointData([...filteredMobile, ...cms, ...manual], 'mobile')
 
     debugLog.success(`Total bandwidth: ${(overallDesktop.totalBytes / 1024 / 1024).toFixed(2)} MB`)
 
@@ -157,9 +305,14 @@ export async function analyzeProject(
           
           debugLog.success(`Page ${page.name || page.id}: ${pageDesktopAssets.length} assets, ${pageRecommendations.length} recommendations`)
           
+          // Get page path from WebPageNode
+          const webPage = page as { path?: string | null }
+          const pagePath = webPage.path || null
+
           return {
             pageId: page.id,
             pageName: page.name || 'Unnamed Page',
+            pagePath,
             breakpoints: {
               mobile: pageMobile,
               tablet: pageTablet,
@@ -171,9 +324,11 @@ export async function analyzeProject(
         } catch (error) {
           debugLog.error(`Error analyzing page ${page.name || page.id}`, error)
           // Fall back to overall data if page analysis fails
+          const webPage = page as { path?: string | null }
           return {
             pageId: page.id,
             pageName: page.name || 'Unnamed Page',
+            pagePath: webPage.path || null,
             breakpoints: {
               mobile: overallMobile,
               tablet: overallTablet,
@@ -186,101 +341,25 @@ export async function analyzeProject(
       })
     )
 
-    // Merge all page-specific recommendations into overall list
-    // This ensures we have page info for recommendations and they're ranked globally
+    // Merge and deduplicate recommendations from all pages
     const pageRecommendations = pageAnalyses.flatMap(page => page.recommendations)
-
-    // Create a map of recommendations by nodeId to deduplicate
-    // IMPORTANT: Use nodeId (not rec.id) to ensure same asset doesn't have multiple recommendations
-    // This prevents double-counting when same image appears on multiple pages
-    const recommendationMap = new Map<string, Recommendation>()
-
-    // Track which pages use each asset (by URL for cross-page tracking)
-    const urlToPages = new Map<string, { pageId: string; pageName: string }[]>()
-
-    // First pass: collect all page info for each URL
-    for (const rec of pageRecommendations) {
-      if (rec.url && rec.pageId && rec.pageName) {
-        const pages = urlToPages.get(rec.url) || []
-        // Only add if not already in the list
-        if (!pages.some(p => p.pageId === rec.pageId)) {
-          pages.push({ pageId: rec.pageId, pageName: rec.pageName })
-        }
-        urlToPages.set(rec.url, pages)
-      }
-    }
-
-    // Second pass: add page-specific recommendations with usedInPages populated
-    for (const rec of pageRecommendations) {
-      const key = rec.nodeId || rec.id
-      const existing = recommendationMap.get(key)
-
-      // Get all pages where this URL is used
-      const pagesForUrl = rec.url ? urlToPages.get(rec.url) : undefined
-      const usedInPages = pagesForUrl && pagesForUrl.length > 0 ? pagesForUrl :
-                          (rec.pageId && rec.pageName ? [{ pageId: rec.pageId, pageName: rec.pageName }] : undefined)
-
-      // Keep the recommendation with higher potential savings, but merge page info
-      if (!existing || rec.potentialSavings > existing.potentialSavings) {
-        recommendationMap.set(key, { ...rec, usedInPages })
-      } else if (existing && usedInPages) {
-        // Merge page info if we have more pages
-        const existingPages = existing.usedInPages || []
-        const mergedPages = [...existingPages]
-        for (const page of usedInPages) {
-          if (!mergedPages.some(p => p.pageId === page.pageId)) {
-            mergedPages.push(page)
-          }
-        }
-        if (mergedPages.length > existingPages.length) {
-          recommendationMap.set(key, { ...existing, usedInPages: mergedPages })
-        }
-      }
-    }
-
-    // Then, add overall recommendations only if they don't already exist
-    // This ensures we don't lose recommendations that weren't found in page-specific analysis
-    for (const rec of overallRecommendations) {
-      const key = rec.nodeId || rec.id
-      if (!recommendationMap.has(key)) {
-        // Try to get page info from URL mapping
-        const pagesForUrl = rec.url ? urlToPages.get(rec.url) : undefined
-        const usedInPages = pagesForUrl && pagesForUrl.length > 0 ? pagesForUrl :
-                            (rec.pageId && rec.pageName ? [{ pageId: rec.pageId, pageName: rec.pageName }] : undefined)
-        recommendationMap.set(key, { ...rec, usedInPages })
-      }
-    }
-    
-    // Convert back to array and sort globally by impact (stable sort)
-    const sortedRecommendations = Array.from(recommendationMap.values())
-      .sort((a, b) => {
-        // Primary sort: by potential savings (descending)
-        if (b.potentialSavings !== a.potentialSavings) {
-          return b.potentialSavings - a.potentialSavings
-        }
-        // Secondary sort: by priority
-        const priorityOrder = { high: 0, medium: 1, low: 2 }
-        const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority]
-        if (priorityDiff !== 0) {
-          return priorityDiff
-        }
-        // Tertiary sort: by node name (alphabetical) for stable ordering
-        const nameA = a.nodeName || ''
-        const nameB = b.nodeName || ''
-        if (nameA !== nameB) {
-          return nameA.localeCompare(nameB)
-        }
-        // Final sort: by node ID for complete stability
-        return (a.nodeId || a.id).localeCompare(b.nodeId || b.id)
-      })
+    const mergedRecommendations = mergeRecommendations(pageRecommendations, overallRecommendations)
+    const sortedRecommendations = sortRecommendationsByImpact(mergedRecommendations)
 
     // Enrich recommendations with proper route info (Site Page, not breakpoint artboard)
     // This uses WebPageNode.path to get the actual route slug like /about, /services
     debugLog.info('🔗 Enriching recommendations with route info...')
-    const allRecommendations = await Promise.all(
+    const enrichedRecommendations = await Promise.all(
       sortedRecommendations.map(rec => enrichWithRouteInfo(rec))
     )
-    debugLog.success(`✅ Enriched ${allRecommendations.length} recommendations with route info`)
+
+    // Filter out recommendations from excluded pages
+    const allRecommendations = filterExcludedRecommendations(enrichedRecommendations, excludedPageIds)
+
+    if (enrichedRecommendations.length !== allRecommendations.length) {
+      debugLog.info(`Filtered ${enrichedRecommendations.length - allRecommendations.length} recommendations from excluded pages`)
+    }
+    debugLog.success(`✅ Final recommendations: ${allRecommendations.length}`)
 
     // Calculate CMS asset statistics
     const allCMSAssets = [...cms, ...manual]
@@ -335,6 +414,15 @@ export async function analyzeProject(
       mode,
       pages: pageAnalyses,
       totalPages: pages.length,
+      // Include ALL pages (including drafts) for Settings UI exclusion list
+      allAvailablePages: allPagesIncludingDrafts.map(page => {
+        const webPage = page as { path?: string | null }
+        return {
+          pageId: page.id,
+          pageName: page.name || 'Unnamed Page',
+          pagePath: webPage.path || null
+        }
+      }),
       overallBreakpoints: {
         mobile: overallMobile,
         tablet: overallTablet,

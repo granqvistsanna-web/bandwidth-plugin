@@ -50,10 +50,11 @@ export async function collectAllAssets(
   debugLog.info('📡 Collecting assets for all breakpoints...')
 
   // Collect canvas assets for each breakpoint separately
+  // Parameters: breakpoint, excludeDesignPages, excludeDraftPages, excludedPageIds
   const [desktopCanvas, tabletCanvas, mobileCanvas] = await Promise.all([
-    collectAllAssetsEfficient('desktop', true, excludedPageIds),
-    collectAllAssetsEfficient('tablet', true, excludedPageIds),
-    collectAllAssetsEfficient('mobile', true, excludedPageIds)
+    collectAllAssetsEfficient('desktop', true, true, excludedPageIds),
+    collectAllAssetsEfficient('tablet', true, true, excludedPageIds),
+    collectAllAssetsEfficient('mobile', true, true, excludedPageIds)
   ])
 
   debugLog.success(`✅ Canvas collection complete: ${desktopCanvas.length} desktop, ${tabletCanvas.length} tablet, ${mobileCanvas.length} mobile`)

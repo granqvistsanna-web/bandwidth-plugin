@@ -164,6 +164,11 @@ export function App() {
                                     lastScanned={lastScanned}
                                     loading={loading}
                                     onSettingsChange={runAnalysis}
+                                    availablePages={(analysis.allAvailablePages || []).map(p => ({
+                                        pageId: p.pageId,
+                                        pageName: p.pageName,
+                                        path: p.pagePath
+                                    }))}
                                 />
                             )}
                             {activeTab === 'debug' && (

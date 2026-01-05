@@ -1,4 +1,37 @@
+// ============================================================================
+// CORE TYPES
+// ============================================================================
+
+/** Device breakpoint for responsive analysis */
 export type Breakpoint = 'mobile' | 'tablet' | 'desktop'
+
+/** Asset source - where the asset came from */
+export type AssetSource = 'canvas' | 'cms' | 'manual'
+
+/** Priority level for recommendations */
+export type RecommendationPriority = 'high' | 'medium' | 'low'
+
+/** Type of optimization recommendation */
+export type RecommendationType = 'oversized' | 'format' | 'compression'
+
+// ============================================================================
+// SHARED REFERENCE TYPES
+// ============================================================================
+
+/** Minimal page reference used across multiple types */
+export interface PageReference {
+  pageId: string
+  pageName: string
+}
+
+/** Extended page reference with route information */
+export interface PageReferenceWithRoute extends PageReference {
+  pagePath?: string | null
+}
+
+// ============================================================================
+// ANALYSIS PROGRESS
+// ============================================================================
 
 /**
  * Progress information during analysis
@@ -7,6 +40,10 @@ export interface AnalysisProgress {
   step: 'pages' | 'assets' | 'bandwidth' | 'recommendations' | 'complete'
   message: string
 }
+
+// ============================================================================
+// PAGE USAGE TYPES
+// ============================================================================
 
 /**
  * Page usage information for an asset
@@ -45,6 +82,14 @@ export interface AssetPageUsage {
   }
 }
 
+// ============================================================================
+// ASSET TYPES
+// ============================================================================
+
+/**
+ * Information about a single asset (image or SVG).
+ * Assets can come from canvas (Framer nodes), CMS collections, or manual estimates.
+ */
 export interface AssetInfo {
   nodeId: string
   nodeName: string
@@ -76,6 +121,11 @@ export interface AssetInfo {
   cmsItemSlug?: string // CMS item slug (for CMS assets)
 }
 
+// ============================================================================
+// BANDWIDTH & BREAKDOWN TYPES
+// ============================================================================
+
+/** Breakdown of bandwidth by content type */
 export interface BreakdownData {
   images: number
   fonts: number
@@ -83,15 +133,22 @@ export interface BreakdownData {
   svg: number
 }
 
+/** Bandwidth data for a specific breakpoint */
 export interface BreakpointData {
   totalBytes: number
   breakdown: BreakdownData
   assets: AssetInfo[]
 }
 
+// ============================================================================
+// PAGE ANALYSIS TYPES
+// ============================================================================
+
+/** Analysis results for a single page */
 export interface PageAnalysis {
   pageId: string
   pageName: string
+  pagePath?: string | null // Route path like "/about" or "/services"
   breakpoints: {
     mobile: BreakpointData
     tablet: BreakpointData
@@ -101,10 +158,15 @@ export interface PageAnalysis {
   recommendations: Recommendation[]
 }
 
+// ============================================================================
+// RECOMMENDATION TYPES
+// ============================================================================
+
+/** An optimization recommendation for an asset */
 export interface Recommendation {
   id: string
-  type: 'oversized' | 'format' | 'compression'
-  priority: 'high' | 'medium' | 'low'
+  type: RecommendationType
+  priority: RecommendationPriority
   nodeId: string
   nodeName: string
   currentBytes: number
@@ -125,6 +187,11 @@ export interface Recommendation {
   cmsItemSlug?: string // CMS item slug (for CMS assets)
 }
 
+// ============================================================================
+// COST ESTIMATION TYPES
+// ============================================================================
+
+/** Cost estimation for bandwidth usage */
 export interface CostEstimation {
   pageViews: number
   totalBytes: number
@@ -132,18 +199,34 @@ export interface CostEstimation {
   provider: string
 }
 
+// ============================================================================
+// CMS TYPES
+// ============================================================================
+
+/** Analysis mode - canvas (design view) or published (live site) */
 export type AnalysisMode = 'canvas' | 'published'
 
+/** CMS bandwidth impact across collections */
 export interface CMSBandwidthImpact {
   totalBytes: number
   byCollection: Record<string, number>
   estimatedMonthlyBytes: number
 }
 
+// ============================================================================
+// PROJECT ANALYSIS (TOP-LEVEL)
+// ============================================================================
+
+/**
+ * Complete analysis results for a Framer project.
+ * This is the main output type returned by the analyzer.
+ */
 export interface ProjectAnalysis {
   mode: AnalysisMode
   pages: PageAnalysis[]
   totalPages: number
+  /** All available pages for Settings UI (includes drafts, for manual exclusion) */
+  allAvailablePages?: Array<{ pageId: string; pageName: string; pagePath?: string | null }>
   overallBreakpoints: {
     mobile: BreakpointData
     tablet: BreakpointData

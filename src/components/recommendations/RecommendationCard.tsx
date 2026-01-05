@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { framer } from 'framer-plugin'
 import type { Recommendation } from '../../types/analysis'
 import { Button } from '../primitives/Button'
@@ -47,9 +47,48 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
   const [isExpanded, setIsExpanded] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false)
+  const [shouldLoadThumbnail, setShouldLoadThumbnail] = useState(false)
+  const thumbnailContainerRef = useRef<HTMLDivElement>(null)
 
   const handleMouseEnter = useCallback(() => setIsHovered(true), [])
   const handleMouseLeave = useCallback(() => setIsHovered(false), [])
+
+  const isCMS = recommendation.isCMSAsset || !!recommendation.cmsItemSlug
+  const canSelect = !isCMS && recommendation.nodeId && recommendation.nodeId.trim() !== ''
+  const hasPreview = recommendation.url && !recommendation.url.includes('.svg')
+  const canOptimize = !isCMS && recommendation.url && 
+                      recommendation.optimalWidth && 
+                      recommendation.optimalHeight && 
+                      recommendation.type !== 'compression' && // Skip compression-only recommendations for now
+                      !recommendation.url.includes('.svg') // Skip SVGs
+
+  // Use Intersection Observer to load thumbnails when visible
+  useEffect(() => {
+    const container = thumbnailContainerRef.current
+    if (!container || !hasPreview) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setShouldLoadThumbnail(true)
+            observer.disconnect()
+          }
+        })
+      },
+      {
+        // Start loading when thumbnail is 50px away from viewport
+        rootMargin: '50px',
+        threshold: 0.01
+      }
+    )
+
+    observer.observe(container)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [hasPreview])
 
   const handleOptimize = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -262,15 +301,6 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
     }
   }
 
-  const isCMS = recommendation.isCMSAsset || !!recommendation.cmsItemSlug
-  const canSelect = !isCMS && recommendation.nodeId && recommendation.nodeId.trim() !== ''
-  const hasPreview = recommendation.url && !recommendation.url.includes('.svg')
-  const canOptimize = !isCMS && recommendation.url && 
-                      recommendation.optimalWidth && 
-                      recommendation.optimalHeight && 
-                      recommendation.type !== 'compression' && // Skip compression-only recommendations for now
-                      !recommendation.url.includes('.svg') // Skip SVGs
-
   return (
     <>
       <ReplaceImageModal
@@ -301,9 +331,10 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
         gap: spacing.md,
         marginBottom: spacing.md
       }}>
-        {/* Thumbnail - Left Side (hover to load) */}
+        {/* Thumbnail - Left Side (loads when visible) */}
         {hasPreview && (
           <div
+            ref={thumbnailContainerRef}
             style={{
               flexShrink: 0,
               width: '64px',
@@ -324,7 +355,8 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
                   inset: 0,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  animation: shouldLoadThumbnail ? 'pulse 1.5s ease-in-out infinite' : 'none'
                 }}
               >
                 <svg
@@ -343,12 +375,12 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
                 </svg>
               </div>
             )}
-            {/* Image - only load on hover */}
-            {isHovered && (
+            {/* Image - loads when visible in viewport */}
+            {shouldLoadThumbnail && (
               <img
                 src={getThumbnailUrl(recommendation.url || '', 64)}
                 alt={recommendation.nodeName}
-                loading="eager"
+                loading="lazy"
                 decoding="async"
                 onLoad={() => setThumbnailLoaded(true)}
                 style={{
@@ -368,8 +400,28 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
 
         {/* Content - Right Side */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: spacing.sm }}>
-          {/* Badges Row - Priority + Savings */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs }}>
+          {/* Badges Row - Priority + CMS + Savings */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: spacing.xs, flexWrap: 'wrap' }}>
+            {/* CMS Badge - Show when asset is from CMS */}
+            {isCMS && (
+              <div
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  padding: `${spacing.xxs} ${spacing.sm}`,
+                  backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                  color: '#6366F1',
+                  fontSize: typography.fontSize.xxs || '10px',
+                  fontWeight: typography.fontWeight.bold,
+                  borderRadius: borders.radius.full,
+                  letterSpacing: '0.02em',
+                  textTransform: 'uppercase'
+                }}
+                title={recommendation.cmsItemSlug ? `CMS item: ${recommendation.cmsItemSlug}` : 'CMS-managed asset'}
+              >
+                CMS
+              </div>
+            )}
             {/* Priority Badge - Only show for high/medium */}
             {(() => {
               const priorityBadge = getPriorityBadge(recommendation.priority)
@@ -482,7 +534,6 @@ export function RecommendationCard({ recommendation, onIgnore, isIgnored = false
             lineHeight: '1.5'
           }}>
             {recommendation.actionable || recommendation.description}
-            {isCMS && <span style={{ color: framerColors.textTertiary }}> · CMS</span>}
           </div>
         </div>
       </div>

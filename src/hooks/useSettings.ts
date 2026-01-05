@@ -2,12 +2,14 @@ import { useState, useEffect, useCallback } from 'react'
 
 export interface PluginSettings {
   includeFramerOptimization: boolean
+  excludedPageIds: string[] // Pages to exclude from analysis (for draft pages, etc.)
 }
 
 const SETTINGS_STORAGE_KEY = 'bandwidth-inspector-settings'
 
 const DEFAULT_SETTINGS: PluginSettings = {
-  includeFramerOptimization: true // Default: assume Framer optimizes images
+  includeFramerOptimization: true, // Default: assume Framer optimizes images
+  excludedPageIds: [] // No pages excluded by default
 }
 
 export function useSettings() {
@@ -50,11 +52,33 @@ export function useSettings() {
     }))
   }, [])
 
+  const togglePageExclusion = useCallback((pageId: string) => {
+    setSettings(prev => {
+      const isExcluded = prev.excludedPageIds.includes(pageId)
+      return {
+        ...prev,
+        excludedPageIds: isExcluded
+          ? prev.excludedPageIds.filter(id => id !== pageId)
+          : [...prev.excludedPageIds, pageId]
+      }
+    })
+  }, [])
+
+  const setExcludedPageIds = useCallback((pageIds: string[]) => {
+    setSettings(prev => ({
+      ...prev,
+      excludedPageIds: pageIds
+    }))
+  }, [])
+
   return {
     settings,
     updateSetting,
     toggleFramerOptimization,
-    includeFramerOptimization: settings.includeFramerOptimization
+    includeFramerOptimization: settings.includeFramerOptimization,
+    excludedPageIds: settings.excludedPageIds,
+    togglePageExclusion,
+    setExcludedPageIds
   }
 }
 
@@ -70,4 +94,18 @@ export function getFramerOptimizationSetting(): boolean {
     // Ignore errors
   }
   return true // Default to true
+}
+
+// Export a function to get excluded page IDs (for use in non-React code)
+export function getExcludedPageIds(): string[] {
+  try {
+    const stored = localStorage.getItem(SETTINGS_STORAGE_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      return parsed.excludedPageIds ?? []
+    }
+  } catch {
+    // Ignore errors
+  }
+  return [] // Default to no exclusions
 }

@@ -1,4 +1,4 @@
-import { memo, useMemo, useCallback, useState } from 'react'
+import { memo, useMemo, useCallback } from 'react'
 import type { AssetInfo } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
 import { getThumbnailUrl } from '../../utils/imageThumbnail'
@@ -62,8 +62,6 @@ export const AssetsTableRow = memo(function AssetsTableRow({
   onClick,
   style
 }: AssetsTableRowProps) {
-  const [isHovered, setIsHovered] = useState(false)
-
   // Memoize expensive calculations
   const potentialSavings = useMemo(() => calculatePotentialSavings(asset), [asset])
 
@@ -83,9 +81,6 @@ export const AssetsTableRow = memo(function AssetsTableRow({
     }
   }, [canClick, onClick, asset.nodeId])
 
-  const handleMouseEnter = useCallback(() => setIsHovered(true), [])
-  const handleMouseLeave = useCallback(() => setIsHovered(false), [])
-
   return (
     <div
       onClick={handleClick}
@@ -103,13 +98,11 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         boxSizing: 'border-box',
       }}
       onMouseEnter={(e) => {
-        handleMouseEnter()
         if (canClick) {
           e.currentTarget.style.backgroundColor = 'var(--hover-surface)'
         }
       }}
       onMouseLeave={(e) => {
-        handleMouseLeave()
         if (canClick) {
           e.currentTarget.style.backgroundColor = 'transparent'
         }
@@ -158,7 +151,6 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             alt={asset.nodeName || 'Image'}
             fallbackSrc={asset.url}
             size={48}
-            forceLoad={isHovered}
           />
         ) : (
           <div
@@ -210,6 +202,24 @@ export const AssetsTableRow = memo(function AssetsTableRow({
           flexWrap: 'wrap',
           lineHeight: '1.6'
         }}>
+          {/* CMS badge - show when asset is from CMS */}
+          {isCMS && (
+            <span
+              style={{
+                textTransform: 'uppercase',
+                fontSize: typography.fontSize.xxs || '10px',
+                fontWeight: typography.fontWeight.semibold,
+                letterSpacing: '0.05em',
+                color: '#6366F1', // Indigo for CMS
+                backgroundColor: 'rgba(99, 102, 241, 0.12)',
+                padding: '2px 6px',
+                borderRadius: '4px'
+              }}
+              title={asset.cmsCollectionName ? `From CMS: ${asset.cmsCollectionName}` : 'CMS-managed asset'}
+            >
+              CMS
+            </span>
+          )}
           {asset.format && (() => {
             const formatColor = getFormatColor(asset.format)
             return (
@@ -227,7 +237,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
               </span>
             )
           })()}
-          {asset.format && <span style={{ color: framerColors.textTertiary }}>·</span>}
+          {(isCMS || asset.format) && <span style={{ color: framerColors.textTertiary }}>·</span>}
           <span style={{ fontWeight: typography.fontWeight.medium, whiteSpace: 'nowrap' }}>
             {asset.actualDimensions ? (
               <>

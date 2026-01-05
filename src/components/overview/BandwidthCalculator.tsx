@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { formatBytes } from '../../utils/formatBytes'
 import { calculateDeviceWeightedBandwidth, getBreakpointInfo } from '../../utils/deviceBandwidth'
-import { calculateMonthlyBandwidth, BANDWIDTH_CALIBRATION } from '../../services/bandwidth'
+import { calculateMonthlyBandwidth, BANDWIDTH_CALIBRATION, BYTES } from '../../services/bandwidth'
 import type { ProjectAnalysis } from '../../types/analysis'
 import { spacing, typography, borders, surfaces, themeBorders, themeElevation, framerColors, status } from '../../styles/designTokens'
 import { CollapsibleSection } from './CollapsibleSection'
@@ -163,13 +163,15 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
     )
   }, [hasValidData, mobileData, tabletData, desktopData, monthlyPageviews, averagePagesPerVisit, pages, framerOptimizationEnabled])
 
-  // Extract values for display
-  const monthlyBandwidthGB = monthlyEstimate.realistic / (1024 * 1024 * 1024)
-  const worstCaseBandwidthGB = monthlyEstimate.worstCase / (1024 * 1024 * 1024)
-  const bandwidthPer1000 = (monthlyEstimate.perVisitorRealistic * 1000) / (1024 * 1024 * 1024)
+  // Extract values for display (convert bytes to GB)
+  const monthlyBandwidthGB = monthlyEstimate.realistic / BYTES.GB
+  const worstCaseBandwidthGB = monthlyEstimate.worstCase / BYTES.GB
+  const bandwidthPer1000 = (monthlyEstimate.perVisitorRealistic * 1000) / BYTES.GB
 
   const planLimit = FRAMER_PLANS[selectedPlan].bandwidthGB
-  const usagePercent = (monthlyBandwidthGB / planLimit) * 100
+  // Guard against division by zero and ensure valid percentage
+  const rawUsagePercent = planLimit > 0 ? (monthlyBandwidthGB / planLimit) * 100 : 0
+  const usagePercent = isNaN(rawUsagePercent) || !isFinite(rawUsagePercent) ? 0 : rawUsagePercent
   const overageGB = Math.max(0, monthlyBandwidthGB - planLimit)
 
   // Suggest appropriate plan based on estimate
@@ -203,7 +205,7 @@ export function BandwidthCalculator({ analysis, onNavigateToRecommendations }: B
   if (usagePercent > 100) {
     riskLevel = 'danger'
     riskTitle = 'Exceeds plan limit'
-    riskMessage = `Your estimate exceeds the ${FRAMER_PLANS[selectedPlan].name} plan limit by ${formatBytes(overageGB * 1024 * 1024 * 1024)}`
+    riskMessage = `Your estimate exceeds the ${FRAMER_PLANS[selectedPlan].name} plan limit by ${formatBytes(overageGB * BYTES.GB)}`
   } else if (usagePercent > 80) {
     riskLevel = 'warning'
     riskTitle = 'Approaching limit'

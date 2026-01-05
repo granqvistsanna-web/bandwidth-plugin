@@ -3,15 +3,22 @@ import { useTheme, type ThemeMode } from '../../hooks/useTheme'
 import { useSettings } from '../../hooks/useSettings'
 import { StatusIndicator } from '../common/StatusIndicator'
 
+interface PageInfo {
+  pageId: string
+  pageName: string
+  path?: string | null
+}
+
 interface SettingsPanelProps {
   lastScanned?: Date | null
   loading?: boolean
   onSettingsChange?: () => void
+  availablePages?: PageInfo[]
 }
 
-export function SettingsPanel({ lastScanned, loading, onSettingsChange }: SettingsPanelProps) {
+export function SettingsPanel({ lastScanned, loading, onSettingsChange, availablePages = [] }: SettingsPanelProps) {
   const { theme, resolvedTheme, setTheme } = useTheme()
-  const { includeFramerOptimization, toggleFramerOptimization } = useSettings()
+  const { includeFramerOptimization, toggleFramerOptimization, excludedPageIds, togglePageExclusion } = useSettings()
 
   const themeOptions: { value: ThemeMode; label: string; icon: JSX.Element }[] = [
     {
@@ -299,6 +306,143 @@ export function SettingsPanel({ lastScanned, loading, onSettingsChange }: Settin
           </div>
         </div>
       </div>
+
+      {/* Page Exclusion */}
+      {availablePages.length > 0 && (
+        <div>
+          <div
+            style={{
+              padding: spacing.lg,
+              backgroundColor: surfaces.secondary,
+              borderRadius: borders.radius.lg,
+            }}
+          >
+            <div style={{ marginBottom: spacing.md }}>
+              <div style={{
+                fontSize: typography.fontSize.xs,
+                fontWeight: typography.fontWeight.medium,
+                color: framerColors.text,
+                marginBottom: '2px'
+              }}>
+                Exclude Pages
+              </div>
+              <p
+                style={{
+                  fontSize: typography.fontSize.xs,
+                  color: framerColors.textSecondary,
+                  lineHeight: '1.4',
+                  margin: 0
+                }}
+              >
+                Select pages to exclude from analysis (e.g., draft pages)
+              </p>
+            </div>
+
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: spacing.xs,
+              maxHeight: '200px',
+              overflowY: 'auto'
+            }}>
+              {availablePages.map((page) => {
+                const isExcluded = excludedPageIds.includes(page.pageId)
+                return (
+                  <label
+                    key={page.pageId}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: spacing.sm,
+                      padding: spacing.sm,
+                      backgroundColor: isExcluded ? 'var(--surface-tertiary)' : 'transparent',
+                      borderRadius: borders.radius.sm,
+                      cursor: 'pointer',
+                      transition: 'background-color 0.15s ease'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isExcluded}
+                      onChange={() => togglePageExclusion(page.pageId)}
+                      style={{
+                        width: '14px',
+                        height: '14px',
+                        cursor: 'pointer',
+                        accentColor: 'var(--framer-color-tint)'
+                      }}
+                    />
+                    <div style={{
+                      flex: 1,
+                      minWidth: 0,
+                      fontSize: typography.fontSize.xs,
+                      fontWeight: typography.fontWeight.medium,
+                      color: isExcluded ? framerColors.textSecondary : framerColors.text,
+                      textDecoration: isExcluded ? 'line-through' : 'none',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {page.path || '/'}
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+
+            {excludedPageIds.length > 0 && (
+              <div style={{
+                marginTop: spacing.sm,
+                paddingTop: spacing.sm,
+                borderTop: '1px solid var(--framer-color-divider)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: spacing.sm
+              }}>
+                <span style={{
+                  fontSize: typography.fontSize.xs,
+                  color: framerColors.textSecondary
+                }}>
+                  {excludedPageIds.length} page{excludedPageIds.length !== 1 ? 's' : ''} excluded
+                </span>
+                <button
+                  onClick={() => onSettingsChange?.()}
+                  style={{
+                    width: '100%',
+                    padding: `${spacing.sm} ${spacing.md}`,
+                    fontSize: typography.fontSize.xs,
+                    fontWeight: typography.fontWeight.medium,
+                    color: '#fff',
+                    backgroundColor: 'var(--framer-color-tint)',
+                    border: 'none',
+                    borderRadius: borders.radius.md,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.opacity = '0.9'
+                    e.currentTarget.style.transform = 'translateY(-1px)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.opacity = '1'
+                    e.currentTarget.style.transform = 'translateY(0)'
+                  }}
+                  onMouseDown={(e) => {
+                    e.currentTarget.style.transform = 'translateY(0)'
+                    e.currentTarget.style.opacity = '0.8'
+                  }}
+                  onMouseUp={(e) => {
+                    e.currentTarget.style.transform = 'translateY(-1px)'
+                    e.currentTarget.style.opacity = '0.9'
+                  }}
+                >
+                  Rescan to apply
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* About Section */}
       <div>

@@ -57,6 +57,17 @@ export function AssetFilters({
     onFiltersChange({ ...filters, type })
   }
 
+  const hasActiveFilters = filters.type !== 'all'
+
+  const handleClearFilters = () => {
+    onFiltersChange({
+      type: 'all',
+      sizeRange: { min: 0, max: Infinity },
+      format: 'all',
+      pageUsage: 'all'
+    })
+  }
+
   return (
     <div style={{
       display: 'flex',
@@ -114,6 +125,41 @@ export function AssetFilters({
         </div>
       )}
 
+      {/* Clear filters button */}
+      {hasActiveFilters && (
+        <button
+          onClick={handleClearFilters}
+          style={{
+            padding: `${spacing.xs} ${spacing.sm}`,
+            fontSize: typography.fontSize.xs,
+            fontWeight: typography.fontWeight.medium,
+            color: framerColors.textSecondary,
+            backgroundColor: 'transparent',
+            border: 'none',
+            borderRadius: borders.radius.sm,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: spacing.xxs,
+            transition: 'all 0.15s ease',
+            whiteSpace: 'nowrap'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = framerColors.text
+            e.currentTarget.style.backgroundColor = surfaces.tertiary
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = framerColors.textSecondary
+            e.currentTarget.style.backgroundColor = 'transparent'
+          }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+          Clear
+        </button>
+      )}
     </div>
   )
 }
