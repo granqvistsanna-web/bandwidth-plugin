@@ -10,8 +10,8 @@ export const AssetsTable = memo(function AssetsTable({ assets, onAssetClick }: A
   const rowVirtualizer = useVirtualizer({
     count: assets.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 80,
-    overscan: 3,
+    estimateSize: () => 72,
+    overscan: 5,
   })
 
   const handleClick = useCallback((nodeId: string) => {

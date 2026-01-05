@@ -88,14 +88,15 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         ...style,
         display: 'flex',
         alignItems: 'center',
-        gap: spacing.sm,
-        padding: `${spacing.md} 0`,
+        gap: spacing.md,
+        padding: `${spacing.sm} 0`,
         backgroundColor: 'transparent',
         borderBottom: `1px solid ${themeBorders.subtle}`,
         cursor: canClick ? 'pointer' : 'default',
         transition: canClick ? 'background-color 0.15s ease' : 'none',
-        minHeight: '80px', // Fixed row height for consistent table layout
+        height: '72px',
         boxSizing: 'border-box',
+        overflow: 'hidden',
       }}
       onMouseEnter={(e) => {
         if (canClick) {
@@ -108,43 +109,30 @@ export const AssetsTableRow = memo(function AssetsTableRow({
         }
       }}
     >
-      {/* Thumbnail - 64px */}
-      <div style={{ flexShrink: 0 }}>
+      {/* Thumbnail - fixed 48px */}
+      <div style={{ flexShrink: 0, width: '48px', height: '48px' }}>
         {asset.type === 'svg' ? (
-          asset.svgContent ? (
-            <div
-              style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: borders.radius.md,
-                border: `1px solid ${themeBorders.subtle}`,
-                backgroundColor: surfaces.tertiary,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                overflow: 'hidden' as const,
-                padding: '8px',
-              }}
-              dangerouslySetInnerHTML={{ __html: asset.svgContent }}
-            />
-          ) : (
-            <div
-              style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: borders.radius.md,
-                border: `1px solid ${themeBorders.subtle}`,
-                backgroundColor: surfaces.tertiary,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke={framerColors.textTertiary} strokeWidth="2">
+          <div
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: borders.radius.sm,
+              border: `1px solid ${themeBorders.subtle}`,
+              backgroundColor: surfaces.tertiary,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              overflow: 'hidden',
+              padding: '6px',
+            }}
+            dangerouslySetInnerHTML={asset.svgContent ? { __html: asset.svgContent } : undefined}
+          >
+            {!asset.svgContent && (
+              <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke={framerColors.textTertiary} strokeWidth="1.5">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
               </svg>
-            </div>
-          )
+            )}
+          </div>
         ) : asset.url && thumbnailUrl ? (
           <LazyThumbnail
             src={thumbnailUrl}
@@ -157,7 +145,7 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             style={{
               width: '48px',
               height: '48px',
-              borderRadius: borders.radius.md,
+              borderRadius: borders.radius.sm,
               border: `1px solid ${themeBorders.subtle}`,
               backgroundColor: surfaces.tertiary,
               display: 'flex',
@@ -165,16 +153,24 @@ export const AssetsTableRow = memo(function AssetsTableRow({
               justifyContent: 'center',
             }}
           >
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={framerColors.textTertiary} strokeWidth="2">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke={framerColors.textTertiary} strokeWidth="1.5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
         )}
       </div>
 
-      {/* Content - flexible wrapping layout */}
-      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: spacing.xs }}>
-        {/* Name */}
+      {/* Content - constrained to prevent overflow */}
+      <div style={{
+        flex: 1,
+        minWidth: 0,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        gap: '4px'
+      }}>
+        {/* Name - single line with ellipsis */}
         <div
           style={{
             fontSize: typography.fontSize.sm,
@@ -182,106 +178,77 @@ export const AssetsTableRow = memo(function AssetsTableRow({
             color: framerColors.text,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            lineHeight: '1.4',
+            whiteSpace: 'nowrap',
           }}
           title={asset.nodeName}
         >
           {asset.nodeName || 'Unnamed'}
         </div>
 
-        {/* Metadata - wraps if needed */}
+        {/* Metadata - single line, no wrapping */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: spacing.xs,
-          fontSize: typography.fontSize.xs,
+          gap: '6px',
+          fontSize: '11px',
           color: framerColors.textSecondary,
-          flexWrap: 'wrap',
-          lineHeight: '1.6'
+          overflow: 'hidden',
         }}>
-          {/* CMS badge - show when asset is from CMS */}
+          {/* CMS badge */}
           {isCMS && (
             <span
               style={{
+                flexShrink: 0,
                 textTransform: 'uppercase',
-                fontSize: typography.fontSize.xxs || '10px',
-                fontWeight: typography.fontWeight.semibold,
-                letterSpacing: '0.05em',
-                color: '#6366F1', // Indigo for CMS
+                fontSize: '9px',
+                fontWeight: 600,
+                letterSpacing: '0.03em',
+                color: '#6366F1',
                 backgroundColor: 'rgba(99, 102, 241, 0.12)',
-                padding: '2px 6px',
-                borderRadius: '4px'
+                padding: '1px 5px',
+                borderRadius: '3px'
               }}
-              title={asset.cmsCollectionName ? `From CMS: ${asset.cmsCollectionName}` : 'CMS-managed asset'}
             >
               CMS
             </span>
           )}
+          {/* Format badge */}
           {asset.format && (() => {
             const formatColor = getFormatColor(asset.format)
             return (
               <span style={{
+                flexShrink: 0,
                 textTransform: 'uppercase',
-                fontSize: typography.fontSize.xxs || '10px',
-                fontWeight: typography.fontWeight.semibold,
-                letterSpacing: '0.05em',
+                fontSize: '9px',
+                fontWeight: 600,
+                letterSpacing: '0.03em',
                 color: formatColor.text,
                 backgroundColor: formatColor.bg,
-                padding: '2px 6px',
-                borderRadius: '4px'
+                padding: '1px 5px',
+                borderRadius: '3px'
               }}>
                 {asset.format}
               </span>
             )
           })()}
-          {(isCMS || asset.format) && <span style={{ color: framerColors.textTertiary }}>·</span>}
-          <span style={{ fontWeight: typography.fontWeight.medium, whiteSpace: 'nowrap' }}>
-            {asset.actualDimensions ? (
-              <>
-                {Math.round(asset.actualDimensions.width)} × {Math.round(asset.actualDimensions.height)}
-                <span style={{ color: framerColors.textTertiary, margin: `0 ${spacing.xs}` }}>→</span>
-                {Math.round(asset.dimensions.width)} × {Math.round(asset.dimensions.height)}
-              </>
-            ) : (
-              <>
-                {Math.round(asset.dimensions.width)} × {Math.round(asset.dimensions.height)}
-              </>
-            )}
+          {/* Dimensions - truncate if needed */}
+          <span style={{
+            color: framerColors.textTertiary,
+            whiteSpace: 'nowrap',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis'
+          }}>
+            {Math.round(asset.dimensions.width)} × {Math.round(asset.dimensions.height)}
           </span>
         </div>
       </div>
 
-      {/* Size and Savings - compact right column */}
+      {/* Size - fixed width right column */}
       <div style={{
-        flex: 'none',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'flex-end',
-        gap: spacing.sm,
-        minWidth: '90px'
+        flexShrink: 0,
+        textAlign: 'right',
+        minWidth: '60px'
       }}>
-        {/* Savings badge - if has potential */}
-        {potentialSavings > 0 && (
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            padding: `${spacing.xxs} ${spacing.sm}`, // 2px top/bottom for compact badge
-            backgroundColor: surfaces.tertiary,
-            color: framerColors.text,
-            fontSize: typography.fontSize.xs,
-            fontWeight: typography.fontWeight.bold,
-            borderRadius: borders.radius.full,
-            letterSpacing: '0.01em',
-            whiteSpace: 'nowrap'
-          }}>
-            −{formatBytes(potentialSavings)}
-          </div>
-        )}
-
-        {/* Current size */}
         <span
           style={{
             fontSize: typography.fontSize.sm,
