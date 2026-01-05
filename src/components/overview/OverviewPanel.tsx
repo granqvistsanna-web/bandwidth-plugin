@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { framer } from 'framer-plugin'
 import type { ProjectAnalysis } from '../../types/analysis'
 import { formatBytes } from '../../utils/formatBytes'
@@ -37,6 +38,7 @@ export function OverviewPanel({
   lastScanned,
   loading
 }: OverviewPanelProps) {
+  const [customCodeExpanded, setCustomCodeExpanded] = useState(false)
 
   // Safety checks
   if (!analysis.overallBreakpoints) {
@@ -453,12 +455,12 @@ export function OverviewPanel({
                   flexDirection: 'column',
                   gap: spacing.sm
                 }}>
-                  {customCode.assets.slice(0, 5).map((asset, i) => (
+                  {(customCodeExpanded ? customCode.assets : customCode.assets.slice(0, 5)).map((asset, i, arr) => (
                     <div
                       key={i}
                       style={{
                         paddingBottom: spacing.sm,
-                        borderBottom: i < Math.min(4, customCode.assets.length - 1) ? `1px solid ${themeBorders.subtle}` : 'none'
+                        borderBottom: i < arr.length - 1 ? `1px solid ${themeBorders.subtle}` : 'none'
                       }}
                     >
                       <div style={{
@@ -486,13 +488,26 @@ export function OverviewPanel({
               </div>
             ))}
                   {customCode.assets.length > 5 && (
-                    <div style={{
-                      fontSize: typography.fontSize.xs,
-                      color: framerColors.textSecondary,
-                      paddingTop: spacing.xs
-                    }}>
-                      + {customCode.assets.length - 5} more
-                    </div>
+                    <button
+                      onClick={() => setCustomCodeExpanded(!customCodeExpanded)}
+                      style={{
+                        fontSize: typography.fontSize.xs,
+                        color: 'var(--framer-color-tint)',
+                        paddingTop: spacing.xs,
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        padding: `${spacing.xs} 0`,
+                        transition: 'opacity 0.15s ease'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+                      onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
+                    >
+                      {customCodeExpanded
+                        ? 'Show less'
+                        : `+ ${customCode.assets.length - 5} more`}
+                    </button>
                   )}
                 </div>
               )}
